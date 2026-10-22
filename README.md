@@ -192,4 +192,4 @@ Each scheme, light and dark, is defined by five base colours at the top of `cua.
 
 ## Licence
 
-To be decided.
+Apache 2.0.
