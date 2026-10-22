@@ -1,6 +1,8 @@
 <div align="center">
 
-# CUA
+# Ayni
+
+## Modern Web CUA
 
 **One way of working, on every screen.**
 
