@@ -204,7 +204,7 @@ While its action runs, a button is busy: a spinner replaces the icon in the same
 | Opens a popup | `popovertarget` or `aria-haspopup` (triangle is added by CSS) |
 | Second action | `data-alt="Print with the last settings"` |
 | Disabled | `aria-disabled="true"`, not the `disabled` attribute |
-| Busy | `CUA.setBusy(button, "Saving…")`, then `CUA.setBusy(button, false)` |
+| Busy | `Ayni.setBusy(button, "Saving…")`, then `Ayni.setBusy(button, false)` |
 
 ## 4. Text, number and search fields
 
@@ -570,7 +570,7 @@ To be done after the full design is closed:
 - **Right-to-left languages** (Arabic, Hebrew): logical CSS properties, mirrored icons and markers, swapped Left and Right keys.
 - **Windows High Contrast mode:** redraw selection, check squares, switches, the triangle and the dot with borders and system colours.
 
-The full list is kept in cua/deferred-accessibility.md in the project files.
+The full list is kept in [accessibility-backlog.md](accessibility-backlog.md).
 
 ## Appendix: decisions not taken
 

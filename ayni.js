@@ -1,23 +1,23 @@
 /* Ayni library 0.1.0: the behaviour of every Ayni control. Plain JavaScript, no build step, evergreen browsers 2024+.
-   Load it after cua.css, together with the icons:
-     <script src="cua-icons.js" defer></script>
-     <script src="cua.js" defer></script>
-   When the page has loaded it wires up every control it finds. CUA.init(root) wires up controls added later
-   (each control is wired once). Controls tell the app what happened with DOM events that bubble (cua:change,
-   cua:action, cua:press, ...), listed in README.md. Everything else the app uses lives on window.CUA. */
+   Load it after ayni.css, together with the icons:
+     <script src="ayni-icons.js" defer></script>
+     <script src="ayni.js" defer></script>
+   When the page has loaded it wires up every control it finds. Ayni.init(root) wires up controls added later
+   (each control is wired once). Controls tell the app what happened with DOM events that bubble (ayni:change,
+   ayni:action, ayni:press, ...), listed in README.md. Everything else the app uses lives on window.Ayni. */
 (() => {
 'use strict';
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const fire = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
-/* Each control is wired once, so CUA.init() can run again on new content */
+/* Each control is wired once, so Ayni.init() can run again on new content */
 const wired = new WeakMap();
 const once = (key, el) => { let s = wired.get(el); if (!s) wired.set(el, (s = new Set())); if (s.has(key)) return false; s.add(key); return true; };
 const each = (root, sel, key, fn) => [...(root.matches?.(sel) ? [root] : []), ...$$(sel, root)].forEach((el) => { if (once(key, el)) fn(el); });
 const isMac = /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform || navigator.platform);
 const isRO = (el) => el?.getAttribute?.('aria-readonly') === 'true';
 
-/* Status bar: CUA.status(text) writes the last action into the element marked data-cua-status */
-const status = (msg) => { const el = $('[data-cua-status]'); if (el) el.textContent = msg; };
+/* Status bar: Ayni.status(text) writes the last action into the element marked data-ayni-status */
+const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
 
 /* Shared layers, created when the page does not have them yet */
 let helpPop, errPop, tip, toasts;
@@ -29,7 +29,7 @@ const HOLD_MS = 500, DBL_MS = 250, coarse = matchMedia('(pointer: coarse)');
 let touchPreview = false;
 const isTouch = () => coarse.matches || touchPreview;
 const applyTouch = () => { document.documentElement.classList.toggle('touch', isTouch()); $$('.btn[data-alt]').forEach((b) => b.setTip?.()); };
-/* CUA.setTouchPreview(true) shows the touch layout with a mouse (the gallery's Touch preview switch) */
+/* Ayni.setTouchPreview(true) shows the touch layout with a mouse (the gallery's Touch preview switch) */
 const setTouchPreview = (on) => { touchPreview = !!on; applyTouch(); };
 
 /* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
@@ -46,7 +46,7 @@ const initTabs = (list) => {
     tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (focus) tab.focus();
     if (hash) try { history.replaceState(null, '', '#' + tab.getAttribute('aria-controls')); } catch {}
-    fire(list, 'cua:tabselect', tab);
+    fire(list, 'ayni:tabselect', tab);
   };
   /* Closable tabs: the round (x), Delete, or a middle click. The neighbour takes over. */
   const close = (tab) => {
@@ -56,7 +56,7 @@ const initTabs = (list) => {
     tab.hidden = true; tab.setAttribute('aria-selected', false); $('#' + tab.getAttribute('aria-controls')).hidden = true;
     /* Focus always goes to the selected tab after a close (item 65) */
     if (was && next) select(next); else { tabs = tabs.filter((t) => t !== tab); $(':scope > [role="tab"][aria-selected="true"]', list)?.focus(); }
-    fire(list, 'cua:tabclose', tab);
+    fire(list, 'ayni:tabclose', tab);
   };
   tabs.forEach((t) => {
     t.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) { e.stopPropagation(); close(t); } else select(t); });
@@ -109,18 +109,18 @@ const setBusy = (b, label) => {
 };
 
 /* ---------- Light / dark mode: follows the system until the user picks one ---------- */
-/* Any button with data-theme-toggle switches it; the choice is kept in localStorage ('cua-theme') */
+/* Any button with data-theme-toggle switches it; the choice is kept in localStorage ('ayni-theme') */
 const darkMq = matchMedia('(prefers-color-scheme: dark)'), themeBtns = [];
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : darkMq.matches; };
 const showTheme = () => themeBtns.forEach((b) => { const d = isDark(); b.setAttribute('aria-pressed', d); b.dataset.tip = 'Dark mode: ' + (d ? 'on' : 'off'); });
 const setTheme = (t) => {
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   showTheme();
-  try { if (t) localStorage.setItem('cua-theme', t); else localStorage.removeItem('cua-theme'); } catch {}
+  try { if (t) localStorage.setItem('ayni-theme', t); else localStorage.removeItem('ayni-theme'); } catch {}
 };
 const initThemeToggle = (b) => {
   themeBtns.push(b);
-  b.addEventListener('click', () => { const next = isDark() ? 'light' : 'dark'; setTheme(next); fire(b, 'cua:theme', { theme: next }); });
+  b.addEventListener('click', () => { const next = isDark() ? 'light' : 'dark'; setTheme(next); fire(b, 'ayni:theme', { theme: next }); });
   showTheme();
 };
 
@@ -164,13 +164,13 @@ const multiSelect = ({ box, items, set, done }) => ({
   isSelectAll: (e) => e.key.toLowerCase() === 'a' && (isMac ? e.metaKey : e.ctrlKey) && !e.altKey && !e.shiftKey,
 });
 
-/* List box (class "lb"): fires cua:change with { selected: [texts] } whenever the selection changes */
+/* List box (class "lb"): fires ayni:change with { selected: [texts] } whenever the selection changes */
 const initListbox = (lb) => {
   const multi = lb.getAttribute('aria-multiselectable') === 'true';
   const opts = $$('[role="option"]', lb);
   opts.forEach((o, i) => { o.id = lb.id + '-o' + i; if (!o.hasAttribute('aria-selected')) o.setAttribute('aria-selected', 'false'); });
   let active = Math.max(0, opts.findIndex((o) => o.getAttribute('aria-selected') === 'true')), anchor = active;
-  const report = () => fire(lb, 'cua:change', { selected: opts.filter((o) => o.getAttribute('aria-selected') === 'true').map((o) => o.textContent.trim()) });
+  const report = () => fire(lb, 'ayni:change', { selected: opts.filter((o) => o.getAttribute('aria-selected') === 'true').map((o) => o.textContent.trim()) });
   const setActive = (i) => {
     active = Math.max(0, Math.min(i, opts.length - 1));
     opts.forEach((o, j) => o.classList.toggle('active', j === active && document.activeElement === lb));
@@ -280,7 +280,7 @@ const initSpin = (g) => {
 /* ---------- Menus and popups: positioning, keyboard, menu bar ---------- */
 /* invoker is the button that opened the current popup (any [popovertarget]); ctxPoint is set for pop-up menus */
 let invoker = null, ctxPoint = null, ctxName = null, ctxReturn = null, ctxMenu = null;
-/* CUA.place(popup): below its button (above when there is no room), or at the pointer for a pop-up menu, kept on screen */
+/* Ayni.place(popup): below its button (above when there is no room), or at the pointer for a pop-up menu, kept on screen */
 const place = (menu) => {
   const m = menu.getBoundingClientRect();
   let x, y;
@@ -293,8 +293,8 @@ const place = (menu) => {
 const inBar = (b) => b?.parentElement?.getAttribute('role') === 'menubar';
 const barItemsOf = (b) => $$('button', b.parentElement);
 const openMenu = (btn) => { invoker = btn; ctxPoint = null; $('#' + btn.getAttribute('popovertarget')).showPopover(); };
-/* A menu fires cua:action with { item, menu, act } when an item is chosen (menu is the menu's name, or the name of
-   the thing a pop-up menu was opened on), and cua:choose with the item when a menuitemradio is picked */
+/* A menu fires ayni:action with { item, menu, act } when an item is chosen (menu is the menu's name, or the name of
+   the thing a pop-up menu was opened on), and ayni:choose with the item when a menuitemradio is picked */
 const initMenu = (menu) => {
   const items = () => $$('[role^="menuitem"]:not([aria-disabled="true"])', menu);
   menu.addEventListener('toggle', (e) => {
@@ -319,13 +319,13 @@ const initMenu = (menu) => {
     if (it.getAttribute('role') === 'menuitemradio') {
       $$('[role="menuitemradio"]', menu).forEach((x) => { x.setAttribute('aria-checked', x === it); $('svg', x)?.remove(); });
       it.insertAdjacentHTML('afterbegin', '<svg class="icon"><use href="#i-check"/></svg>');
-      fire(menu, 'cua:choose', it);
+      fire(menu, 'ayni:choose', it);
     }
     if (it.getAttribute('role') === 'menuitemcheckbox') {
       const on = it.getAttribute('aria-checked') !== 'true'; it.setAttribute('aria-checked', on);
       const ic = $('svg', it); if (on && !ic) it.insertAdjacentHTML('afterbegin', '<svg class="icon"><use href="#i-check"/></svg>'); if (!on && ic) ic.remove();
     }
-    fire(menu, 'cua:action', { item: it, menu: menu === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
+    fire(menu, 'ayni:action', { item: it, menu: menu === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
     menu.hidePopover();
   });
 };
@@ -354,7 +354,7 @@ const holdRing = (x, y) => {
   const r = document.createElement('div'); r.className = 'hold-ring'; r.style.left = x + 'px'; r.style.top = y + 'px';
   r.style.setProperty('--hold-ms', HOLD_MS + 'ms'); document.body.append(r); return r;
 };
-/* CUA.contextMenu(area, { menu, target, keyTarget }): target(e) returns { name, back, at? } for the element under the
+/* Ayni.contextMenu(area, { menu, target, keyTarget }): target(e) returns { name, back, at? } for the element under the
    event, or null; keyTarget(e) does the same for Shift+F10 and the Menu key (default: target) */
 const contextMenu = (root, { menu, target, keyTarget = target }) => {
   let rightDown = false, timer, ring, fired = null, start;
@@ -389,7 +389,7 @@ const contextMenu = (root, { menu, target, keyTarget = target }) => {
     e.preventDefault(); const r = (t.at || t.back).getBoundingClientRect(); openCtx(menu, r.left + 16, r.top + r.height / 2, t.name, t.back);
   });
 };
-/* CUA.toolbar(el): one Tab stop, arrow keys move between tools (roving tabindex). Called by the page, not automatic */
+/* Ayni.toolbar(el): one Tab stop, arrow keys move between tools (roving tabindex). Called by the page, not automatic */
 const initToolbar = (bar) => {
   const tools = $$('button', bar);
   tools.forEach((t, i) => (t.tabIndex = i ? -1 : 0));
@@ -420,7 +420,7 @@ const parseDT = (str) => {
   const d = parseIso(m[1]), h = +m[2], mi = +m[3]; if (!d || h > 23 || mi > 59) return null;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi);
 };
-/* CUA.calendar(root, onPick) draws a calendar in root and returns { set(date), focus() }.
+/* Ayni.calendar(root, onPick) draws a calendar in root and returns { set(date), focus() }.
    Optional limits come from data-min / data-max (YYYY-MM-DD) on the calendar root.
    The title switches days -> months -> years; picking a month or a year returns to the days. */
 const makeCalendar = (root, onPick) => {
@@ -508,7 +508,7 @@ const makeCalendar = (root, onPick) => {
   return { set: (d) => { sel = cur = d ? day0(d) : day0(new Date()); view = 'days'; render(false); }, focus: () => $('.cal-body [tabindex="0"]', root).focus() };
 };
 const errOf = (inp) => document.getElementById(inp.getAttribute('aria-describedby'));
-/* CUA.dateField(input, { popup, onChange }): a YYYY-MM-DD field whose popup holds a .cal; onChange(date) runs on a pick */
+/* Ayni.dateField(input, { popup, onChange }): a YYYY-MM-DD field whose popup holds a .cal; onChange(date) runs on a pick */
 const dateField = (inp, { popup, onChange } = {}) => {
   const err = errOf(inp);
   const check = () => { const bad = inp.value !== '' && !parseIso(inp.value); inp.setAttribute('aria-invalid', bad); if (err) err.hidden = !bad; return !bad; };
@@ -520,7 +520,7 @@ const dateField = (inp, { popup, onChange } = {}) => {
   });
   return { check };
 };
-/* CUA.dateTimeField(input, { popup, value, onChange }): one value, edited by typing (YYYY-MM-DD HH:MM) or in the
+/* Ayni.dateTimeField(input, { popup, value, onChange }): one value, edited by typing (YYYY-MM-DD HH:MM) or in the
    popup (a .cal plus hour and minute fields in a .time-row), applied live; onChange(date) runs on every change */
 const dateTimeField = (inp, { popup, value = new Date(), onChange } = {}) => {
   const err = errOf(inp), [hIn, mIn] = $$('.time-row .input', popup);
@@ -559,7 +559,7 @@ const initDateKeys = (g) => {
 };
 
 /* ---------- Tree view (deferred: kept as it is until the tree is picked up again) ---------- */
-/* Fires cua:select with { item, path } when an item is opened */
+/* Fires ayni:select with { item, path } when an item is opened */
 const initTree = (tree) => {
   const visibleItems = () => $$('[role="treeitem"]', tree).filter((it) => !it.parentElement.closest('[role="treeitem"][aria-expanded="false"]'));
   const focusItem = (it) => { $$('[role="treeitem"]', tree).forEach((x) => (x.tabIndex = -1)); it.tabIndex = 0; it.focus(); };
@@ -568,7 +568,7 @@ const initTree = (tree) => {
     $$('[role="treeitem"][aria-selected="true"]', tree).forEach((x) => x.setAttribute('aria-selected', 'false'));
     it.setAttribute('aria-selected', 'true');
     const path = []; for (let n = it; n; n = n.parentElement.closest('[role="treeitem"]')) path.unshift($(':scope > .ti', n).textContent.trim());
-    fire(tree, 'cua:select', { item: it, path });
+    fire(tree, 'ayni:select', { item: it, path });
   };
   $$('[role="treeitem"]', tree).forEach((it, i) => { it.tabIndex = i ? -1 : 0; it.setAttribute('aria-selected', 'false'); });
   tree.addEventListener('click', (e) => {
@@ -608,7 +608,7 @@ const hideTip = () => { clearTimeout(tipTimer); tipEl = null; if (tip.matches(':
 
 /* ---------- Help on touch: every element of the view with its icon, tooltip and a short explanation ---------- */
 /* RULE: on touch there are no tooltips. A Help button in the title row opens a dialog that lists every element
-   of the current view. CUA.fillHelp(body, entries) fills it: entries are [group name, element] pairs, in order;
+   of the current view. Ayni.fillHelp(body, entries) fills it: entries are [group name, element] pairs, in order;
    each element with a visible data-tip is listed once per group. data-help on an element gives its explanation. */
 const explain = (el) => {
   const b = el.matches('button, [role="button"]') ? el : $('button', el) || el, out = [];
@@ -658,7 +658,7 @@ const fillHelp = (body, entries) => {
 
 /* ---------- Notifications ---------- */
 let lastUndo = null;
-/* CUA.toast(kind, text, { action: { label, icon, run }, persist }): kind is info, ok, warn or err */
+/* Ayni.toast(kind, text, { action: { label, icon, run }, persist }): kind is info, ok, warn or err */
 const toast = (kind, text, { action, persist = kind === 'err' } = {}) => {
   const t = document.createElement('div');
   t.className = 'toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
@@ -682,7 +682,7 @@ const toast = (kind, text, { action, persist = kind === 'err' } = {}) => {
 };
 
 /* ---------- Second action: double-click, long tap (touch/pen), Shift+Enter ---------- */
-/* A button with data-alt="what the second action does" fires cua:press with { second, label } instead of acting on
+/* A button with data-alt="what the second action does" fires ayni:press with { second, label } instead of acting on
    its own click: the first action has second false and label = data-tip, the second has second true. */
 const initAlt = (b) => {
   const base = b.dataset.tip, alt = b.dataset.alt;
@@ -691,7 +691,7 @@ const initAlt = (b) => {
   b.setTip();
   b.setAttribute('aria-description', `Shift+Enter: ${alt}`);
   b.style.setProperty('--hold-ms', HOLD_MS + 'ms');
-  const run = (second) => fire(b, 'cua:press', { second, label: second ? alt : base });
+  const run = (second) => fire(b, 'ayni:press', { second, label: second ? alt : base });
   let timer, held = false;
   const cancel = () => { clearTimeout(timer); b.classList.remove('holding'); };
   b.addEventListener('pointerdown', (e) => {
@@ -715,7 +715,7 @@ const initAlt = (b) => {
 };
 
 /* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
-/* RULE: one list picker serves every drop-down list and combo box, on every device. Fires cua:change on the .picker
+/* RULE: one list picker serves every drop-down list and combo box, on every device. Fires ayni:change on the .picker
    with { value, name, field, input } when the user picks or types a value. */
 const initPicker = (root) => {
   const field = $(':scope > .input', root), hidden = $(':scope > input[type="hidden"]', root), pop = $('.picker-pop', root);
@@ -732,7 +732,7 @@ const initPicker = (root) => {
   const set = (v, announce = true) => {
     hidden.value = v; all.forEach((o) => o.setAttribute('aria-selected', o.dataset.value === v));
     if (typing) field.value = v; else field.textContent = v;
-    if (announce) fire(root, 'cua:change', { value: v, name, field, input: hidden });
+    if (announce) fire(root, 'ayni:change', { value: v, name, field, input: hidden });
   };
   const place = () => {
     const r = field.getBoundingClientRect(), sheet = isTouch() && innerWidth < 600;
@@ -764,7 +764,7 @@ const initPicker = (root) => {
     all.forEach((o) => { o.hidden = false; }); if (empty) empty.hidden = true;
   };
   const pick = (o) => { set(o.dataset.value); close(); field.focus(); };
-  root.addEventListener('cua:dismiss', (e) => { e.preventDefault(); close(); keepTyped(); });
+  root.addEventListener('ayni:dismiss', (e) => { e.preventDefault(); close(); keepTyped(); });
   const keepTyped = () => { if (typing && field.value.trim() !== hidden.value) set(field.value.trim()); };
   /* Type-ahead (typing off), shared helper; works while closed too */
   const ta = makeTypeAhead((o) => o.dataset.value);
@@ -809,7 +809,7 @@ const initPicker = (root) => {
 };
 
 /* ---------- Splitter (item 69): drag, arrows, Home/End; Enter collapses/restores the first pane; double-click resets ---------- */
-/* Fires cua:split with { action: 'reset' | 'collapse' | 'restore', pane, message } after a user action */
+/* Fires ayni:split with { action: 'reset' | 'collapse' | 'restore', pane, message } after a user action */
 const initSplit = (split) => {
   const bar = $('.splitter', split), rows = split.classList.contains('rows'), def = +(split.dataset.default || 35);
   const [first, last] = rows ? ['top', 'bottom'] : ['left', 'right'];
@@ -829,7 +829,7 @@ const initSplit = (split) => {
     bar.setAttribute('aria-valuenow', v);
     toStart.setAttribute('aria-disabled', v === 0); toEnd.setAttribute('aria-disabled', v === 100);
   };
-  const tell = (action, pane, message) => fire(split, 'cua:split', { action, pane, message });
+  const tell = (action, pane, message) => fire(split, 'ayni:split', { action, pane, message });
   const reset = () => { before = def; setSplit(def); tell('reset', null, 'Panes reset'); };
   /* Too short a bar for three targets: only the reset ring shows */
   new ResizeObserver(() => {
@@ -903,7 +903,7 @@ const initError = (c) => {
   new MutationObserver(() => { if (errFor === c) showErr(c, errPinned); }).observe(src, { childList: true, characterData: true, subtree: true });
   errSync(c);
 };
-/* CUA.focusFirstError(root): on sending a form with errors, the focus goes to the first wrong field, so its message shows */
+/* Ayni.focusFirstError(root): on sending a form with errors, the focus goes to the first wrong field, so its message shows */
 const focusFirstError = (root = document) => {
   const c = [...errMarks.keys()].find((k) => root.contains(k) && errBad(k)); if (!c) return false;
   (errGroup(c) ? $('input:not([disabled]), [tabindex="0"], [role="option"]', c) || c : c).focus(); return true;
@@ -911,22 +911,22 @@ const focusFirstError = (root = document) => {
 
 /* ---------- Open menus and popups close when the page scrolls or the window resizes (item 56) ----------
    Scrolling inside the popup itself does not close it. Dialogs and bottom sheets are not affected. A popup that
-   wants to handle it itself listens for cua:dismiss and calls preventDefault(). */
+   wants to handle it itself listens for ayni:dismiss and calls preventDefault(). */
 let poppedAt = 0;
 const dismissPopups = (src) => {
   if (performance.now() - poppedAt < 300) return;
   $$('.panel.menu:popover-open, .panel.popup:popover-open').forEach((p) => {
     if (p.classList.contains('sheet') || (src && p.contains(src))) return;
-    if (p.dispatchEvent(new Event('cua:dismiss', { bubbles: true, cancelable: true }))) p.hidePopover();
+    if (p.dispatchEvent(new Event('ayni:dismiss', { bubbles: true, cancelable: true }))) p.hidePopover();
   });
 };
 
 /* ---------- Page-wide behaviour, set up once ---------- */
 const setup = () => {
-  helpPop = layer('cua-help', '<div class="panel popup help" popover id="cua-help" role="dialog" aria-label="Help"></div>');
-  errPop = layer('cua-err', '<div class="panel popup err-pop" popover="manual" id="cua-err" aria-hidden="true"></div>');
-  tip = layer('cua-tip', '<div class="tooltip" popover="manual" role="tooltip" id="cua-tip"></div>');
-  toasts = layer('cua-toasts', '<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="cua-toasts"></div>');
+  helpPop = layer('ayni-help', '<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="Help"></div>');
+  errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
+  tip = layer('ayni-tip', '<div class="tooltip" popover="manual" role="tooltip" id="ayni-tip"></div>');
+  toasts = layer('ayni-toasts', '<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="ayni-toasts"></div>');
   coarse.addEventListener('change', applyTouch);
 
   /* Disabled buttons (aria-disabled) stay focusable but do nothing: clicks, Enter and Space are stopped here */
@@ -938,7 +938,7 @@ const setup = () => {
   addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
 
   /* Theme: a saved choice wins over the system setting */
-  try { const saved = localStorage.getItem('cua-theme'); if (saved) document.documentElement.dataset.theme = saved; } catch {}
+  try { const saved = localStorage.getItem('ayni-theme'); if (saved) document.documentElement.dataset.theme = saved; } catch {}
   darkMq.addEventListener('change', showTheme);
 
   document.addEventListener('click', (e) => {
@@ -990,9 +990,9 @@ const setup = () => {
     if (!errFor || errPinned) return;
     const a = document.activeElement; if (a !== errFor && !(errGroup(errFor) && errFor.contains(a))) hideErr();
   }));
-  document.addEventListener('pointerdown', (e) => { if (errPinned && !e.target.closest('.err-mark, #cua-err')) hideErr(); }, true);
+  document.addEventListener('pointerdown', (e) => { if (errPinned && !e.target.closest('.err-mark, #ayni-err')) hideErr(); }, true);
   /* Page scroll or resize: a focused field's message follows the field; a hovered or clicked one closes */
-  errPop.addEventListener('cua:dismiss', (e) => {
+  errPop.addEventListener('ayni:dismiss', (e) => {
     e.preventDefault(); const c = errFor, a = document.activeElement;
     if (c && !errPinned && (a === c || (errGroup(c) && c.contains(a)))) showErr(c); else hideErr();
   });
@@ -1008,7 +1008,7 @@ const setup = () => {
   });
 };
 
-/* ---------- CUA.init(root): wire up every control inside root (the whole page on load) ---------- */
+/* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   each(root, '[role="tablist"]', 'tabs', initTabs);
   each(root, 'dialog.panel', 'dialog', initDialog);
@@ -1043,7 +1043,7 @@ const init = (root = document) => {
   each(root, '[data-theme-toggle]', 'theme', initThemeToggle);
 };
 
-window.CUA = {
+window.Ayni = {
   version: '0.1.0', init, $, $$, status, toast, setBusy, place, contextMenu, fillHelp, focusFirstError,
   isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
