@@ -937,6 +937,23 @@ const setup = () => {
   addEventListener('keydown', (e) => { if (isRO(e.target) && /radio|range/.test(e.target.type) && /^(Arrow|Page|Home|End)/.test(e.key)) e.preventDefault(); }, true);
   addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
 
+  /* Two-sided switch (.switch-pair): two radios around one track. A click on the track or Space flips to the other side;
+     Left/Up pick the first side and Right/Down the second (no wrapping); clicking a label picks that side (native) */
+  const pickSide = (pair, i) => {
+    const r = $$(':scope > label > input', pair)[i ?? ($(':scope > label:first-of-type > input', pair).checked ? 1 : 0)];
+    if (!r || r.disabled || isRO(r)) return;
+    r.focus();
+    if (r.checked) return;
+    r.checked = true; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  addEventListener('click', (e) => { const t = e.target.closest('.switch-pair > .track'); if (t) pickSide(t.parentElement); });
+  addEventListener('keydown', (e) => {
+    const pair = e.target.closest?.('.switch-pair'); if (!pair || !e.target.matches('input') || e.altKey || e.ctrlKey || e.metaKey) return;
+    const side = { ' ': null, ArrowLeft: 0, ArrowUp: 0, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    if (side === undefined) return;
+    e.preventDefault(); pickSide(pair, side ?? undefined);
+  });
+
   /* Theme: a saved choice wins over the system setting */
   try { const saved = localStorage.getItem('ayni-theme'); if (saved) document.documentElement.dataset.theme = saved; } catch {}
   darkMq.addEventListener('change', showTheme);

@@ -123,6 +123,8 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Panel (the base surface of windows, dialogs, menus and popups) | `.panel` with `header`, `.body` and `footer` |
 | Button (round, icon only, always with a tooltip) | `button.btn` with `aria-label` and `data-tip`; `.primary` marks the default button; `.danger`, `.ok`, `.warn` colour the icon; `.quiet` has no border |
 | Toggle button | `.btn` with `aria-pressed` and `data-toggle` |
+| Switch (on/off, like one check box) | `label.switch` with the text, then `input[type="checkbox"][role="switch"]` |
+| Two-sided switch (two options, like two radio buttons) | `.switch-pair[role="radiogroup"]` with `label > input[type="radio"]`, `span.track`, `label > input[type="radio"]` |
 | Second action (double-click, long tap, Shift+Enter) | `data-alt="what it does"` on a `.btn`; listen for `ayni:press` |
 | Busy button | `Ayni.setBusy(button, 'Saving…')`, then `Ayni.setBusy(button, false)` |
 | Disabled button | `aria-disabled="true"` (stays focusable, its tooltip says why) |

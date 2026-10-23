@@ -133,6 +133,18 @@ legend { font-size: 12px; font-weight: 500; color: var(--ink-2); padding: 0; mar
 .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--thumb); box-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 30%, transparent); transition: transform .15s; }
 .switch input:checked { background: var(--accent); }
 .switch input:checked::after { transform: translateX(16px); }
+/* RULE: a switch has two uses. One-sided (.switch): one label, on or off, the same as one check box ("Visible").
+   Two-sided (.switch-pair): a label on each side, the thumb points at the chosen one, the same as two radio buttons
+   ("Dark / Light"). Inside are two radios and a track; neither side means "off", so the track keeps the accent colour.
+   Space or a click on the track flips the side, Left and Right pick a side, clicking a label picks that side. */
+.switch-pair { display: flex; align-items: center; gap: 10px; width: fit-content; }
+.switch-pair > label { position: relative; cursor: pointer; color: var(--ink-2); }
+.switch-pair > label:has(input:checked) { color: var(--ink); }
+.switch-pair > label > input { position: absolute; inset: 0; opacity: 0; margin: 0; pointer-events: none; }
+.switch-pair > .track { width: 36px; height: 20px; border-radius: 10px; background: var(--accent); position: relative; cursor: pointer; flex: none; }
+.switch-pair > .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--thumb); box-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 30%, transparent); transition: transform .15s; }
+.switch-pair:has(> label:last-of-type input:checked) > .track::after { transform: translateX(16px); }
+.switch-pair:has(input:focus-visible) > .track { outline: 2px solid var(--focus); outline-offset: 2px; }
 .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
 /* ---------- Text inputs ---------- */
@@ -362,7 +374,9 @@ html.touch [role="tab"] { min-height: var(--touch); }
 html.touch [role="tab"] .tab-close { position: relative; margin-left: 6px; }
 html.touch [role="tab"] .tab-close::before { content: ""; position: absolute; inset: -13px; }
 html.touch [role="menubar"] > button, html.touch .menu [role^="menuitem"], html.touch [role="option"], html.touch [role="treeitem"] > .ti,
-html.touch .choice, html.touch .switch { min-height: var(--touch); }
+html.touch .choice, html.touch .switch, html.touch .switch-pair, html.touch .switch-pair > label { min-height: var(--touch); }
+html.touch .switch-pair > label { display: flex; align-items: center; }
+html.touch .switch-pair > .track::before { content: ""; position: absolute; inset: -12px -4px; }
 html.touch [role="menubar"] > button, html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
 html.touch .info-tip::after, html.touch .err-mark::after { inset: -16px; }
 html.touch input[type="range"] { height: var(--touch); }
@@ -422,18 +436,18 @@ html .help-list .help-ico { --btn: 32px; pointer-events: none; grid-row: span 2;
    Disabled: faded to 45% and not interactive. Read-only: no border, soft tint (--readonly-bg); the value can be read but
    not changed. Loading / empty: a short centred message in the control. Error: Danger colour on the group border, and
    the message under it. */
-.input:disabled, .choice:has(input:disabled), .switch:has(input:disabled), input[type="range"]:disabled, fieldset:disabled,
+.input:disabled, .choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled), input[type="range"]:disabled, fieldset:disabled,
 .input-group:has(.input:disabled), [role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti,
 [role="tab"][aria-disabled="true"], .picker:has(> .input[aria-disabled="true"]) { opacity: .45; cursor: default; }
-:is(fieldset:disabled, .input-group) :is(.input, .choice, .switch, input):disabled, fieldset:disabled .choice, fieldset:disabled .switch { opacity: 1; }
-.choice:has(input:disabled), .switch:has(input:disabled), [role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti,
+:is(fieldset:disabled, .input-group) :is(.input, .choice, .switch, input):disabled, fieldset:disabled :is(.choice, .switch, .switch-pair) { opacity: 1; }
+.choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled), [role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti,
 .picker:has(> .input[aria-disabled="true"]) { pointer-events: none; }
 :is([role="listbox"], [role="tree"], fieldset, .picker > .input, .input-group)[aria-readonly="true"], .input-group:has(> .input[readonly]),
 fieldset:has(input[aria-readonly="true"]) { border-color: transparent; background: var(--readonly-bg); }
-:not(fieldset) > .switch:has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]),
+:not(fieldset) > :is(.switch, .switch-pair):has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]),
 .slider-row:has(input[aria-readonly="true"]) { background: var(--readonly-bg); border-radius: var(--ctl-radius); padding: 4px 8px; width: fit-content; }
 .slider-row:has(input[aria-readonly="true"]) { width: auto; }
-[aria-readonly="true"], :has(> input[aria-readonly="true"]) { cursor: default; }
+[aria-readonly="true"], :has(> input[aria-readonly="true"]), .switch-pair:has(input[aria-readonly="true"]) :is(label, .track) { cursor: default; }
 .input-group:has(> .input[readonly]) > .input { background: transparent; }
 .date-field:has(> .input[readonly]) > .btn, .picker:has(> .input[aria-readonly="true"])::after { display: none; }
 .state-msg { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 14px 8px; color: var(--ink-2); font-size: 13px; text-align: center; list-style: none; }

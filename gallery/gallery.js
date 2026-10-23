@@ -29,6 +29,15 @@ $('#save-demo').addEventListener('click', (e) => {
   }, 1500);
 });
 
+/* Switches next to their radio / check box equivalents: both always hold the same value */
+const mirror = (a, b) => [[a, b], [b, a]].forEach(([from, to]) => from.addEventListener('change', () => {
+  if (from.type === 'checkbox') to.checked = from.checked;
+  else $(`input[value="${$('input:checked', from).value}"]`, to).checked = true;
+  status(from.type === 'checkbox' ? 'Visible ' + (from.checked ? 'on' : 'off') : 'Theme: ' + $('input:checked', from).parentElement.textContent.trim());
+}));
+mirror($('#sw-theme'), $('#rb-theme'));
+mirror($('#sw-visible'), $('#cb-visible'));
+
 /* Light / dark mode */
 document.addEventListener('ayni:theme', (e) => status(e.detail.theme === 'dark' ? 'Dark mode on' : 'Dark mode off'));
 
