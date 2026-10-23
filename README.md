@@ -11,11 +11,11 @@ Plain HTML, CSS and JavaScript. No framework, no build step, nothing to install.
 
 </div>
 
-![The CUA gallery in light mode: round icon buttons, radio buttons, check boxes, switches and the second-action dot](docs/gallery-light.png)
+![The Ayni gallery in light mode: round icon buttons, radio buttons, check boxes, switches and the second-action dot](docs/gallery-light.png)
 
-## Why CUA
+## Why Ayni
 
-Most interfaces grow one screen at a time, and every screen invents its own little habits. CUA starts from the other end: first the rules, then the controls that obey them. The result is an interface that feels the same everywhere.
+Most interfaces grow one screen at a time, and every screen invents its own little habits. Ayni starts from the other end: first the rules, then the controls that obey them. The result is an interface that feels the same everywhere.
 
 - **Consistent.** One look per state across every control. Disabled is always faded, read-only is always a soft tint, an error is always a red border with a small "!".
 - **Congruent.** Each sign means one thing. A filled button is the default, and nothing else. A small dot means "this button has a second action". A small triangle means "this opens something".
@@ -37,7 +37,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 
 **Nothing to build.** Three files, `cua.css`, `cua.js` and `cua-icons.js`, work straight from disk or from any static web server. The target is evergreen browsers from 2024 on.
 
-![The CUA gallery in dark mode: sliders, a date field, the calendar and the date-and-time popup](docs/gallery-dark.png)
+![The Ayni gallery in dark mode: sliders, a date field, the calendar and the date-and-time popup](docs/gallery-dark.png)
 
 ## What's inside
 
@@ -74,14 +74,14 @@ That's it: the library finds its controls when the page loads. Then open [`galle
 
 The gallery is the living reference. It shows every control in every state, in light and dark, with a **Touch preview** switch so you can try the touch layout with a mouse. Open it [online](https://peyrona.github.io/ayni/gallery/) (once GitHub Pages is turned on for this repository), or open `gallery/index.html` straight from your disk.
 
-The rules behind every control are in the [CUA Design Guidelines](docs/guidelines.md) book. The book says what the rules are, and the gallery shows them working.
+The rules behind every control are in the [Ayni Design Guidelines](docs/guidelines.md) book. The book says what the rules are, and the gallery shows them working.
 
 ## Roadmap
 
-CUA is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
+Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
 - [ ] **The final icon set.** The current icons are examples.
-- [ ] **Desktop mode.** From 1024 px wide, CUA will switch on its own to a desktop with windows that float, move and resize, plus a taskbar.
+- [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows that float, move and resize, plus a taskbar.
 - [ ] **Tree view.** It works in the gallery, but its design will be reviewed.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
 
@@ -187,7 +187,7 @@ Each scheme, light and dark, is defined by five base colours at the top of `cua.
 | `cua.js` | The behaviour of every control |
 | `cua-icons.js` | The icon sprite (24×24 grid, 2px stroke) |
 | `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps) |
-| `docs/guidelines.md` | The CUA Design Guidelines: every rule, chapter by chapter |
+| `docs/guidelines.md` | The Ayni Design Guidelines: every rule, chapter by chapter |
 | `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
 | `docs/*.png` | Images for this page |
 | `CHANGELOG.md` | What changed in each version |

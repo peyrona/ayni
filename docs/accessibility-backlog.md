@@ -1,6 +1,6 @@
 # Deferred until the design is closed: blind and deaf users, High Contrast mode, right-to-left
 
-Frasquito decided on 2026-10-22 to handle all work for blind and deaf users (screen readers, ARIA, live regions, announcements, captions) **after the full CUA design is closed**. On the same day Frasquito postponed right-to-left (RTL) language support and Windows High Contrast mode the same way. Do not forget them.
+Frasquito decided on 2026-10-22 to handle all work for blind and deaf users (screen readers, ARIA, live regions, announcements, captions) **after the full Ayni design is closed**. On the same day Frasquito postponed right-to-left (RTL) language support and Windows High Contrast mode the same way. Do not forget them.
 
 These items come from the review of the components gallery (the "gap review") and keep their original numbers.
 

@@ -1,4 +1,4 @@
-/* CUA library 0.1.0: the behaviour of every CUA control. Plain JavaScript, no build step, evergreen browsers 2024+.
+/* Ayni library 0.1.0: the behaviour of every Ayni control. Plain JavaScript, no build step, evergreen browsers 2024+.
    Load it after cua.css, together with the icons:
      <script src="cua-icons.js" defer></script>
      <script src="cua.js" defer></script>
@@ -1014,13 +1014,13 @@ const init = (root = document) => {
   each(root, 'dialog.panel', 'dialog', initDialog);
   /* Rule check: a danger button is never the default (no .primary, no autofocus) */
   each(root, '.btn.danger.primary, .btn.danger[autofocus]', 'danger', (b) => {
-    console.warn('CUA rule: a danger button cannot be the default button', b);
+    console.warn('Ayni rule: a danger button cannot be the default button', b);
     b.classList.remove('primary'); b.removeAttribute('autofocus');
   });
   each(root, '.btn[popovertarget]:not([aria-haspopup])', 'haspopup', (b) => b.setAttribute('aria-haspopup', 'true'));
   /* Rule check: a button that opens a popup (menu, popover, dialog) has no second action */
   each(root, '.btn[data-alt][popovertarget], .btn[data-alt][data-open-dialog], .btn[data-alt][aria-haspopup]', 'altrule', (b) => {
-    console.warn('CUA rule: a button that opens a popup cannot have a second action', b);
+    console.warn('Ayni rule: a button that opens a popup cannot have a second action', b);
     b.removeAttribute('data-alt');
   });
   each(root, '[data-toggle]', 'toggle', (b) => b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true')));

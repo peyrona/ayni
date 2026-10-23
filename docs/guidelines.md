@@ -1,10 +1,10 @@
-# CUA Design Guidelines
+# Ayni Design Guidelines
 
 Version of 2026-10-22 · Frasquito
 
 ## About this book
 
-This book is the rule set for the CUA (Common User Access) interface built with HTML, CSS and JavaScript: every rule here has been decided by Frasquito, the decision maker, and is shown working in the [CUA Components gallery](../gallery/index.html).
+This book is the rule set for Ayni, a CUA (Common User Access) interface built with HTML, CSS and JavaScript: every rule here has been decided by Frasquito, the decision maker, and is shown working in the [Ayni Components gallery](../gallery/index.html).
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
@@ -12,7 +12,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 
 **Words used in this book.**
 
-- **Panel**: the base surface of the CUA. Dialogs, menus, popups and (later) windows are all Panels. Panels can nest, for example a dialog opened from a window.
+- **Panel**: the base surface of Ayni. Dialogs, menus, popups and (later) windows are all Panels. Panels can nest, for example a dialog opened from a window.
 - **Default button**: the one button in a view that Enter runs. It is the only button with a filled background.
 - **Second action**: an extra action on a button, reached by double-click, long tap or Shift+Enter.
 - **Touch**: a device whose main pointer is coarse (a finger). **Phone**: a touch device narrower than 600 px.
@@ -24,7 +24,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 
 ## 1. Principles
 
-The CUA aims for the best user experience by being consistent, congruent and intuitive: the same thing always looks the same, behaves the same and means the same, on every device.
+Ayni aims for the best user experience by being consistent, congruent and intuitive: the same thing always looks the same, behaves the same and means the same, on every device.
 
 1. **One look, one meaning.** A visual sign has exactly one meaning across the whole interface. A filled background means "default button" and nothing else. A small dot on a button means "second action". A small down-pointing triangle means "opens a list or popup". Colour of an icon carries meaning (danger, success, warning). No sign is reused for something else.
 2. **One control per job.** There is one list picker for every drop-down list and combo box, one search field, one number field, one date field. Native browser widgets whose look or behaviour differ between browsers (select, datalist, date wheels) are not used.
@@ -239,7 +239,7 @@ A number in a range, laid out as − field +.
 
 ### 4.5 Search field
 
-Every search field in the CUA is the same control.
+Every search field in Ayni is the same control.
 
 - Filters as the user types.
 - The magnifier sits at the right edge. An optional filter button sits just before it; a clear button appears before that once there is text.
@@ -287,7 +287,7 @@ A value in a range where the exact number matters less than its position. The cu
 
 ## 6. Date, time and calendar
 
-Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the CUA calendar; weeks start on Monday.
+Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni calendar; weeks start on Monday.
 
 ### 6.1 Date field
 
@@ -321,7 +321,7 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the CUA ca
 
 ## 7. List picker: drop-down list and combo box
 
-One CUA list picker serves every drop-down list and every combo box, on every device; the browser's native select, datalist and scrolling wheels are never used.
+One Ayni list picker serves every drop-down list and every combo box, on every device; the browser's native select, datalist and scrolling wheels are never used.
 
 ### 7.1 Two modes
 
@@ -586,7 +586,7 @@ These were considered and turned down; they are listed so they are not proposed 
 | Filter name as a chip in the search field | Dropped: the filter icon turns Accent instead |
 | Ring with a dot, or a second ring, to mark a second action | Rejected: a single small dot |
 | Hold-to-peek or notifications to show tooltips on touch | Rejected: the Help dialog |
-| Native select, datalist or date wheels | Rejected: the CUA list picker and calendar |
+| Native select, datalist or date wheels | Rejected: the Ayni list picker and calendar |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |
 | Text labels on buttons | Not used: icon-only round buttons with tooltips |

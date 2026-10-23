@@ -1,4 +1,4 @@
-/* CUA Components gallery: the demo wiring of this page only (outputs, status messages, sample data).
+/* Ayni Components gallery: the demo wiring of this page only (outputs, status messages, sample data).
    Every control's behaviour comes from the library (../cua.js); nothing here is needed by a real app. */
 const { $, $$, status } = CUA;
 const say = (id, msg) => { $('#' + id).textContent = msg; };
