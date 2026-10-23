@@ -6,7 +6,7 @@
 
 **One way of working, on every screen.**
 
-A user-interface library where every control follows the same rules, so people learn them once and never have to guess again.
+A consistent, modern and intuitive user-interface library where every control follows the same rules.
 Plain HTML, CSS and JavaScript. No framework, no build step, nothing to install.
 
 [**Open the gallery**](https://peyrona.github.io/ayni/gallery/) · [Read the design guidelines](docs/guidelines.md) · [Quick start](#quick-start)
