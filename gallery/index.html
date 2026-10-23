@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CUA Components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../cua.css">
+<link rel="stylesheet" href="gallery.css">
+<script src="../cua-icons.js" defer></script>
+<script src="../cua.js" defer></script>
+<script src="gallery.js" defer></script>
+</head>
+<body>
+<!-- CUA Components gallery: every control and state, built with the CUA library. The living reference for the
+     CUA Design Guidelines book. -->
+<section class="panel gallery" aria-labelledby="g-title">
+  <header>
+    <h2 id="g-title">CUA Components</h2>
+    <span class="mode" id="mode"></span>
+    <button class="btn quiet" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><svg class="icon"><use href="#i-moon"/></svg></button>
+    <label class="switch"><input type="checkbox" role="switch" id="sim-touch">Touch preview</label>
+    <button class="btn quiet touch-only" id="help-btn" data-open-dialog="dlg-help" data-help="Lists every element on this page and what it does." aria-label="Help: what each element does" data-tip="Help"><svg class="icon"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div role="tablist" aria-label="Component families" id="tabs" data-hash>
+    <button role="tab" id="t-dialogs" aria-controls="dialogs"><svg class="icon"><use href="#i-window"/></svg>Dialogs</button>
+    <button role="tab" id="t-buttons" aria-controls="buttons"><svg class="icon"><use href="#i-button"/></svg>Buttons</button>
+    <button role="tab" id="t-lists" aria-controls="lists"><svg class="icon"><use href="#i-list"/></svg>Lists</button>
+    <button role="tab" id="t-texts" aria-controls="texts"><svg class="icon"><use href="#i-text"/></svg>Texts</button>
+    <button role="tab" id="t-pickers" aria-controls="pickers"><svg class="icon"><use href="#i-sliders"/></svg>Pickers</button>
+    <button role="tab" id="t-menus" aria-controls="menus"><svg class="icon"><use href="#i-menu"/></svg>Menus</button>
+    <button role="tab" id="t-feedback" aria-controls="feedback"><svg class="icon"><use href="#i-bell"/></svg>Feedback</button>
+    <button role="tab" id="t-layout" aria-controls="layout"><svg class="icon"><use href="#i-layout"/></svg>Layout</button>
+    <button role="tab" id="t-icons" aria-controls="icons"><svg class="icon"><use href="#i-star"/></svg>Icons</button>
+  </div>
+
+  <!-- ===== DIALOGS ===== -->
+  <div role="tabpanel" id="dialogs" aria-labelledby="t-dialogs">
+    <div class="specimens">
+      <div class="spec"><h3>Message</h3>
+        <p class="rule">Tells the user something. Its only button is Close, so it sits in the title row at the right.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-msg" aria-label="Show message…" data-tip="Show message…"><svg class="icon"><use href="#i-info"/></svg></button></div></div>
+      <div class="spec"><h3>Settings, applied at once</h3>
+        <p class="rule">No Accept or Cancel. Each change takes effect as soon as it is made, here on this gallery.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-settings" aria-label="Gallery settings…" data-tip="Gallery settings…"><svg class="icon"><use href="#i-settings"/></svg></button></div></div>
+      <div class="spec"><h3>Applied on close</h3>
+        <p class="rule">The new name is applied when the dialog closes, by the Close button or Esc. An invalid name is not applied, and the status bar says why.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-form" aria-label="Rename…" data-tip="Rename…"><svg class="icon"><use href="#i-edit"/></svg></button></div></div>
+      <div class="spec"><h3>Confirmation</h3>
+        <p class="rule">Used only when a change can't be applied live, like a deletion. It needs more than Close, so its buttons go in a bottom row. Keep (also Esc) is the default, and Delete is never the default.</p>
+        <div class="row"><button class="btn danger" data-open-dialog="dlg-confirm" aria-label="Delete file…" data-tip="Delete file…"><svg class="icon"><use href="#i-trash"/></svg></button></div></div>
+      <div class="spec"><h3>Modeless dialog</h3>
+        <p class="rule">Stays open while you keep working, with no backdrop. It has more than Close, so its buttons go in the bottom row: Close and Find next at the right, the extra action (List all matches) at the left.</p>
+        <div class="row"><button class="btn" id="open-modeless" aria-label="Find…" data-tip="Find…"><svg class="icon"><use href="#i-search"/></svg></button></div></div>
+      <div class="spec"><h3>Dialog rules</h3>
+        <p class="rule">Esc always closes a dialog. Avoid Accept and Cancel wherever possible: apply changes as they happen, or when the dialog closes. With Close as the only button, it goes at the right of the title row. Otherwise all buttons, Close included, go in a bottom row: the usual ones (Close, Accept, Cancel) at the right, any extra actions at the left. Enter anywhere in a Panel runs its default (filled) button, except in a text area, on another button, or while a list or menu is open.</p></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">Every control shares one look per state. In a dialog the default button can be disabled until the input is valid: it stays filled but faded, can still be focused, and its tooltip says why.</p>
+        <div class="row"><button class="btn primary" aria-disabled="true" aria-label="Save" data-tip="Save: type a name first"><svg class="icon"><use href="#i-save"/></svg></button><button class="btn quiet" aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></div></div>
+    </div>
+    <p class="out" id="dlg-out" role="status" style="margin-top:12px"></p>
+  </div>
+
+  <!-- ===== BUTTONS ===== -->
+  <div role="tabpanel" id="buttons" aria-labelledby="t-buttons" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Push buttons</h3>
+        <p class="rule">Always round with an icon and no label. The tooltip names the action. The filled background marks only the default button (one per view, run by Enter). Meaning goes in the icon colour: red for danger, green for success, amber for warning. A danger button is never the default. A disabled button is faded and does nothing, but it can still be focused and its tooltip says why (see Paste). While an action runs, the button is busy: a spinner replaces the icon and clicks are ignored (try Save).</p>
+        <div class="row">
+          <button class="btn primary" id="save-demo" aria-label="Save" data-tip="Save"><svg class="icon"><use href="#i-save"/></svg></button><button class="btn" aria-label="Cancel" data-tip="Cancel"><svg class="icon"><use href="#i-close"/></svg></button>
+          <button class="btn danger" aria-label="Delete" data-tip="Delete"><svg class="icon"><use href="#i-trash"/></svg></button><button class="btn ok" aria-label="Approve" data-tip="Approve"><svg class="icon"><use href="#i-check"/></svg></button><button class="btn warn" aria-label="Report a problem" data-tip="Report a problem"><svg class="icon"><use href="#i-warn"/></svg></button><button class="btn quiet" aria-label="Help" data-tip="Help"><svg class="icon"><use href="#i-help"/></svg></button>
+        </div>
+        <div class="row">
+          <button class="btn" aria-label="New" data-tip="New"><svg class="icon"><use href="#i-plus"/></svg></button>
+          <button class="btn" aria-label="Settings" data-tip="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+          <button class="btn" aria-disabled="true" aria-label="Paste" data-tip="Paste: nothing copied yet"><svg class="icon"><use href="#i-paste"/></svg></button>
+        </div></div>
+      <div class="spec"><h3>Radio buttons</h3>
+        <p class="rule">Pick exactly one. Arrow keys move the choice.</p>
+        <fieldset><legend>Paper size</legend>
+          <label class="choice"><input type="radio" name="paper" value="a4" checked>A4</label>
+          <label class="choice"><input type="radio" name="paper" value="letter">Letter</label>
+          <label class="choice"><input type="radio" name="paper" value="legal">Legal</label>
+          <label class="choice"><input type="radio" name="paper" value="a3" disabled>A3 (not available)</label>
+        </fieldset></div>
+      <div class="spec"><h3>Check boxes</h3>
+        <p class="rule">Pick any number. A parent box shows a mixed state.</p>
+        <fieldset><legend>Include</legend>
+          <label class="choice"><input type="checkbox" id="chk-all">All sections</label>
+          <div class="stack" style="padding-left:24px">
+            <label class="choice"><input type="checkbox" class="chk-sub" checked>Summary</label>
+            <label class="choice"><input type="checkbox" class="chk-sub">Charts</label>
+            <label class="choice"><input type="checkbox" class="chk-sub">Appendix</label>
+          </div>
+        </fieldset></div>
+      <div class="spec"><h3>Toggles</h3>
+        <p class="rule">A switch takes effect at once. A toggle button holds an on/off state.</p>
+        <label class="switch"><input type="checkbox" role="switch" checked>Autosave</label>
+        <label class="switch"><input type="checkbox" role="switch">Dark mode preview</label>
+        <div class="row">
+          <button class="btn" aria-pressed="false" data-toggle aria-label="Favourite" data-tip="Favourite"><svg class="icon"><use href="#i-star"/></svg></button>
+          <button class="btn" aria-pressed="true" data-toggle aria-label="Bold" data-tip="Bold"><svg class="icon"><use href="#i-bold"/></svg></button>
+        </div></div>
+      <div class="spec"><h3>Popup buttons</h3>
+        <p class="rule">A small down-pointing triangle means the button opens a menu or popup, like a combo box. These buttons never have a second action, so they never show the dot.</p>
+        <div class="row">
+          <button class="btn" popovertarget="m-file" aria-haspopup="menu" aria-label="File menu" data-tip="File menu"><svg class="icon"><use href="#i-new"/></svg></button>
+          <button class="btn primary" popovertarget="m-edit" aria-haspopup="menu" aria-label="Edit menu" data-tip="Edit menu"><svg class="icon"><use href="#i-copy"/></svg></button>
+          <button class="btn" aria-label="Save" data-tip="Save"><svg class="icon"><use href="#i-save"/></svg></button>
+        </div></div>
+      <div class="spec"><h3>Second action</h3>
+        <p class="rule">A dot means the button also takes a double-click, or a long tap on touch screens (Shift+Enter on the keyboard). The tooltip names both actions. A single click waits a quarter of a second, in case a second click follows; a double-click runs only the second action. Buttons without a dot never wait, and a tap or Enter acts at once. Save has no second action, so no dot. A button that opens a popup (menu, popover or dialog) never has a second action.</p>
+        <div class="row">
+          <button class="btn" aria-label="Open" data-tip="Open" data-alt="Open in a new window"><svg class="icon"><use href="#i-open"/></svg></button>
+          <button class="btn primary" aria-label="Print" data-tip="Print" data-alt="Print with the last settings"><svg class="icon"><use href="#i-print"/></svg></button>
+          <button class="btn" aria-label="Save" data-tip="Save"><svg class="icon"><use href="#i-save"/></svg></button>
+        </div>
+        <p class="hint">Turn on Touch preview at the top to try the long tap with the mouse.</p>
+        <p class="out" id="alt-out" role="status"></p></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">Disabled is faded and does nothing. Read-only has no border and a soft tint: you see the value but cannot change it. An error puts the Danger colour on the group border and a red "!" next to its label; the message pops up while the focus is in the group, or on hovering or clicking the "!".</p>
+        <div class="row"><button class="btn" aria-disabled="true" aria-label="Cut" data-tip="Cut: select some text first"><svg class="icon"><use href="#i-cut"/></svg></button><button class="btn" aria-pressed="true" aria-disabled="true" aria-label="Italic" data-tip="Italic: not available in this font"><svg class="icon"><use href="#i-italic"/></svg></button></div>
+        <label class="switch"><input type="checkbox" role="switch" disabled>Sync (disabled)</label>
+        <label class="switch"><input type="checkbox" role="switch" checked aria-readonly="true">Backups (read-only)</label>
+        <label class="choice"><input type="checkbox" disabled>Print in colour (disabled)</label>
+        <fieldset class="group" role="radiogroup" aria-readonly="true"><legend>Plan (read-only)</legend>
+          <label class="choice"><input type="radio" name="st-plan" aria-readonly="true">Basic</label>
+          <label class="choice"><input type="radio" name="st-plan" checked aria-readonly="true">Business</label></fieldset>
+        <fieldset class="group" role="radiogroup" aria-invalid="true" aria-describedby="st-ship-err"><legend>Shipping</legend>
+          <label class="choice"><input type="radio" name="st-ship">Standard</label>
+          <label class="choice"><input type="radio" name="st-ship">Express</label>
+          <span class="error" id="st-ship-err">Choose how to ship the order.</span></fieldset>
+        <fieldset class="group" aria-invalid="true" aria-describedby="st-terms-err"><legend>Before you send</legend>
+          <label class="choice"><input type="checkbox">I have read the terms</label>
+          <span class="error" id="st-terms-err">Tick the box to go on.</span></fieldset></div>
+    </div>
+  </div>
+
+  <!-- ===== LISTS ===== -->
+  <div role="tabpanel" id="lists" aria-labelledby="t-lists" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Single-selection list</h3>
+        <p class="rule">Arrow keys, Home and End move the selection. Typing jumps to the first match: letters typed quickly build one search ("me" reaches México), accents and case don't matter, and repeating one letter cycles through its items. A list may have a visible label above it (optional): it names the list, and clicking it moves to the list. Without one, the list keeps a hidden name, like Files below.</p>
+        <label for="lb-single" id="lb-single-l" class="list-label">Country</label>
+        <ul role="listbox" tabindex="0" aria-labelledby="lb-single-l" class="lb" id="lb-single">
+          <li role="option">Argentina</li><li role="option">Chile</li><li role="option">Colombia</li>
+          <li role="option" aria-selected="true">España</li><li role="option">México</li><li role="option">Perú</li><li role="option">Uruguay</li>
+        </ul>
+        <p class="out" id="lb-single-out"></p></div>
+      <div class="spec"><h3>Multiple-selection list</h3>
+        <p class="rule">A check square on each item shows that several can be chosen. Click or Space toggles an item. Shift+click or Shift+arrows select a range, Ctrl+A (⌘A on Mac) selects all, and Page Up and Page Down jump a page.</p>
+        <ul role="listbox" tabindex="0" aria-label="Files" aria-multiselectable="true" class="lb" id="lb-multi">
+          <li role="option"><svg class="icon"><use href="#i-folder"/></svg>Invoices</li>
+          <li role="option" aria-selected="true"><svg class="icon"><use href="#i-file"/></svg>budget-2026.xlsx</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>contract.pdf</li>
+          <li role="option" aria-selected="true"><svg class="icon"><use href="#i-file"/></svg>notes.txt</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>photo.jpg</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>plan-2027.pdf</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>price-list.xlsx</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>receipt-0912.pdf</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>report-q3.docx</li>
+          <li role="option"><svg class="icon"><use href="#i-file"/></svg>summary.txt</li>
+        </ul>
+        <p class="out" id="lb-multi-out"></p></div>
+      <div class="spec"><h3>Drop-down list</h3>
+        <p class="rule">Our list picker with typing off: one choice from a fixed set. The triangle marks the list. Click or tap the field, or press Alt+Down or F4. The list opens below the field, above it when there is no room, and as a sheet at the bottom on phones. Arrows move, Enter picks, Esc closes. Typing a letter jumps to the first match, even while closed.</p>
+        <div class="field"><label for="dd" id="dd-l">Priority</label>
+          <div class="picker" data-picker="list">
+            <input type="hidden" name="priority" value="Normal">
+            <div class="input" id="dd" role="combobox" tabindex="0" aria-labelledby="dd-l" aria-haspopup="listbox" aria-expanded="false" aria-controls="dd-list"></div>
+            <div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="dd-list" aria-labelledby="dd-l"><li role="option">Low</li><li role="option">Normal</li><li role="option">High</li><li role="option">Urgent</li></ul></div>
+          </div></div>
+        <p class="out" id="dd-out"></p></div>
+      <div class="spec"><h3>Combination box</h3>
+        <p class="rule">The same list picker with typing on. Type any value, and the list shows only the suggestions that match, ignoring accents and case. Down or Alt+Down opens the full list. Enter picks the highlighted suggestion, or keeps what you typed when nothing matches.</p>
+        <div class="field"><label for="combo" id="combo-l">City</label>
+          <div class="picker" data-picker="combo">
+            <input type="hidden" name="city" value="">
+            <input class="input" id="combo" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="combo-list" placeholder="Type or pick a city" autocomplete="off" spellcheck="false">
+            <div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="combo-list" aria-labelledby="combo-l"><li role="option">A Coruña</li><li role="option">Alicante</li><li role="option">Barcelona</li><li role="option">Bilbao</li><li role="option">Córdoba</li><li role="option">Granada</li><li role="option">Madrid</li><li role="option">Málaga</li><li role="option">Murcia</li><li role="option">Palma</li><li role="option">Sevilla</li><li role="option">Valencia</li><li role="option">Valladolid</li><li role="option">Zaragoza</li></ul><p class="picker-empty" hidden>No city matches. Enter keeps what you typed.</p></div>
+          </div></div>
+        <p class="out" id="combo-out"></p></div>
+      <div class="spec"><h3>Tree view</h3>
+        <p class="rule">Up and Down move. Right opens a folder or enters it, Left closes it or goes to its parent.</p>
+        <label for="tree" id="tree-l" class="list-label">Folders</label>
+        <ul role="tree" aria-labelledby="tree-l" id="tree">
+          <li role="treeitem" aria-expanded="true"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-folder"/></svg>Documents</div>
+            <ul role="group">
+              <li role="treeitem" aria-expanded="true"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-folder"/></svg>Invoices</div>
+                <ul role="group">
+                  <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>2026-09.pdf</div></li>
+                  <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>2026-10.pdf</div></li>
+                </ul></li>
+              <li role="treeitem" aria-expanded="false"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-folder"/></svg>Contracts</div>
+                <ul role="group">
+                  <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>rental.pdf</div></li>
+                </ul></li>
+              <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>notes.txt</div></li>
+            </ul></li>
+          <li role="treeitem" aria-expanded="false"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-folder"/></svg>Pictures</div>
+            <ul role="group">
+              <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>beach.jpg</div></li>
+              <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>giralda.jpg</div></li>
+            </ul></li>
+          <li role="treeitem"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>todo.txt</div></li>
+          <li role="treeitem" aria-disabled="true"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>backup.zip (in use)</div></li>
+        </ul>
+        <p class="out" id="tree-out"></p></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">Disabled lists and items are faded and ignore the pointer. A read-only list shows its choices with a soft tint and no border. While a list loads it shows a spinner row; when it has nothing it says so in the middle. An error colours the border and puts a red "!" next to the label, which shows the message; a list with no visible label (the last one) shows the "!" inside its top-right corner. In the folder tree above, backup.zip is a disabled item.</p>
+        <div class="state-grid">
+          <div class="field"><span class="static-label">Disabled</span><ul role="listbox" aria-label="Disabled list" aria-disabled="true"><li role="option">Invoices</li><li role="option" aria-selected="true">Contracts</li></ul></div>
+          <div class="field"><span class="static-label">Read-only</span><ul role="listbox" aria-label="Read-only list" aria-readonly="true" aria-multiselectable="true" tabindex="0"><li role="option" aria-selected="true">Invoices</li><li role="option">Contracts</li></ul></div>
+          <div class="field"><span class="static-label">Loading</span><ul role="listbox" aria-label="Files" aria-busy="true"><li role="none" class="state-msg"><span class="busy" aria-hidden="true"></span>Loading…</li></ul></div>
+          <div class="field"><span class="static-label">Empty</span><ul role="listbox" aria-label="Files"><li role="none" class="state-msg">No files</li></ul></div>
+          <div class="field"><span class="static-label">Loading tree</span><ul role="tree" aria-label="Folders" aria-busy="true"><li role="none" class="state-msg"><span class="busy" aria-hidden="true"></span>Loading…</li></ul></div>
+          <div class="field"><span class="static-label">Empty tree</span><ul role="tree" aria-label="Folders"><li role="none" class="state-msg">No folders</li></ul></div>
+        </div>
+        <div class="field"><span class="static-label" id="st-att-l">Attachments</span><ul role="listbox" aria-labelledby="st-att-l" aria-multiselectable="true" aria-invalid="true" aria-describedby="st-att-err"><li role="option">contract.pdf</li><li role="option">photo.jpg</li></ul>
+          <span class="error" id="st-att-err">Pick at least one file to attach.</span></div>
+        <div class="field"><ul role="listbox" aria-label="Cover photo" aria-invalid="true" aria-describedby="st-ph-err"><li role="option">beach.jpg</li><li role="option">city.jpg</li></ul>
+          <span class="error" id="st-ph-err">Pick a photo for the cover.</span></div>
+        <div class="state-grid">
+          <div class="field"><label for="st-dd1" id="st-dd1-l">Drop-down, disabled</label><div class="picker" data-picker="list"><input type="hidden" name="st1" value="Normal"><div class="input" id="st-dd1" role="combobox" aria-labelledby="st-dd1-l" aria-disabled="true" aria-expanded="false" aria-controls="st-dd1-list"></div><div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="st-dd1-list"><li role="option">Normal</li></ul></div></div></div>
+          <div class="field"><label for="st-dd2" id="st-dd2-l">Drop-down, read-only</label><div class="picker" data-picker="list"><input type="hidden" name="st2" value="High"><div class="input" id="st-dd2" role="combobox" tabindex="0" aria-labelledby="st-dd2-l" aria-readonly="true" aria-expanded="false" aria-controls="st-dd2-list"></div><div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="st-dd2-list"><li role="option">High</li></ul></div></div></div>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- ===== TEXTS ===== -->
+  <div role="tabpanel" id="texts" aria-labelledby="t-texts" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Labels</h3>
+        <p class="rule">Every control has a visible label above it. A red mark means required. Clicking a label moves to its control.</p>
+        <p class="static"><b>Static label:</b> Account 0042-1187</p>
+        <div class="field"><label for="tf-name">Full name <span class="req" aria-hidden="true">*</span></label>
+          <input id="tf-name" class="input" required placeholder="As it appears on your ID"></div></div>
+      <div class="spec"><h3>Info label</h3>
+        <p class="rule">A small "i" in a circle can sit next to any control. Click it, or focus it and press Enter, to open a short help popup. Esc or a click elsewhere closes it.</p>
+        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Delivery slot" data-tip="What is this?" data-help="Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00.">i</button></div>
+        <p class="hint">More examples sit next to Email, Password, Copies, and Image quality on the Pickers tab.</p></div>
+      <div class="spec"><h3>Text field</h3>
+        <p class="rule">Help goes in the placeholder, not under the field. Nothing appears under the field, errors included: an error colours the border and shows a small red "!" at the end of the field, and its message (how to fix it) pops up while the field has focus, or on hovering or clicking the "!". When the form is sent with errors, the focus goes to the first wrong field, so its message shows. Buttons can sit inside the field, at the start or the end. A read-only field (Customer ID) has no border and a soft tint: you can focus it, select and copy its text, but not change it. A disabled field (Promo code) is faded and can't be focused.</p>
+        <div class="field"><div class="label-row"><label for="tf-email">Email</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Email" data-tip="What is this?" data-help="We send invoices and delivery notices here. We never share it.">i</button></div>
+          <input id="tf-email" class="input" type="email" value="ana.morales@" placeholder="name@example.com" aria-describedby="tf-email-err">
+          <span class="error" id="tf-email-err" hidden>Enter a full address, like name@example.com.</span></div>
+        <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Password" data-tip="What is this?" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess.">i</button></div>
+          <div class="input-group"><input id="tf-pw" class="input" type="password" value="giralda-2026" placeholder="At least 8 characters">
+            <button class="btn quiet" type="button" id="pw-toggle" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><svg class="icon"><use href="#i-eye"/></svg></button></div></div>
+        <div class="field"><label for="tf-ro">Customer ID</label>
+          <input id="tf-ro" class="input" value="C-20931" readonly></div>
+        <div class="field"><label for="tf-dis">Promo code</label>
+          <input id="tf-dis" class="input" value="Not available for this order" disabled></div></div>
+      <div class="spec"><h3>Text area</h3>
+        <p class="rule">Multi-line text. When there is a limit, the count sits inside the field, at the bottom right.</p>
+        <div class="field"><label for="ta">Comments</label>
+          <div class="ta-wrap"><textarea id="ta" class="input" maxlength="200" placeholder="Anything the driver should know" aria-describedby="ta-count">Delivery to the back door, please.</textarea>
+          <span class="ta-count" id="ta-count"></span></div></div></div>
+      <div class="spec"><h3>Search field</h3>
+        <p class="rule">Filters as you type. The magnifier sits at the right edge. An optional filter button sits just before it, and a clear button appears once there is text. The first Esc clears the field; a second Esc closes the popup or dialog it sits in, like View options in the Menus tab.</p>
+        <div class="field"><label for="sf">Search fruits</label>
+          <div class="input-group search-field"><input id="sf" class="input" type="search" placeholder="Type a fruit, like mango">
+            <button class="btn quiet" type="button" id="sf-clear" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><svg class="icon"><use href="#i-close"/></svg></button>
+            <button class="btn quiet filter-btn" type="button" id="sf-filter" popovertarget="m-filter" aria-haspopup="menu" aria-label="Filter" data-tip="Filter: all fruits"><svg class="icon"><use href="#i-filter"/></svg></button>
+            <button class="btn quiet" type="button" id="sf-go" aria-label="Search" data-tip="Search"><svg class="icon"><use href="#i-search"/></svg></button></div></div>
+        <p class="out" id="sf-out"></p></div>
+      <div class="spec"><h3>Spin button</h3>
+        <p class="rule">A number in a range. Arrow keys or the buttons inside the field step it; holding a button repeats, slowly then faster. Page Up and Page Down step 10 times, Home and End go to the limits. A value out of range shows an error (red border and "!") instead of being corrected. Both "," and "." work as the decimal mark.</p>
+        <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
+          <div class="input-group spin">
+            <button class="btn quiet" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><svg class="icon"><use href="#i-minus"/></svg></button>
+            <input id="spin" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="99" data-step="1" value="2" aria-describedby="spin-err">
+            <button class="btn quiet" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><svg class="icon"><use href="#i-plus"/></svg></button>
+          </div><span class="error" id="spin-err" hidden></span></div>
+        <div class="field"><label for="spin-kg">Weight in kg (0–50, steps of 0.5)</label>
+          <div class="input-group spin">
+            <button class="btn quiet" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><svg class="icon"><use href="#i-minus"/></svg></button>
+            <input id="spin-kg" class="input" role="spinbutton" inputmode="decimal" data-min="0" data-max="50" data-step="0.5" value="2,5" aria-describedby="spin-kg-err">
+            <button class="btn quiet" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><svg class="icon"><use href="#i-plus"/></svg></button>
+          </div><span class="error" id="spin-kg-err" hidden></span></div></div>
+      <div class="spec"><h3>Progress</h3>
+        <p class="rule">A bar when the amount is known, a spinner when it is not.</p>
+        <div class="field"><label for="pg">Uploading photo.jpg</label><progress id="pg" max="100" value="35"></progress>
+          <span class="hint" id="pg-txt">35%</span></div>
+        <div class="row"><button class="btn" id="pg-start" aria-label="Start upload" data-tip="Start upload"><svg class="icon"><use href="#i-upload"/></svg></button>
+          <div class="busy" role="status" aria-label="Loading"></div><span class="hint">Loading…</span></div></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">The same three looks as everywhere: disabled is faded and cannot be focused, read-only has no border and a soft tint, and an error colours the border and shows a red "!" in the field; its message pops up on focus, hover or click.</p>
+        <div class="field"><label for="st-t1">Disabled</label><input id="st-t1" class="input" value="Old reference" disabled></div>
+        <div class="field"><label for="st-t2">Read-only</label><input id="st-t2" class="input" value="INV-2026-0042" readonly></div>
+        <div class="field"><label for="st-t3">With an error</label><input id="st-t3" class="input" value="12/31/2026" aria-invalid="true" aria-describedby="st-t3-err"><span class="error" id="st-t3-err">Use the form YYYY-MM-DD.</span></div></div>
+    </div>
+  </div>
+
+  <!-- ===== PICKERS ===== -->
+  <div role="tabpanel" id="pickers" aria-labelledby="t-pickers" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Slider</h3>
+        <p class="rule">A value in a range where the exact number matters less. Arrow keys step it, Page Up and Page Down jump.</p>
+        <div class="field"><label for="sl-vol">Volume</label>
+          <div class="slider-row"><input id="sl-vol" type="range" min="0" max="100" value="60"><output for="sl-vol" id="sl-vol-out">60%</output></div></div>
+        <div class="field"><div class="label-row"><label for="sl-q">Image quality</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Image quality" data-tip="What is this?" data-help="Higher quality makes sharper images and larger files. Medium suits most screens.">i</button></div>
+          <input id="sl-q" type="range" min="1" max="5" step="1" value="3" list="q-ticks" aria-valuetext="Medium">
+          <datalist id="q-ticks"><option value="1"><option value="2"><option value="3"><option value="4"><option value="5"></datalist>
+          <div class="ticks" aria-hidden="true"><span>Draft</span><span>Low</span><span>Medium</span><span>High</span><span>Best</span></div></div></div>
+      <div class="spec"><h3>Date field</h3>
+        <p class="rule">Type the date as YYYY-MM-DD, or pick it from the calendar: the button, or Alt+Down or F4 while in the field.</p>
+        <div class="field"><label for="date-f">Delivery date</label>
+          <div class="input-group date-field"><input id="date-f" class="input" inputmode="numeric" placeholder="YYYY-MM-DD" aria-describedby="date-err">
+            <button class="btn quiet" popovertarget="cal-pop" aria-label="Choose date" data-tip="Choose date"><svg class="icon"><use href="#i-calendar"/></svg></button></div>
+          <span class="error" id="date-err" hidden>Use the form YYYY-MM-DD, like 2026-10-20.</span></div></div>
+      <div class="spec"><h3>Date and time</h3>
+        <p class="rule">Type it as YYYY-MM-DD HH:MM, or pick it (the button, or Alt+Down or F4 in the field). In the popup the day and the time apply as soon as you change them. Esc or a click outside closes it.</p>
+        <div class="field"><label for="dt-f">Appointment</label>
+          <div class="input-group date-field"><input id="dt-f" class="input" inputmode="numeric" placeholder="YYYY-MM-DD HH:MM" aria-describedby="dt-err">
+            <button class="btn quiet" popovertarget="dt-pop" aria-label="Choose date and time" data-tip="Choose date and time"><svg class="icon"><use href="#i-calendar"/></svg></button></div>
+          <span class="error" id="dt-err" hidden>Use the form YYYY-MM-DD HH:MM, like 2026-10-21 16:30.</span></div></div>
+      <div class="spec"><h3>Calendar</h3>
+        <p class="rule">Arrow keys move by day and week, Page Up and Page Down by month, Enter picks. Click the month title for a 12-month grid, again for a grid of years; picking one returns to the days. The Today button jumps to today and picks it. This one only allows the next 60 days: other days look disabled and cannot be picked.</p>
+        <div class="cal inline" id="cal-inline"></div>
+        <p class="out" id="cal-out"></p></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">A disabled slider or date field is faded and ignores input. A read-only one keeps its value visible on a soft tint, without border, and the calendar button goes away.</p>
+        <div class="field"><label for="st-s1">Volume, disabled</label><div class="slider-row"><input id="st-s1" type="range" value="40" disabled><output for="st-s1">40%</output></div></div>
+        <div class="field"><label for="st-s2">Volume, read-only</label><div class="slider-row"><input id="st-s2" type="range" value="70" aria-readonly="true"><output for="st-s2">70%</output></div></div>
+        <div class="field"><label for="st-d1">Date, disabled</label><div class="input-group date-field"><input id="st-d1" class="input" value="2026-11-02" disabled><button class="btn quiet" aria-disabled="true" aria-label="Choose date" data-tip="Choose date: not available"><svg class="icon"><use href="#i-calendar"/></svg></button></div></div>
+        <div class="field"><label for="st-d2">Date, read-only</label><div class="input-group date-field"><input id="st-d2" class="input" value="2026-09-14" readonly><button class="btn quiet" aria-label="Choose date" data-tip="Choose date"><svg class="icon"><use href="#i-calendar"/></svg></button></div></div></div>
+    </div>
+  </div>
+
+  <!-- ===== MENUS ===== -->
+  <div role="tabpanel" id="menus" aria-labelledby="t-menus" hidden>
+    <div class="specimens">
+      <div class="spec" style="grid-column: 1 / -1"><h3>Menu bar with pull-down menus</h3>
+        <p class="rule">F10 focuses the bar. Left and Right move between menus, Down opens one.</p>
+        <div role="menubar" aria-label="Main" id="menubar">
+          <button popovertarget="m-file" aria-haspopup="menu" aria-expanded="false">File</button>
+          <button popovertarget="m-edit" aria-haspopup="menu" aria-expanded="false">Edit</button>
+          <button popovertarget="m-view" aria-haspopup="menu" aria-expanded="false">View</button>
+        </div></div>
+      <div class="spec"><h3>Pop-up menu</h3>
+        <p class="rule">Right-click, Shift+F10 or the Menu key opens actions for what is under the pointer. On touch screens a long tap does the same: the ring fills while you hold, and the menu opens when you lift. It also works on the files list and the folder tree in the Lists tab.</p>
+        <div class="ctx-area" tabindex="0" id="ctx-area">Right-click or long-tap here</div></div>
+      <div class="spec"><h3>Popup with controls</h3>
+        <p class="rule">A popup can hold any control: text fields, radio buttons, switches, sliders, lists. Changes apply as you make them. When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it.</p>
+        <div class="row"><button class="btn" popovertarget="pp-ctrl" aria-label="View options" data-tip="View options"><svg class="icon"><use href="#i-sliders"/></svg></button></div>
+        <p class="out" id="pp-out"></p></div>
+      <div class="spec"><h3>Toolbar</h3>
+        <p class="rule">One Tab stop. Arrow keys move between tools.</p>
+        <div role="toolbar" aria-label="Formatting" id="toolbar">
+          <button class="btn quiet icon-btn" aria-label="Undo" data-tip="Undo (Ctrl+Z)"><svg class="icon"><use href="#i-undo"/></svg></button>
+          <button class="btn quiet icon-btn" aria-label="Redo" data-tip="Redo (Ctrl+Y)"><svg class="icon"><use href="#i-redo"/></svg></button>
+          <span class="sep" role="separator"></span>
+          <button class="btn quiet icon-btn" aria-label="Bold" data-tip="Bold" aria-pressed="false" data-toggle data-fmt="bold"><svg class="icon"><use href="#i-bold"/></svg></button>
+          <button class="btn quiet icon-btn" aria-label="Italic" data-tip="Italic" aria-pressed="false" data-toggle data-fmt="italic"><svg class="icon"><use href="#i-italic"/></svg></button>
+          <button class="btn quiet icon-btn" aria-label="Underline" data-tip="Underline" aria-pressed="false" data-toggle data-fmt="underline"><svg class="icon"><use href="#i-underline"/></svg></button>
+          <span class="sep" role="separator"></span>
+          <button class="btn quiet icon-btn" aria-label="More" data-tip="More" popovertarget="m-ctx"><svg class="icon"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="doc" id="doc">Select a style in the toolbar to change this text.</div></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">A disabled menu item (Redo, in the Edit menu) is faded and the arrow keys skip it. A disabled toolbar button is faded but keeps its tooltip, which says why.</p>
+        <div role="toolbar" aria-label="Formatting (with a disabled button)"><button class="btn" aria-label="Bold" data-tip="Bold"><svg class="icon"><use href="#i-bold"/></svg></button><button class="btn" aria-disabled="true" aria-label="Underline" data-tip="Underline: not available for headings"><svg class="icon"><use href="#i-underline"/></svg></button></div></div>
+    </div>
+    <p class="out" id="menu-out" role="status" style="margin-top:12px"></p>
+  </div>
+
+  <!-- ===== FEEDBACK ===== -->
+  <div role="tabpanel" id="feedback" aria-labelledby="t-feedback" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Tooltips</h3>
+        <p class="rule">Appear after half a second of hover, or at once on keyboard focus. Esc hides them. They never hold the only copy of important text. On touch screens there are no tooltips: the Help button at the top opens a dialog that lists every element of the view with its tooltip and a short explanation (turn on Touch preview to try it).</p>
+        <div class="row">
+          <button class="btn" aria-label="Print" data-tip="Print (Ctrl+P)"><svg class="icon"><use href="#i-print"/></svg></button>
+          <button class="btn icon-btn" aria-label="Settings" data-tip="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+          <button class="btn" aria-label="Share" data-tip="Share: sends a copy to everyone in the list"><svg class="icon"><use href="#i-share"/></svg></button>
+        </div></div>
+      <div class="spec"><h3>Notifications</h3>
+        <p class="rule">Appear bottom-right and leave after 6 seconds (paused while the pointer is on them). Errors stay until dismissed. Every notification has a round close button. One with Undo also says that Ctrl+Z (⌘Z on Mac) undoes, and the shortcut still works after the notification has gone.</p>
+        <div class="row">
+          <button class="btn" data-toast="info" aria-label="Show an info notification" data-tip="Show an info notification"><svg class="icon"><use href="#i-info"/></svg></button>
+          <button class="btn" data-toast="ok" aria-label="Show a success notification with Undo" data-tip="Show a success notification with Undo"><svg class="icon"><use href="#i-ok"/></svg></button>
+          <button class="btn" data-toast="warn" aria-label="Show a warning notification" data-tip="Show a warning notification"><svg class="icon"><use href="#i-warn"/></svg></button>
+          <button class="btn" data-toast="err" aria-label="Show an error notification" data-tip="Show an error notification"><svg class="icon"><use href="#i-error"/></svg></button>
+        </div></div>
+      <div class="spec"><h3>Status bar</h3>
+        <p class="rule">The strip along the bottom of this Panel. It shows the last action, the selection and where you are.</p>
+        <div class="statusbar demo"><span>Saved ana-morales.json</span><span>Ln 12, Col 4</span><span>UTF-8</span></div>
+        <div class="row"><button class="btn" id="sb-busy" aria-label="Save (shows a busy message)" data-tip="Save (shows a busy message)"><svg class="icon"><use href="#i-save"/></svg></button></div></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">The shared messages that every control uses: a spinner row while loading, a short centred line when there is nothing to show, and an error line in the Danger colour.</p>
+        <div class="state-box"><p class="state-msg"><span class="busy" aria-hidden="true"></span>Loading…</p></div>
+        <div class="state-box"><p class="state-msg">No messages</p></div>
+        <p class="error">Could not load the messages. Check the connection.</p></div>
+    </div>
+  </div>
+
+  <!-- ===== LAYOUT ===== -->
+  <div role="tabpanel" id="layout" aria-labelledby="t-layout" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Tabs</h3>
+        <p class="rule">Split one Panel into pages. Tabs are drawn like folder tabs, and the selected one joins its page. When there are more tabs than fit, the row scrolls sideways, and the selected tab always scrolls into view. Left and Right switch pages, and Ctrl+Page Down or Ctrl+Page Up switch from anywhere inside the Panel. A tab can have one icon at its left. A closable tab has a small round close button at its right; Delete (or a middle click) also closes it. Here General and Security cannot be closed.</p>
+        <div class="subtabs">
+          <div role="tablist" aria-label="Properties" class="tabs-local">
+            <button role="tab" id="st-1" aria-controls="sp-1"><svg class="icon"><use href="#i-file"/></svg>General</button>
+            <button role="tab" id="st-2" aria-controls="sp-2"><svg class="icon"><use href="#i-eye"/></svg>Security</button>
+            <button role="tab" id="st-3" aria-controls="sp-3" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-info"/></svg>Details<span class="tab-close" data-close data-tip="Close Details" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-4" aria-controls="sp-4" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-share"/></svg>Sharing<span class="tab-close" data-close data-tip="Close Sharing" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-5" aria-controls="sp-5" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-calendar"/></svg>Versions<span class="tab-close" data-close data-tip="Close Versions" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-6" aria-controls="sp-6" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-user"/></svg>Permissions<span class="tab-close" data-close data-tip="Close Permissions" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-7" aria-controls="sp-7" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-edit"/></svg>Comments<span class="tab-close" data-close data-tip="Close Comments" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-8" aria-controls="sp-8" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-refresh"/></svg>History<span class="tab-close" data-close data-tip="Close History" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <button role="tab" id="st-9" aria-controls="sp-9" data-closable aria-keyshortcuts="Delete"><svg class="icon"><use href="#i-settings"/></svg>Advanced<span class="tab-close" data-close data-tip="Close Advanced" aria-hidden="true"><svg class="icon"><use href="#i-close"/></svg></span></button>
+          </div>
+          <div role="tabpanel" id="sp-1" aria-labelledby="st-1"><div class="field"><label for="p-name">Name</label><input id="p-name" class="input" value="contract.pdf"></div></div>
+          <div role="tabpanel" id="sp-2" aria-labelledby="st-2" hidden><label class="choice"><input type="checkbox" checked>Only I can edit</label></div>
+          <div role="tabpanel" id="sp-3" aria-labelledby="st-3" hidden><p class="static">Size <b>184 KB</b> · Modified <b>2026-10-14</b></p></div>
+          <div role="tabpanel" id="sp-4" aria-labelledby="st-4" hidden><p class="static">Shared with <b>2 people</b>: Ana Morales, Talleres Ruiz.</p></div>
+          <div role="tabpanel" id="sp-5" aria-labelledby="st-5" hidden><p class="static"><b>3 versions</b>. The latest is from 2026-10-14 at 09:12.</p></div>
+          <div role="tabpanel" id="sp-6" aria-labelledby="st-6" hidden><label class="choice"><input type="checkbox" checked>Others can comment</label></div>
+          <div role="tabpanel" id="sp-7" aria-labelledby="st-7" hidden><p class="static">No comments yet.</p></div>
+          <div role="tabpanel" id="sp-8" aria-labelledby="st-8" hidden><p class="static">Created 2026-09-02 by Ana Morales.</p></div>
+          <div role="tabpanel" id="sp-9" aria-labelledby="st-9" hidden><label class="switch"><input type="checkbox" role="switch">Keep offline copy</label></div>
+        </div>
+        <div class="row"><button class="btn" id="tabs-reopen" aria-label="Reopen closed tabs" data-tip="Reopen closed tabs: no tab is closed" aria-disabled="true"><svg class="icon"><use href="#i-refresh"/></svg></button></div></div>
+      <div class="spec"><h3>Group boxes</h3>
+        <p class="rule">A border and a title that group related controls.</p>
+        <fieldset class="group"><legend>Shipping address</legend>
+          <div class="field"><label for="g-street">Street</label><input id="g-street" class="input" value="Calle Sierpes 21"></div>
+          <div class="field"><label for="g-city">City</label><input id="g-city" class="input" value="Sevilla"></div>
+        </fieldset>
+        <fieldset class="group"><legend>Delivery</legend>
+          <label class="choice"><input type="radio" name="deliv" checked>Standard</label>
+          <label class="choice"><input type="radio" name="deliv">Express</label>
+        </fieldset></div>
+      <div class="spec wide"><h3>Scrolling</h3>
+        <p class="rule">Every container scrolls up and down and sideways. Scrollbars show only when the content does not fit, like the left panel. The right one fits, so it shows none.</p>
+        <div class="row" style="align-items:stretch; flex-wrap:nowrap; min-width:0">
+          <section class="panel scroll-demo" aria-labelledby="sd1" style="flex:2; min-width:0"><header><h2 id="sd1">Prices 2026</h2></header><div class="body" tabindex="0" aria-label="Prices table, scrollable"><table><thead><tr><th>Product</th><th>Jan 2026 (€)</th><th>Feb 2026 (€)</th><th>Mar 2026 (€)</th><th>Apr 2026 (€)</th><th>May 2026 (€)</th><th>Jun 2026 (€)</th><th>Jul 2026 (€)</th><th>Aug 2026 (€)</th><th>Sep 2026 (€)</th><th>Oct 2026 (€)</th><th>Nov 2026 (€)</th><th>Dec 2026 (€)</th></tr></thead><tbody><tr><td>Olive oil 1 l</td><td>3.62</td><td>2.11</td><td>6.46</td><td>1.43</td><td>5.46</td><td>3.98</td><td>1.30</td><td>5.21</td><td>1.13</td><td>4.57</td><td>1.41</td><td>1.59</td></tr><tr><td>Bread 500 g</td><td>4.49</td><td>7.99</td><td>1.88</td><td>2.74</td><td>6.26</td><td>9.05</td><td>5.82</td><td>4.25</td><td>9.29</td><td>1.21</td><td>8.27</td><td>3.32</td></tr><tr><td>Rice 1 kg</td><td>2.06</td><td>1.82</td><td>3.48</td><td>7.90</td><td>2.37</td><td>5.86</td><td>6.36</td><td>4.04</td><td>5.57</td><td>1.35</td><td>1.32</td><td>2.59</td></tr><tr><td>Coffee 250 g</td><td>6.72</td><td>4.52</td><td>3.53</td><td>5.89</td><td>4.74</td><td>3.41</td><td>7.71</td><td>6.88</td><td>2.92</td><td>5.80</td><td>5.37</td><td>8.41</td></tr><tr><td>Oranges 2 kg</td><td>7.15</td><td>3.31</td><td>9.33</td><td>1.83</td><td>4.44</td><td>7.39</td><td>2.12</td><td>5.05</td><td>1.14</td><td>6.61</td><td>7.45</td><td>5.79</td></tr><tr><td>Milk 1 l</td><td>8.42</td><td>3.53</td><td>6.85</td><td>5.97</td><td>5.85</td><td>4.77</td><td>8.11</td><td>9.02</td><td>4.92</td><td>6.58</td><td>1.33</td><td>6.90</td></tr><tr><td>Eggs (12)</td><td>6.43</td><td>9.44</td><td>7.95</td><td>3.28</td><td>4.16</td><td>6.62</td><td>1.00</td><td>4.82</td><td>2.26</td><td>1.82</td><td>1.31</td><td>7.48</td></tr><tr><td>Tomatoes 1 kg</td><td>1.93</td><td>2.95</td><td>4.20</td><td>8.38</td><td>1.50</td><td>4.71</td><td>5.58</td><td>8.49</td><td>7.93</td><td>8.32</td><td>3.22</td><td>4.41</td></tr><tr><td>Cheese 250 g</td><td>3.92</td><td>8.49</td><td>9.13</td><td>2.11</td><td>2.33</td><td>2.82</td><td>2.83</td><td>5.02</td><td>5.93</td><td>3.09</td><td>0.84</td><td>4.44</td></tr><tr><td>Ham 100 g</td><td>4.01</td><td>5.73</td><td>9.09</td><td>6.81</td><td>5.28</td><td>6.17</td><td>6.68</td><td>1.27</td><td>8.63</td><td>7.59</td><td>8.41</td><td>7.74</td></tr></tbody></table></div></section>
+          <section class="panel scroll-demo" aria-labelledby="sd2" style="flex:1; min-width:0"><header><h2 id="sd2">Note</h2></header><div class="body"><p>Short content fits.</p></div></section>
+        </div></div>
+      <div class="spec wide"><h3>Splitter</h3>
+        <p class="rule">Drag the bar to resize the two panes. In its middle, two small arrows send the bar to either end, hiding that pane, and the dot between them puts both panes back to their default sizes. An arrow is disabled when its pane is already hidden, and when the bar is too short only the dot shows. Shortcuts: focus the bar and use the arrow keys (Left and Right side by side, Up and Down top and bottom), Home and End for the limits, Enter to hide or show the first pane; a double-click also resets.</p>
+        <div class="split" id="split" data-default="35">
+          <div class="pane"><ul class="log" style="list-style:none;margin:0;padding:0;line-height:1.9"><li>Invoices</li><li>Contracts</li><li>Pictures</li><li>Music</li></ul></div>
+          <div class="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize" data-help="Drag the bar to resize the panes, or use the arrow keys. Enter hides or shows the left pane; a double-click resets both panes."></div>
+          <div class="pane"><p style="margin:0">Invoices holds 24 files. Select one on the left to preview it here.</p></div>
+        </div>
+        <div class="split rows" id="split-rows" data-default="50">
+          <div class="pane"><p style="margin:0">Message list: 12 unread.</p></div>
+          <div class="splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Resize top and bottom panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize" data-help="Drag the bar to resize the panes, or use the arrow keys. Enter hides or shows the top pane; a double-click resets both panes."></div>
+          <div class="pane"><p style="margin:0">Preview of the selected message.</p></div>
+        </div></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">A disabled tab is faded and the arrow keys skip it. A disabled group box fades everything inside it at once.</p>
+        <div class="subtabs">
+          <div role="tablist" aria-label="States demo" class="tabs-local">
+            <button role="tab" id="sst-1" aria-controls="ssp-1">Summary</button>
+            <button role="tab" id="sst-2" aria-controls="ssp-2" aria-disabled="true" data-tip="Billing: needs an account">Billing</button>
+            <button role="tab" id="sst-3" aria-controls="ssp-3">Notes</button>
+          </div>
+          <div role="tabpanel" id="ssp-1" aria-labelledby="sst-1"><p class="static">Three tabs; Billing is disabled.</p></div>
+          <div role="tabpanel" id="ssp-2" aria-labelledby="sst-2" hidden></div>
+          <div role="tabpanel" id="ssp-3" aria-labelledby="sst-3" hidden><p class="static">No notes.</p></div>
+        </div>
+        <fieldset class="group" disabled><legend>Delivery (disabled)</legend>
+          <div class="field"><label for="st-g1">Street</label><input id="st-g1" class="input" value="Calle Sierpes 21"></div>
+          <label class="switch"><input type="checkbox" role="switch" checked>Leave with a neighbour</label></fieldset></div>
+    </div>
+  </div>
+
+  <!-- ===== ICONS ===== -->
+  <div role="tabpanel" id="icons" aria-labelledby="t-icons" hidden>
+    <div class="stack" style="gap:16px">
+      <div class="row">
+        <fieldset style="flex-direction:row; gap:16px; align-items:center"><legend style="margin:0 8px 0 0">Size</legend>
+          <label class="choice"><input type="radio" name="isize" value="16px">16</label>
+          <label class="choice"><input type="radio" name="isize" value="20px">20</label>
+          <label class="choice"><input type="radio" name="isize" value="24px" checked>24</label>
+          <label class="choice"><input type="radio" name="isize" value="32px">32</label>
+        </fieldset>
+      </div>
+      <p class="hint" style="margin:0">One 24×24 grid, 2px stroke, rounded ends, color from the text. Every button uses one of these, with a tooltip and a label for screen readers.</p>
+      <div class="icon-grid" id="icon-grid"></div>
+      <div class="specimens">
+        <div class="spec"><h3>Status icons</h3>
+          <div class="status info"><svg class="icon"><use href="#i-info"/></svg><span>Information</span></div>
+          <div class="status ok"><svg class="icon"><use href="#i-ok"/></svg><span>Success</span></div>
+          <div class="status warn"><svg class="icon"><use href="#i-warn"/></svg><span>Warning</span></div>
+          <div class="status err"><svg class="icon"><use href="#i-error"/></svg><span>Error</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar" role="status" aria-live="polite">
+    <span id="sb-msg" data-cua-status>Ready</span><span id="sb-sel">No selection</span><span id="sb-tab"></span>
+  </div>
+</section>
+
+<!-- Shared layers used by cua.js (it creates them when a page leaves them out): help popup for info labels, field error popup -->
+<div class="panel popup help" popover id="cua-help" role="dialog" aria-label="Help"></div>
+<div class="panel popup err-pop" popover="manual" id="cua-err" aria-hidden="true"></div>
+<div class="panel menu" popover id="m-filter" role="menu" aria-label="Filter">
+  <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all"><svg class="icon"><use href="#i-check"/></svg>All fruits</button>
+  <div role="separator"></div>
+  <button role="menuitemradio" aria-checked="false" data-act="Citrus" data-f="citrus">Citrus</button>
+  <button role="menuitemradio" aria-checked="false" data-act="Orchard" data-f="orchard">Orchard</button>
+  <button role="menuitemradio" aria-checked="false" data-act="Tropical" data-f="tropical">Tropical</button>
+  <button role="menuitemradio" aria-checked="false" data-act="Berries and grapes" data-f="berries">Berries and grapes</button>
+</div>
+<!-- Date and time popup: calendar plus hour and minute spinners, applied live -->
+<div class="panel popup" popover id="dt-pop" role="dialog" aria-label="Choose date and time">
+  <div class="cal" id="dt-cal"></div>
+  <div class="time-row"><label for="dt-h">Time</label>
+    <div class="input-group"><button class="btn quiet" type="button" data-tstep="h,-1" aria-label="Hour earlier" data-tip="Hour earlier" tabindex="-1"><svg class="icon"><use href="#i-minus"/></svg></button><input id="dt-h" class="input" type="number" min="0" max="23" aria-label="Hours" inputmode="numeric"><button class="btn quiet" type="button" data-tstep="h,1" aria-label="Hour later" data-tip="Hour later" tabindex="-1"><svg class="icon"><use href="#i-plus"/></svg></button></div>
+    <span aria-hidden="true">:</span>
+    <div class="input-group"><button class="btn quiet" type="button" data-tstep="m,-5" aria-label="5 minutes earlier" data-tip="5 minutes earlier" tabindex="-1"><svg class="icon"><use href="#i-minus"/></svg></button><input id="dt-m" class="input" type="number" min="0" max="59" step="5" aria-label="Minutes" inputmode="numeric"><button class="btn quiet" type="button" data-tstep="m,5" aria-label="5 minutes later" data-tip="5 minutes later" tabindex="-1"><svg class="icon"><use href="#i-plus"/></svg></button></div>
+  </div>
+</div>
+<!-- Popup with mixed controls; it scrolls when the content does not fit -->
+<div class="panel popup controls" popover id="pp-ctrl" role="dialog" aria-label="View options">
+  <h4>View options</h4>
+  <div class="field"><label for="pp-name">Filter by name</label>
+    <div class="input-group search-field"><input id="pp-name" class="input" type="search" placeholder="Type part of a name"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><svg class="icon"><use href="#i-close"/></svg></button><button class="btn quiet" type="button" aria-label="Search" data-tip="Search"><svg class="icon"><use href="#i-search"/></svg></button></div></div>
+  <fieldset><legend>Sort by</legend>
+    <label class="choice"><input type="radio" name="pp-sort" value="Name" checked>Name</label>
+    <label class="choice"><input type="radio" name="pp-sort" value="Date modified">Date modified</label>
+    <label class="choice"><input type="radio" name="pp-sort" value="Size">Size</label>
+  </fieldset>
+  <label class="switch"><input type="checkbox" role="switch" id="pp-hidden">Show hidden files</label>
+  <label class="switch"><input type="checkbox" role="switch" id="pp-ext" checked>Show file extensions</label>
+  <div class="field"><label for="pp-zoom">Icon size</label>
+    <div class="slider-row"><input id="pp-zoom" type="range" min="16" max="64" step="8" value="32"><output id="pp-zoom-out" for="pp-zoom">32 px</output></div></div>
+  <fieldset><legend>Columns</legend>
+    <label class="choice"><input type="checkbox" checked>Name</label>
+    <label class="choice"><input type="checkbox" checked>Date modified</label>
+    <label class="choice"><input type="checkbox">Type</label>
+    <label class="choice"><input type="checkbox" checked>Size</label>
+    <label class="choice"><input type="checkbox">Owner</label>
+  </fieldset>
+</div>
+<!-- Date popup: Panel + popover -->
+<div class="panel popup" popover id="cal-pop" aria-label="Choose date"><div class="cal" id="cal-popup"></div></div>
+<!-- Tooltip and notification layer -->
+<div class="tooltip" popover="manual" role="tooltip" id="cua-tip"></div>
+<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="cua-toasts"></div>
+
+<!-- ===== Menus (Panel + popover) ===== -->
+<div class="panel menu" popover id="m-file" role="menu" aria-label="File">
+  <button role="menuitem" data-act="New"><svg class="icon"><use href="#i-new"/></svg>New<kbd>Ctrl+N</kbd></button>
+  <button role="menuitem" data-act="Open"><svg class="icon"><use href="#i-open"/></svg>Open…<kbd>Ctrl+O</kbd></button>
+  <button role="menuitem" data-act="Save"><svg class="icon"><use href="#i-save"/></svg>Save<kbd>Ctrl+S</kbd></button>
+  <div role="separator"></div>
+  <button role="menuitem" data-act="Exit">Exit</button>
+</div>
+<div class="panel menu" popover id="m-edit" role="menu" aria-label="Edit">
+  <button role="menuitem" data-act="Undo"><svg class="icon"><use href="#i-undo"/></svg>Undo<kbd>Ctrl+Z</kbd></button>
+  <button role="menuitem" aria-disabled="true"><svg class="icon"><use href="#i-redo"/></svg>Redo<kbd>Ctrl+Y</kbd></button>
+  <div role="separator"></div>
+  <button role="menuitem" data-act="Cut"><svg class="icon"><use href="#i-cut"/></svg>Cut<kbd>Ctrl+X</kbd></button>
+  <button role="menuitem" data-act="Copy"><svg class="icon"><use href="#i-copy"/></svg>Copy<kbd>Ctrl+C</kbd></button>
+  <button role="menuitem" data-act="Paste"><svg class="icon"><use href="#i-paste"/></svg>Paste<kbd>Ctrl+V</kbd></button>
+</div>
+<div class="panel menu" popover id="m-view" role="menu" aria-label="View">
+  <button role="menuitemcheckbox" aria-checked="true" data-act="Toolbar"><svg class="icon"><use href="#i-check"/></svg>Toolbar</button>
+  <button role="menuitemcheckbox" aria-checked="false" data-act="Status bar">Status bar</button>
+  <div role="separator"></div>
+  <button role="menuitem" data-act="Zoom in"><svg class="icon"><use href="#i-plus"/></svg>Zoom in<kbd>Ctrl++</kbd></button>
+  <button role="menuitem" data-act="Zoom out"><svg class="icon"><use href="#i-minus"/></svg>Zoom out<kbd>Ctrl+−</kbd></button>
+</div>
+<div class="panel menu" popover id="m-ctx" role="menu" aria-label="Actions">
+  <button role="menuitem" data-act="Cut"><svg class="icon"><use href="#i-cut"/></svg>Cut</button>
+  <button role="menuitem" data-act="Copy"><svg class="icon"><use href="#i-copy"/></svg>Copy</button>
+  <button role="menuitem" data-act="Paste"><svg class="icon"><use href="#i-paste"/></svg>Paste</button>
+  <div role="separator"></div>
+  <button role="menuitem" data-act="Delete"><svg class="icon"><use href="#i-trash"/></svg>Delete</button>
+</div>
+
+<!-- ===== Dialogs (Panel + <dialog>) ===== -->
+<dialog class="panel" id="dlg-msg" aria-labelledby="dm-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="dm-t">Upload complete</h2><button class="btn quiet" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></header>
+    <div class="body"><div class="msg info"><svg class="icon"><use href="#i-info"/></svg><p>3 files were uploaded to Invoices.</p></div></div>
+  </form>
+</dialog>
+<dialog class="panel" id="dlg-help" aria-labelledby="dh-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="dh-t">Help</h2><button class="btn quiet" value="close" aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></header>
+    <div class="body" id="dh-body"></div>
+  </form>
+</dialog>
+<dialog class="panel" id="dlg-settings" aria-labelledby="ds-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="ds-t">Gallery settings</h2><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></header>
+    <div class="body">
+      <label class="switch"><input type="checkbox" role="switch" id="set-compact">Compact spacing</label>
+      <label class="switch"><input type="checkbox" role="switch" id="set-status" checked>Show status bar</label>
+      <p class="hint">Changes apply as you make them.</p>
+    </div>
+  </form>
+</dialog>
+<dialog class="panel" id="dlg-confirm" aria-labelledby="dc-t" aria-describedby="dc-d">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="dc-t">Delete contract.pdf?</h2></header>
+    <div class="body"><div class="msg warn"><svg class="icon"><use href="#i-warn"/></svg><p id="dc-d">The file goes to the bin. You can restore it for 30 days.</p></div></div>
+    <footer><button class="btn primary" value="keep" autofocus aria-label="Keep the file" data-tip="Keep the file (Esc)"><svg class="icon"><use href="#i-close"/></svg></button><button class="btn danger" value="delete" aria-label="Delete" data-tip="Delete"><svg class="icon"><use href="#i-trash"/></svg></button></footer>
+  </form>
+</dialog>
+<dialog class="panel" id="dlg-form" aria-labelledby="df-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="df-t">Rename file</h2><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></header>
+    <div class="body">
+      <div class="field"><label for="df-name">Name</label>
+        <input id="df-name" class="input" value="notes.txt" autofocus aria-describedby="df-err">
+        <span class="error" id="df-err" hidden>A name can't be empty or contain / or \.</span></div>
+    </div>
+  </form>
+</dialog>
+<dialog class="panel" id="dlg-find" aria-labelledby="dfi-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="dfi-t">Find</h2></header>
+    <div class="body">
+      <div class="field"><label for="dfi-q">Find what</label><input id="dfi-q" class="input" value="invoice"></div>
+      <label class="choice"><input type="checkbox">Match case</label>
+    </div>
+    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><svg class="icon"><use href="#i-list"/></svg></button></div><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><svg class="icon"><use href="#i-chev-right"/></svg></button></footer>
+  </form>
+</dialog>
+</body>
+</html>

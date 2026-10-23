@@ -9,7 +9,7 @@
 A user-interface library where every control follows the same rules, so people learn them once and never have to guess again.
 Plain HTML, CSS and JavaScript. No framework, no build step, nothing to install.
 
-[**Open the gallery**](https://peyrona.github.io/ayni/gallery/) · [Read the design guidelines](https://claude.ai/artifact/LkCCu4gJ7fpYABPvpZsuY4) · [Quick start](#quick-start)
+[**Open the gallery**](https://peyrona.github.io/ayni/gallery/) · [Read the design guidelines](docs/guidelines.md) · [Quick start](#quick-start)
 
 </div>
 
@@ -76,7 +76,7 @@ That's it: the library finds its controls when the page loads. Then open [`galle
 
 The gallery is the living reference. It shows every control in every state, in light and dark, with a **Touch preview** switch so you can try the touch layout with a mouse. Open it [online](https://peyrona.github.io/ayni/gallery/) (once GitHub Pages is turned on for this repository), or open `gallery/index.html` straight from your disk.
 
-The rules behind every control are in the [CUA Design Guidelines](https://claude.ai/artifact/LkCCu4gJ7fpYABPvpZsuY4) book. The book says what the rules are, and the gallery shows them working.
+The rules behind every control are in the [CUA Design Guidelines](docs/guidelines.md) book. The book says what the rules are, and the gallery shows them working.
 
 ## Roadmap
 
@@ -189,7 +189,9 @@ Each scheme, light and dark, is defined by five base colours at the top of `cua.
 | `cua.js` | The behaviour of every control |
 | `cua-icons.js` | The icon sprite (24×24 grid, 2px stroke) |
 | `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps) |
-| `docs/` | Images for this page |
+| `docs/guidelines.md` | The CUA Design Guidelines: every rule, chapter by chapter |
+| `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
+| `docs/*.png` | Images for this page |
 | `CHANGELOG.md` | What changed in each version |
 
 ## Licence

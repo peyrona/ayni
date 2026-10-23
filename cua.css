@@ -1,0 +1,461 @@
+/* CUA library 0.1.0: the look of every CUA control. Plain CSS, no build step, evergreen browsers 2024+.
+   Use it with cua.js and cua-icons.js; see README.md. Fonts: IBM Plex Sans and IBM Plex Mono (loaded by the page). */
+/* RULE: colour. Each mode (light, dark) defines only 5 base colours. Every other colour is derived from them at
+   runtime with color-mix() and relative colour syntax, so a new scheme is just 5 new values.
+   paper = backgrounds · ink = text · accent = selection, default button · alert = focus ring, warnings
+   · danger = errors, destructive actions. Success green is the accent turned to a green hue. */
+:root {
+  --c-paper: #ffffff; --c-ink: #1b2330; --c-accent: #1f5fbf; --c-alert: #b86e00; --c-danger: #b3261e;
+  --thumb: var(--c-paper); color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-paper: #1d232c; --c-ink: #e5e9f0; --c-accent: #5b9bff; --c-alert: #ffb340; --c-danger: #ff7a6e;
+    --thumb: var(--c-ink); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --c-paper: #1d232c; --c-ink: #e5e9f0; --c-accent: #5b9bff; --c-alert: #ffb340; --c-danger: #ff7a6e;
+  --thumb: var(--c-ink); color-scheme: dark;
+}
+/* Derived colours: the same formulas serve both modes */
+:root {
+  --surface: var(--c-paper); --ink: var(--c-ink); --accent: var(--c-accent); --danger: var(--c-danger); --focus: var(--c-alert);
+  --surface-2: color-mix(in oklab, var(--c-ink) 5%, var(--c-paper));
+  --ground: color-mix(in oklab, oklch(from var(--c-paper) calc(l - .07) c h), var(--c-accent) 4%);
+  --ink-2: color-mix(in oklab, var(--c-ink) 66%, var(--c-paper));
+  --line: color-mix(in oklab, var(--c-ink) 22%, var(--c-paper));
+  --field-line: color-mix(in oklab, var(--c-ink) 46%, var(--c-paper));  /* >= 3:1 on paper (WCAG 1.4.11) */
+  --placeholder: color-mix(in oklab, var(--c-ink) 60%, var(--c-paper)); /* >= 4.5:1 on paper (WCAG 1.4.3) */
+  --accent-soft: color-mix(in oklab, var(--c-accent) 16%, var(--c-paper));
+  --accent-ink: var(--c-paper);
+  --readonly-bg: color-mix(in oklab, var(--c-ink) 7%, var(--c-paper));
+  --warn: color-mix(in oklab, var(--c-alert) 85%, var(--c-ink));
+  --ok: oklch(from var(--c-accent) l calc(c * .8) 152);
+  --shade: oklch(from var(--c-paper) calc(l * .15) c h);
+  --backdrop: color-mix(in srgb, var(--shade) 50%, transparent);
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --panel-bg: var(--surface); --panel-head-bg: var(--surface-2); --panel-border: 1px solid var(--line);
+  --panel-radius: 6px; --panel-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 10%, transparent), 0 8px 24px color-mix(in srgb, var(--shade) 16%, transparent);
+  --panel-pad: 16px; --panel-gap: 12px;
+  --ctl-h: 32px; --ctl-radius: 4px; --icon: 20px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--ground); color: var(--ink); font: 14px/1.45 var(--font-ui); accent-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.icon { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- Panel ---------- */
+.panel { background: var(--panel-bg); color: var(--ink); border: var(--panel-border); border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow); padding: 0; margin: 0; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.panel > header, .panel > form > header { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px var(--panel-pad); background: var(--panel-head-bg); border-bottom: var(--panel-border); }
+.panel > header h2, .panel > form > header h2 { font-size: 13px; font-weight: 600; margin: 0 auto 0 0; }
+.panel > .body, .panel > form > .body { padding: var(--panel-pad); display: flex; flex-direction: column; gap: var(--panel-gap); overflow: auto; }
+.panel > footer, .panel > form > footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px var(--panel-pad); background: var(--panel-head-bg); border-top: var(--panel-border); }
+
+/* ---------- Tabs ---------- */
+/* Tabs look like folder tabs: outlined on three sides; the selected one is filled like the page below it and joins it */
+[role="tablist"] { display: flex; gap: 3px; padding: 6px 8px 0; background: var(--panel-head-bg); box-shadow: inset 0 -1px 0 var(--line);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+[role="tab"] { font: 500 13px var(--font-ui); color: var(--ink-2); flex: none; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border: 1px solid var(--line); border-bottom: 0; border-radius: 7px 7px 0 0;
+  background: color-mix(in srgb, var(--line) 45%, var(--panel-head-bg)); }
+[role="tab"]:hover { color: var(--ink); background: color-mix(in srgb, var(--line) 20%, var(--panel-bg)); }
+[role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 600; background: var(--panel-bg); box-shadow: inset 0 3px 0 var(--accent); position: relative; }
+[role="tab"]:focus-visible { outline-offset: -3px; }
+[role="tab"] .icon { --icon: 16px; }
+[role="tab"][hidden] { display: none; }
+[role="tab"] .tab-close { display: grid; place-items: center; width: 18px; height: 18px; margin: 0 -6px 0 2px; border-radius: 50%; color: var(--ink-2); }
+[role="tab"] .tab-close .icon { --icon: 12px; }
+[role="tab"] .tab-close:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 14%, transparent); }
+[role="tabpanel"] { padding: 20px var(--panel-pad); }
+
+/* ---------- Layout helpers ---------- */
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- Buttons ---------- */
+/* Buttons are always round, icon only, and carry a tooltip (data-tip) plus an aria-label */
+.btn { --btn: 36px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 50%;
+  width: var(--btn); height: var(--btn); padding: 0; flex: none; cursor: pointer; display: inline-grid; place-items: center; }
+.btn:hover:not([aria-disabled="true"]) { border-color: var(--ink-2); background: var(--surface-2); }
+.btn:active:not([aria-disabled="true"]) { transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover:not([aria-disabled="true"]) { background: var(--accent); filter: brightness(1.08); }
+/* Background says only "default button or not". Meaning (danger, success, warning) is carried by the icon colour */
+.btn.danger { color: var(--danger); } .btn.ok { color: var(--ok); } .btn.warn { color: var(--warn); }
+.btn.primary.ok, .btn.primary.warn { color: var(--accent-ink); } /* a default button keeps a legible icon */
+/* Rule: a danger button is never the default. If markup breaks it, show it as a plain danger button */
+.btn.primary.danger { background: var(--surface); border-color: var(--line); color: var(--danger); }
+.btn.quiet { background: transparent; border-color: transparent; }
+.btn.quiet:hover:not([aria-disabled="true"]) { background: var(--surface-2); }
+/* RULE: a disabled button uses aria-disabled="true" (not the disabled attribute): faded, ignores clicks and Enter,
+   but stays focusable and shows its tooltip, which can say why it is unavailable */
+.btn[aria-disabled="true"] { opacity: .45; cursor: default; }
+/* RULE: a filter button's icon is grey with no filter, and accent while a filter is active */
+.btn.filter-btn { color: var(--ink-2); } .btn.filter-btn.is-active { color: var(--accent); }
+/* RULE: a busy button swaps its icon for a small spinner in the same circle (no size change), ignores clicks and its
+   tooltip says what is happening ("Saving…"). Set with one line: setBusy(button, 'Saving…') and setBusy(button, false). */
+.btn[aria-busy="true"] { cursor: progress; }
+.btn[aria-busy="true"] > svg { display: none; }
+.btn-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
+.btn .icon { --icon: 18px; }
+/* Second action (double-click, long tap on touch, Shift+Enter): always marked with a dot, on every device */
+.btn[data-alt] { position: relative; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; }
+.btn[data-alt]::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--panel-bg); }
+/* Popup button (opens a menu or popover): a small down-pointing triangle in the same corner, like a combo box */
+.btn[popovertarget], .btn[aria-haspopup] { position: relative; }
+.btn[popovertarget]::before, .btn[aria-haspopup]::before, .btn[popovertarget]::after, .btn[aria-haspopup]::after {
+  content: ""; position: absolute; clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; }
+.btn[popovertarget]::before, .btn[aria-haspopup]::before { right: -5px; bottom: -3px; width: 15px; height: 11px; background: var(--panel-bg); }
+.btn[popovertarget]::after, .btn[aria-haspopup]::after { right: -2px; bottom: 0; width: 9px; height: 6px; background: var(--accent); }
+/* While holding on touch, the ring paints in for as long as the hold lasts (around a button, or at the finger on an area or item) */
+.hold-ring { position: fixed; z-index: 100; width: 56px; height: 56px; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(var(--accent) calc(var(--hold) * 1turn), transparent 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: hold var(--hold-ms, 500ms) linear forwards; }
+html.touch .ctx-area, html.touch [role="option"], html.touch [role="treeitem"] > .ti { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+@property --hold { syntax: "<number>"; inherits: false; initial-value: 0; }
+.btn[data-alt].holding::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(var(--accent) calc(var(--hold) * 1turn), transparent 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: hold var(--hold-ms, 500ms) linear forwards; }
+@keyframes hold { to { --hold: 1; } }
+.choice { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.choice input { width: 16px; height: 16px; margin: 0; }
+fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+legend { font-size: 12px; font-weight: 500; color: var(--ink-2); padding: 0; margin-bottom: 4px; }
+.switch { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.switch input { appearance: none; margin: 0; width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; cursor: pointer; transition: background .15s; flex: none; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--thumb); box-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 30%, transparent); transition: transform .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(16px); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Text inputs ---------- */
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > label, .label-row > label, .list-label { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+.req { color: var(--danger); }
+.hint { font-size: 12px; color: var(--ink-2); }
+.error { font-size: 12px; color: var(--danger); }
+.input { font: inherit; color: var(--ink); background: var(--panel-bg); border: 1px solid var(--field-line); border-radius: var(--ctl-radius); min-height: var(--ctl-h); padding: 5px 8px; width: 100%; }
+.input:hover { border-color: var(--ink-2); }
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--accent); }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+/* RULE: a read-only field has no border and a soft tint, with text at full contrast. It stays focusable (focus ring),
+   selectable and copyable, with the text cursor. Native inputs use readonly; custom ones add aria-readonly="true".
+   Disabled is different: faded and not focusable. */
+.input[readonly], .input[aria-readonly="true"] { border-color: transparent; background: var(--readonly-bg); color: var(--ink); cursor: text; user-select: text; }
+textarea.input { resize: vertical; min-height: 80px; }
+/* Text field with buttons inside its border, at the start and/or the end */
+.input-group { display: flex; align-items: center; gap: 2px; min-height: var(--ctl-h); padding: 0 3px; width: 100%;
+  border: 1px solid var(--field-line); border-radius: var(--ctl-radius); background: var(--panel-bg); }
+.input-group:hover { border-color: var(--ink-2); }
+.input-group:focus-within { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--accent); }
+.input-group:has(.input[aria-invalid="true"]) { border-color: var(--danger); }
+.input-group > .input { border: 0; background: transparent; min-height: calc(var(--ctl-h) - 2px); padding-inline: 5px; flex: 1; min-width: 0; width: auto; }
+.input-group > .input:focus-visible { outline: none; }
+.input-group > .btn { --btn: 26px; }
+.input-group > .btn .icon { --icon: 15px; }
+.input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+.input::placeholder { color: var(--placeholder); opacity: 1; }
+.ta-wrap { position: relative; }
+.ta-wrap textarea { padding-bottom: 20px; }
+.ta-count { position: absolute; right: 9px; bottom: 6px; font: 11px var(--font-mono); color: var(--ink-2); pointer-events: none; }
+/* Info label: a small "i" in a circle next to any control; a click opens a short help popup */
+.label-row { display: flex; align-items: center; gap: 6px; }
+.info-tip { position: relative; width: 12px; height: 12px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--accent); background: var(--panel-bg);
+  color: var(--accent); font: 600 8.5px/1 var(--font-ui); display: inline-grid; place-items: center; cursor: pointer; }
+.info-tip::after { content: ""; position: absolute; inset: -8px; } /* larger touch target, same small look */
+/* RULE: field errors (Frasquito, 2026-10-22). Space is precious, so nothing is added below the field: the border takes the
+   Danger colour and a small red "!" (the size of the info "i") sits inside the field at its end, before any end buttons,
+   taking no layout space. For groups (radios, check boxes, lists) the "!" sits next to the group label; a list with no visible label shows it inside its top-right corner. The message floats
+   in a small popup: by itself while the field has focus, otherwise on hovering or clicking the "!". Fixed = all of it goes. */
+.error[data-err-src] { display: none !important; }
+.err-mark { position: relative; flex: none; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; background: var(--danger);
+  color: var(--panel-bg); font: 700 9px/1 var(--font-ui); display: inline-grid; place-items: center; cursor: pointer; }
+.err-mark::after { content: ""; position: absolute; inset: -8px; }
+.err-mark[hidden] { display: none; }
+.err-wrap { position: relative; display: block; }
+.err-wrap > .err-mark { position: absolute; right: 9px; top: 50%; translate: 0 -50%; }
+.err-wrap > .input[aria-invalid="true"] { padding-right: 30px; }
+.err-wrap.err-corner > .err-mark { top: 9px; right: 9px; translate: none; }
+.input-group > .err-mark { margin-inline: 4px; }
+legend > .err-mark, .static-label > .err-mark { margin-left: 6px; vertical-align: -1px; }
+.panel.popup.err-pop { position: fixed; inset: auto; margin: 0; padding: 6px 10px; max-width: min(280px, calc(100vw - 16px));
+  font-size: 12px; color: var(--ink); border-color: var(--danger); }
+.info-tip:hover, .info-tip[aria-expanded="true"] { background: var(--accent); color: var(--accent-ink); }
+.panel.help { max-width: min(280px, calc(100vw - 16px)); padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+.spin { width: 150px; }
+.spin .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.spin .input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+progress { width: 100%; height: 8px; appearance: none; border: 0; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--surface-2); }
+progress::-webkit-progress-value { background: var(--accent); border-radius: 4px; }
+progress::-moz-progress-bar { background: var(--accent); border-radius: 4px; }
+.busy { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.static { font-size: 14px; }
+.static b { font-weight: 600; }
+
+/* ---------- Lists ---------- */
+[role="listbox"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 180px; overflow: auto; background: var(--panel-bg); }
+[role="listbox"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+[role="option"] { padding: 5px 8px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; }
+[role="option"]:hover { background: var(--surface-2); }
+[role="option"][aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+[role="option"].active { box-shadow: inset 0 0 0 1px var(--focus); }
+[role="option"] .icon { --icon: 16px; }
+
+/* ---------- Menus & toolbar ---------- */
+[role="menubar"] { display: flex; gap: 2px; padding: 2px; background: var(--panel-head-bg); border: var(--panel-border); border-radius: var(--ctl-radius); }
+[role="menubar"] > button { font: inherit; color: var(--ink); background: none; border: 0; border-radius: 3px; padding: 4px 10px; cursor: pointer; }
+[role="menubar"] > button:hover, [role="menubar"] > button[aria-expanded="true"] { background: var(--accent-soft); }
+.panel.menu { position: fixed; inset: auto; min-width: 200px; padding: 4px; gap: 0; }
+.panel.menu:not(:popover-open) { display: none; }
+.menu [role^="menuitem"] { font: inherit; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 4px;
+  padding: 6px 10px 6px 30px; display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.menu [role^="menuitem"] .icon { --icon: 16px; position: absolute; left: 8px; }
+.menu [role^="menuitem"] kbd { font: 12px var(--font-mono); opacity: .7; margin-left: auto; padding-left: 24px; }
+.menu [role^="menuitem"]:hover, .menu [role^="menuitem"]:focus { background: var(--accent); color: var(--accent-ink); outline: none; }
+.menu [role^="menuitem"][aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.menu [role="separator"] { border-top: var(--panel-border); margin: 4px 0; }
+[role="toolbar"] { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; background: var(--panel-head-bg); border: var(--panel-border); border-radius: var(--ctl-radius); }
+[role="toolbar"] .btn { --btn: 30px; }
+[role="toolbar"] .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
+
+.status { display: flex; align-items: center; gap: 8px; }
+.status.info { color: var(--accent); } .status.ok { color: var(--ok); } .status.warn { color: var(--warn); } .status.err { color: var(--danger); }
+.status span { color: var(--ink); }
+
+/* ---------- Dialogs ---------- */
+dialog.panel { margin: auto; width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+dialog.panel:not([open]) { display: none; }
+dialog.panel::backdrop { background: var(--backdrop); }
+dialog.panel:not(:modal) { position: fixed; inset: auto 24px 24px auto; margin: 0; z-index: 50; }
+.msg { display: flex; gap: 12px; align-items: flex-start; }
+/* Bottom row: Close/Accept-type buttons sit at the right; any extra actions go in the same row, at the left */
+.panel footer > .extra, .panel > form > footer > .extra { display: flex; gap: 8px; margin-right: auto; }
+.msg .icon { --icon: 28px; }
+.msg.warn .icon { color: var(--warn); } .msg.info .icon { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { dialog.panel[open] { animation: rise .14s ease-out; } @keyframes rise { from { opacity: 0; transform: translateY(6px); } } }
+@media (prefers-reduced-motion: reduce) { .busy { animation-duration: 3s; } }
+
+/* ---------- Tooltip, toasts, status bar ---------- */
+.tooltip { position: fixed; inset: auto; margin: 0; border: 0; pointer-events: none; background: var(--ink); color: var(--surface);
+  font-size: 12px; line-height: 1.35; padding: 4px 8px; border-radius: 4px; max-width: 240px; box-shadow: var(--panel-shadow); }
+.toasts { position: fixed; inset: auto max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) auto;
+  margin: 0; border: 0; padding: 0; background: none; overflow: visible; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.toasts:not(:popover-open) { display: none; }
+.toast { display: flex; align-items: center; gap: 10px; padding: 8px 6px 8px 12px; background: var(--panel-bg); color: var(--ink);
+  border: var(--panel-border); border-radius: var(--panel-radius); box-shadow: var(--panel-shadow); }
+.toast p { margin: 0; flex: 1; min-width: 0; }
+.toast p small { display: block; font-size: 12px; color: var(--ink-2); }
+.toast > .icon:first-child { color: var(--accent); }
+.toast.ok > .icon:first-child { color: var(--ok); } .toast.warn > .icon:first-child { color: var(--warn); } .toast.err > .icon:first-child { color: var(--danger); }
+.toast .btn { --btn: 30px; }
+.toast .btn.act { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: rise .18s ease-out; } }
+.statusbar { display: flex; font-size: 12px; color: var(--ink-2); background: var(--panel-head-bg); border-top: var(--panel-border); overflow-x: auto; }
+.statusbar > span { padding: 4px 12px; border-left: var(--panel-border); white-space: nowrap; }
+.statusbar > span:first-child { border-left: 0; flex: 1; }
+
+/* ---------- Tree view ---------- */
+[role="tree"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 280px; overflow: auto; }
+[role="tree"] [role="group"] { list-style: none; margin: 0; padding: 0 0 0 18px; }
+[role="treeitem"] { outline: none; }
+[role="treeitem"] > .ti { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 3px; cursor: pointer; user-select: none; }
+[role="treeitem"] > .ti:hover { background: var(--surface-2); }
+[role="treeitem"]:focus-visible > .ti { outline: 2px solid var(--focus); outline-offset: -2px; }
+[role="treeitem"][aria-selected="true"] > .ti { background: var(--accent); color: var(--accent-ink); }
+[role="treeitem"][aria-expanded="false"] > [role="group"] { display: none; }
+.ti .icon { --icon: 16px; }
+.ti .tw { transition: transform .15s; }
+[role="treeitem"]:not([aria-expanded]) > .ti .tw { visibility: hidden; }
+[role="treeitem"][aria-expanded="true"] > .ti .tw { transform: rotate(90deg); }
+
+/* ---------- Slider & calendar ---------- */
+input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row output { font: 500 13px var(--font-mono); min-width: 4ch; text-align: right; white-space: nowrap; }
+.slider-row input { min-width: 0; }
+.ticks { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--ink-2); padding: 0 2px; }
+.date-field .input { font-variant-numeric: tabular-nums; }
+.panel.popup { position: fixed; inset: auto; }
+.panel.popup:not(:popover-open) { display: none; }
+.time-row { display: flex; align-items: center; gap: 6px; padding: 10px 8px; border-top: var(--panel-border); }
+.time-row label { font-size: 12px; font-weight: 500; color: var(--ink-2); margin-right: auto; }
+.time-row .input-group { width: 100px; }
+.time-row .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.time-row .input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.panel.popup.controls { width: min(300px, calc(100vw - 16px)); max-height: min(320px, calc(100dvh - 16px)); padding: 12px; gap: 12px; display: flex; flex-direction: column; }
+.panel.popup.controls:not(:popover-open) { display: none; }
+.panel.popup.controls h4 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.cal { display: inline-flex; flex-direction: column; gap: 6px; padding: 8px; }
+.cal.inline { border: var(--panel-border); border-radius: var(--ctl-radius); align-self: flex-start; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
+.cal table { border-collapse: collapse; }
+.cal th { font-size: 11px; font-weight: 500; color: var(--ink-2); width: 34px; height: 22px; }
+.cal td { padding: 1px; }
+.cal td button { width: 32px; height: 32px; border: 0; border-radius: 4px; background: none; color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.cal td button:hover { background: var(--surface-2); }
+.cal td button.out { color: var(--ink-2); opacity: .55; }
+.cal td button.today { box-shadow: inset 0 0 0 1px var(--accent); }
+.cal td button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); opacity: 1; }
+.cal-title { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; padding: 4px 8px; border-radius: 4px; }
+button.cal-title { cursor: pointer; } button.cal-title:hover { background: var(--surface-2); } .cal-title .icon { width: 14px; height: 14px; }
+.cal-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; width: calc(7 * 34px); height: 226px; }
+.cal-grid button { border: 0; border-radius: 4px; background: none; color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.cal-grid button:hover { background: var(--surface-2); }
+.cal-grid button.today { box-shadow: inset 0 0 0 1px var(--accent); }
+.cal-grid button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.cal td button[aria-disabled="true"], .cal-grid button[aria-disabled="true"] { opacity: .45; cursor: default; background: none; color: var(--ink); }
+.cal-foot { display: flex; }
+
+/* ---------- Layout: nested tabs, group boxes, splitter ---------- */
+.subtabs { border: var(--panel-border); border-radius: var(--ctl-radius); overflow: hidden; }
+.subtabs [role="tabpanel"] { padding: 12px; min-height: 0; }
+fieldset.group { border: var(--panel-border); border-radius: var(--ctl-radius); padding: 8px 12px 12px; }
+fieldset.group legend { padding: 0 4px; margin: 0; }
+.split { display: flex; height: 200px; border: var(--panel-border); border-radius: var(--ctl-radius); overflow: hidden; }
+.split .pane { overflow: auto; padding: 10px; min-width: 0; font-size: 13px; }
+.split .pane:first-child { flex: none; width: var(--split, 35%); }
+.split .pane:last-child { flex: 1; }
+.splitter { flex: none; width: 7px; background: var(--surface-2); border-inline: var(--panel-border); cursor: col-resize; touch-action: none;
+  position: relative; display: grid; place-items: center; z-index: 1; }
+.splitter:hover, .splitter:focus-visible { background: var(--accent-soft); outline-offset: -2px; }
+/* Splitter controls (Frasquito, 2026-10-22): small filled glyphs drawn on the bar, close together (no circle, no background); two small arrows send the bar to either end
+   (collapsing that pane) and a small ring in the middle resets both panes. The rest of the bar is dragged. */
+.split-ctl { display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; z-index: 2; }
+.split.rows .split-ctl { flex-direction: row; }
+.split-ctl button { width: 9px; height: 10px; padding: 0; border: 0; background: none; color: var(--ink-2);
+  display: grid; place-items: center; cursor: pointer; position: relative; }
+.split.rows .split-ctl button { width: 10px; height: 9px; }
+.split-ctl .tri { background: currentColor; width: 7px; height: 9px; }
+.split-ctl .tri.left { clip-path: polygon(100% 0, 100% 100%, 0 50%); } .split-ctl .tri.right { clip-path: polygon(0 0, 0 100%, 100% 50%); }
+.split-ctl .tri.up, .split-ctl .tri.down { width: 9px; height: 7px; }
+.split-ctl .tri.up { clip-path: polygon(0 100%, 100% 100%, 50% 0); } .split-ctl .tri.down { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.split-ctl button:hover:not([aria-disabled="true"]) { color: var(--accent); }
+.split-ctl button[aria-disabled="true"] { opacity: .45; cursor: default; }
+.split-ctl .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.split-ctl.short [data-to="0"], .split-ctl.short [data-to="100"] { display: none; }
+.split.rows { flex-direction: column; height: 240px; }
+.split.rows .pane:first-child { width: auto; height: var(--split, 50%); }
+.split.rows .splitter { width: auto; height: 7px; border-inline: 0; border-block: var(--panel-border); cursor: row-resize; }
+.split.collapsed .pane:first-child, .split.collapsed-end .pane:last-child { padding: 0; visibility: hidden; }
+.split.collapsed-end .pane:first-child { flex: 1; }
+.split.collapsed-end .pane:last-child { flex: none; width: 0; } .split.rows.collapsed-end .pane:last-child { width: auto; height: 0; }
+/* RULE: touch sizes. On a touch device (coarse pointer, or the Touch preview switch) everything that can be touched
+   has a hit area of at least 44 × 44 px (Apple HIG 44 pt, WCAG 2.5.5), and separate targets keep at least 8 px apart.
+   Controls that look small (the "i", a tab's close, the splitter) keep their look and get an invisible larger hit area.
+   Targets that tile edge to edge (list rows, menu items, calendar days) need no gap: each one is its own full 44 px cell. */
+html.touch { --ctl-h: 44px; --touch: 44px; }
+html.touch .btn, html.touch [role="toolbar"] .btn, html.touch .toast .btn, html.touch .input-group > .btn { --btn: var(--touch); }
+html.touch .row, html.touch [role="toolbar"], html.touch .input-group, html.touch .cal-head, html.touch .time-row,
+html.touch .panel > footer, html.touch .panel > form > footer, html.touch .panel footer > .extra, html.touch .panel > header,
+html.touch .panel > form > header, html.touch [role="menubar"] { gap: 8px; }
+html.touch [role="tab"] { min-height: var(--touch); }
+html.touch [role="tab"] .tab-close { position: relative; margin-left: 6px; }
+html.touch [role="tab"] .tab-close::before { content: ""; position: absolute; inset: -13px; }
+html.touch [role="menubar"] > button, html.touch .menu [role^="menuitem"], html.touch [role="option"], html.touch [role="treeitem"] > .ti,
+html.touch .choice, html.touch .switch { min-height: var(--touch); }
+html.touch [role="menubar"] > button, html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
+html.touch .info-tip::after, html.touch .err-mark::after { inset: -16px; }
+html.touch input[type="range"] { height: var(--touch); }
+html.touch .splitter { position: relative; }
+html.touch .splitter::before { content: ""; position: absolute; inset: 0 -19px; z-index: 1; }
+html.touch .split.rows .splitter::before { inset: -19px 0; }
+/* Touch: the glyphs stay close; their invisible areas reach 19 px across the bar, and the arrows' reach 34 px past the ends (44 px); the reset dot's area stays small, and a double-tap on the bar also resets */
+html.touch .split-ctl button::before { content: ""; position: absolute; inset: 0 -19px; }
+html.touch .split-ctl button:first-child::before { top: -34px; } html.touch .split-ctl button:last-child::before { bottom: -34px; }
+html.touch .split.rows .split-ctl button::before { inset: -19px 0; }
+html.touch .split.rows .split-ctl button:first-child::before { left: -34px; } html.touch .split.rows .split-ctl button:last-child::before { right: -34px; }
+html.touch .cal { padding: 4px; } html.touch .cal td { padding: 0; }
+html.touch .cal th, html.touch .cal td button { width: var(--touch); }
+html.touch .cal td button { height: var(--touch); }
+html.touch .cal-grid { width: calc(7 * var(--touch)); height: calc(6 * var(--touch) + 22px); }
+html.touch .cal-title { min-height: var(--touch); }
+/* Very narrow phones: the date popup takes 4 px margins and each day is drawn 6 px smaller inside its full 44 px touch cell */
+@media (max-width: 359px) {
+  html.touch .panel.popup { max-width: calc(100vw - 8px); }
+  html.touch .cal { padding: 4px 0; }
+  html.touch .cal td button { padding: 3px; background-clip: content-box; border-radius: 7px; }
+  html.touch .cal td button.today { box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px var(--accent); }
+  html.touch .cal td button:focus-visible { outline-offset: -3px; }
+}
+html.touch .time-row { flex-wrap: wrap; justify-content: space-between; padding: 10px 4px; gap: 6px 4px; } html.touch .time-row label { flex-basis: 100%; }
+html.touch .time-row .input-group { width: auto; } html.touch .time-row .input { width: 44px; flex: none; }
+
+/* RULE: on touch there are no tooltips. A Help button in the title row opens a dialog that lists every element
+   of the current view with its icon, its tooltip and a short explanation. */
+html:not(.touch) .touch-only { display: none; }
+.help-group { margin: 4px 0 0; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.help-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.help-list li { display: grid; grid-template-columns: 32px 1fr; gap: 2px 10px; align-items: center; }
+html .help-list .help-ico { --btn: 32px; pointer-events: none; grid-row: span 2; }
+.help-list .help-ico .icon { --icon: 16px; }
+.help-list .help-ico.info-tip { width: 14px; height: 14px; justify-self: center; }
+.help-list b { font-weight: 600; }
+.help-list p { grid-column: 2; margin: 0; font-size: 12px; color: var(--ink-2); }
+
+/* RULE: one list picker serves every drop-down list and combo box, on every device: no native select, datalist or
+   wheel. A field with our popup triangle; the list opens in a Panel popup below the field (above when there is no
+   room), or as a bottom sheet on phones that sits above the on-screen keyboard. */
+.picker { position: relative; }
+.picker > .input { padding-right: 28px; }
+.picker > div.input { display: flex; align-items: center; cursor: pointer; user-select: none; }
+.picker::after { content: ""; position: absolute; right: 10px; top: 50%; translate: 0 -50%; width: 9px; height: 6px; background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; }
+.picker-pop { position: fixed; inset: auto; margin: 0; padding: 4px; }
+.picker-pop:not(:popover-open) { display: none; }
+.picker-pop [role="listbox"] { border: 0; padding: 0; max-height: none; overflow: visible; background: none; }
+.picker-pop [role="option"][hidden] { display: none; }
+.picker-pop [role="option"].active:not([aria-selected="true"]) { background: var(--surface-2); box-shadow: none; }
+.picker-empty { margin: 0; padding: 6px 8px; font-size: 13px; color: var(--ink-2); }
+.panel.picker-pop.sheet { left: 0; right: 0; width: auto; max-width: none; border-radius: var(--panel-radius) var(--panel-radius) 0 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+
+/* RULE: states. One look per state across every control, with colours from the 5 base colours.
+   Disabled: faded to 45% and not interactive. Read-only: no border, soft tint (--readonly-bg); the value can be read but
+   not changed. Loading / empty: a short centred message in the control. Error: Danger colour on the group border, and
+   the message under it. */
+.input:disabled, .choice:has(input:disabled), .switch:has(input:disabled), input[type="range"]:disabled, fieldset:disabled,
+.input-group:has(.input:disabled), [role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti,
+[role="tab"][aria-disabled="true"], .picker:has(> .input[aria-disabled="true"]) { opacity: .45; cursor: default; }
+:is(fieldset:disabled, .input-group) :is(.input, .choice, .switch, input):disabled, fieldset:disabled .choice, fieldset:disabled .switch { opacity: 1; }
+.choice:has(input:disabled), .switch:has(input:disabled), [role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti,
+.picker:has(> .input[aria-disabled="true"]) { pointer-events: none; }
+:is([role="listbox"], [role="tree"], fieldset, .picker > .input, .input-group)[aria-readonly="true"], .input-group:has(> .input[readonly]),
+fieldset:has(input[aria-readonly="true"]) { border-color: transparent; background: var(--readonly-bg); }
+:not(fieldset) > .switch:has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]),
+.slider-row:has(input[aria-readonly="true"]) { background: var(--readonly-bg); border-radius: var(--ctl-radius); padding: 4px 8px; width: fit-content; }
+.slider-row:has(input[aria-readonly="true"]) { width: auto; }
+[aria-readonly="true"], :has(> input[aria-readonly="true"]) { cursor: default; }
+.input-group:has(> .input[readonly]) > .input { background: transparent; }
+.date-field:has(> .input[readonly]) > .btn, .picker:has(> .input[aria-readonly="true"])::after { display: none; }
+.state-msg { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 14px 8px; color: var(--ink-2); font-size: 13px; text-align: center; list-style: none; }
+.state-msg .busy { width: 16px; height: 16px; }
+.state-box { border: var(--panel-border); border-radius: var(--ctl-radius); }
+:is(fieldset, [role="listbox"], [role="tree"])[aria-invalid="true"] { border: 1px solid var(--danger); border-radius: var(--ctl-radius); }
+.state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.list-label { display: block; margin-bottom: 4px; }
+.static-label { font-size: 13px; font-weight: 500; color: var(--ink); }
+
+/* RULE: every container (panel body, dialog, menu, popup, list, tree, table, pane) scrolls vertically and horizontally,
+   and its scrollbars appear only when the content does not fit */
+.panel > .body, .panel > form > .body, [role="tabpanel"], .panel.menu, .panel.popup, [role="listbox"], [role="tree"],
+.split .pane { overflow: auto; }
+.panel > .body, .panel > form > .body { flex: 1 1 auto; min-height: 0; }
+.panel.menu, .panel.popup { max-height: calc(100dvh - 16px); max-width: calc(100vw - 16px); }
+.menu [role^="menuitem"] { white-space: nowrap; flex: none; }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+/* RULE: a list that allows multiple selection shows a check square at the left of each item */
+[role="listbox"][aria-multiselectable="true"] [role="option"] { position: relative; padding-left: 32px; }
+[role="listbox"][aria-multiselectable="true"] [role="option"]::before { content: ""; position: absolute; left: 9px; top: 50%; translate: 0 -50%;
+  width: 14px; height: 14px; box-sizing: border-box; border: 1.5px solid var(--ink-2); border-radius: 3px; background: var(--panel-bg); }
+[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::before { border-color: var(--accent-ink); background: var(--accent-ink); }
+[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::after { content: ""; position: absolute; left: 14px; top: 50%;
+  width: 4px; height: 8px; border: solid var(--accent); border-width: 0 2px 2px 0; translate: 0 -65%; rotate: 45deg; }

@@ -1,0 +1,32 @@
+/* CUA Components gallery: styles for the demo page only. Everything a real app needs is in cua.css. */
+/* Layout: one Panel holding a tab per component family; each tab is a grid of labelled specimens. */
+body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; }
+.gallery { max-width: 1000px; margin: 0 auto; }
+.gallery > header h2 { font-size: 14px; }
+.gallery > [role="tabpanel"] { min-height: 420px; }
+.mode { font: 12px var(--font-mono); color: var(--ink-2); }
+
+/* ---------- Specimen layout ---------- */
+.specimens { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.spec { border: var(--panel-border); border-radius: var(--panel-radius); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.spec h3 { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.spec p.rule { font-size: 12px; color: var(--ink-2); margin: 0; }
+.out { font: 12px var(--font-mono); color: var(--ink-2); min-height: 1.4em; }
+.wide { grid-column: 1 / -1; }
+.gallery.compact { --panel-pad: 10px; } .gallery.compact .specimens { gap: 10px; } .gallery.compact .spec { padding: 10px; gap: 8px; }
+
+/* ---------- Demo areas ---------- */
+.ctx-area { border: 1px dashed var(--line); border-radius: var(--ctl-radius); padding: 24px; text-align: center; color: var(--ink-2); font-size: 13px; user-select: none; }
+.doc { border: var(--panel-border); border-radius: var(--ctl-radius); padding: 10px; min-height: 60px; }
+.statusbar.demo { border: var(--panel-border); border-radius: var(--ctl-radius); flex-wrap: wrap; }
+.spec .split + .split { margin-top: 10px; }
+.scroll-demo { height: 190px; box-shadow: none; }
+.scroll-demo table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.scroll-demo td, .scroll-demo th { padding: 4px 10px; white-space: nowrap; text-align: right; border-bottom: var(--panel-border); font-size: 13px; }
+.scroll-demo th { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.scroll-demo td:first-child, .scroll-demo th:first-child { text-align: left; }
+
+/* ---------- Icons tab ---------- */
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; border: var(--panel-border); border-radius: var(--ctl-radius); font: 11px var(--font-mono); color: var(--ink-2); }
+.icon-cell .icon { color: var(--ink); width: var(--size, 24px); height: var(--size, 24px); }
