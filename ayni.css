@@ -129,8 +129,13 @@ html.touch .ctx-area, html.touch [role="option"], html.touch [role="treeitem"] >
 fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 legend { font-size: 12px; font-weight: 500; color: var(--ink-2); padding: 0; margin-bottom: 4px; }
 .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.switch input { appearance: none; margin: 0; width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; cursor: pointer; transition: background .15s; flex: none; }
-.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--thumb); box-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 30%, transparent); transition: transform .15s; }
+/* RULE: switch states. Off is hollow (grey outline, small grey thumb); on is filled accent with a full thumb. Disabled off
+   is a filled strong grey track, faded like every disabled control, so it never looks like an enabled off switch. */
+.switch input { appearance: none; margin: 0; width: 36px; height: 20px; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink-2); position: relative; cursor: pointer; transition: background .15s, box-shadow .15s; flex: none; }
+.switch input::after { content: ""; position: absolute; top: 4px; left: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink-2); transition: transform .15s, inset .15s, width .15s, height .15s; }
+.switch input:is(:checked, :disabled) { box-shadow: none; }
+.switch input:is(:checked, :disabled)::after { top: 2px; left: 2px; width: 16px; height: 16px; background: var(--thumb); box-shadow: 0 1px 2px color-mix(in srgb, var(--shade) 30%, transparent); }
+.switch input:disabled:not(:checked) { background: color-mix(in oklab, var(--ink) 55%, var(--surface)); }
 .switch input:checked { background: var(--accent); }
 .switch input:checked::after { transform: translateX(16px); }
 /* RULE: a switch has two uses. One-sided (.switch): one label, on or off, the same as one check box ("Visible").
