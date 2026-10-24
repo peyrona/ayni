@@ -275,7 +275,7 @@ Pick any number. A parent box over a set of child boxes shows a mixed state when
 
 A switch is its own control, not a restyled radio button or check box, and it takes effect at once. Use a switch for settings, and a toggle button (3.2) for tools such as Bold. It has two uses:
 
-- **One-sided: on or off, the same job as one check box.** One label, at the left of the switch: "Visible (o)===" does what "[x] Visible" does. The track is grey when off and accent when on.
+- **One-sided: on or off, the same job as one check box.** One label, at the left of the switch: "Visible (o)===" does what "[x] Visible" does. Off is hollow: a grey outline with a small grey thumb. On is filled with the accent colour, with a full thumb. Disabled off is a filled strong grey track, faded like every disabled control, so it never looks like an enabled off switch.
 - **Two-sided: one of two options, the same job as two radio buttons.** A label on each side, and the thumb points at the chosen one: "Dark (o)=== Light" picks Dark, "Dark ===(o) Light" picks Light, like "(o) Dark ( ) Light". Neither side means "off", so the track keeps the accent colour on both sides, and the chosen label is shown at full contrast. Use it only when the two options are a natural pair (Dark/Light, Metric/Imperial); for three or more, or for options that need explaining, use radio buttons.
 - **Keys:** a switch is one Tab stop. Space flips it. On a two-sided switch, Left (or Up) picks the left option and Right (or Down) the right one, without wrapping.
 - **Mouse and touch:** clicking the switch or its label flips a one-sided switch. On a two-sided switch, clicking the track flips it and clicking a label picks that option. On touch, every label and the track have a 44 px hit area.
