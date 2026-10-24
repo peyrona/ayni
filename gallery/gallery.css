@@ -1,4 +1,4 @@
-/* CUA Components gallery: styles for the demo page only. Everything a real app needs is in cua.css. */
+/* Ayni Components gallery: styles for the demo page only. Everything a real app needs is in ayni.css. */
 /* Layout: one Panel holding a tab per component family; each tab is a grid of labelled specimens. */
 body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; }
 .gallery { max-width: 1000px; margin: 0 auto; }

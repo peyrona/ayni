@@ -1,5 +1,5 @@
-/* CUA icons: one <symbol> per icon on a 24x24 grid, 2px stroke, colour from the text. These icons are examples:
-   the final icon set is still to be chosen. Load before cua.js; it puts the sprite at the start of <body>, so
+/* Ayni icons: one <symbol> per icon on a 24x24 grid, 2px stroke, colour from the text. These icons are examples:
+   the final icon set is still to be chosen. Load before ayni.js; it puts the sprite at the start of <body>, so
    <svg class="icon"><use href="#i-save"/></svg> works anywhere, also from file://. */
 (() => {
   const sprite = `<svg width="0" height="0" style="position:absolute" aria-hidden="true">

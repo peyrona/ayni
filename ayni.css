@@ -1,5 +1,5 @@
-/* CUA library 0.1.0: the look of every CUA control. Plain CSS, no build step, evergreen browsers 2024+.
-   Use it with cua.js and cua-icons.js; see README.md. Fonts: IBM Plex Sans and IBM Plex Mono (loaded by the page). */
+/* Ayni library 0.1.0: the look of every Ayni control. Plain CSS, no build step, evergreen browsers 2024+.
+   Use it with ayni.js and ayni-icons.js; see README.md. Fonts: IBM Plex Sans and IBM Plex Mono (loaded by the page). */
 /* RULE: colour. Each mode (light, dark) defines only 5 base colours. Every other colour is derived from them at
    runtime with color-mix() and relative colour syntax, so a new scheme is just 5 new values.
    paper = backgrounds · ink = text · accent = selection, default button · alert = focus ring, warnings

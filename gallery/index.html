@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>CUA Components</title>
+<title>Ayni Components</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../cua.css">
+<link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
-<script src="../cua-icons.js" defer></script>
-<script src="../cua.js" defer></script>
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni.js" defer></script>
 <script src="gallery.js" defer></script>
 </head>
 <body>
-<!-- CUA Components gallery: every control and state, built with the CUA library. The living reference for the
-     CUA Design Guidelines book. -->
+<!-- Ayni Components gallery: every control and state, built with the Ayni library. The living reference for the
+     Ayni Design Guidelines book. -->
 <section class="panel gallery" aria-labelledby="g-title">
   <header>
-    <h2 id="g-title">CUA Components</h2>
+    <h2 id="g-title">Ayni Components</h2>
     <span class="mode" id="mode"></span>
     <button class="btn quiet" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><svg class="icon"><use href="#i-moon"/></svg></button>
     <label class="switch"><input type="checkbox" role="switch" id="sim-touch">Touch preview</label>
@@ -239,14 +239,14 @@
           <input id="tf-name" class="input" required placeholder="As it appears on your ID"></div></div>
       <div class="spec"><h3>Info label</h3>
         <p class="rule">A small "i" in a circle can sit next to any control. Click it, or focus it and press Enter, to open a short help popup. Esc or a click elsewhere closes it.</p>
-        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Delivery slot" data-tip="What is this?" data-help="Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00.">i</button></div>
+        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Delivery slot" data-tip="What is this?" data-help="Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00.">i</button></div>
         <p class="hint">More examples sit next to Email, Password, Copies, and Image quality on the Pickers tab.</p></div>
       <div class="spec"><h3>Text field</h3>
         <p class="rule">Help goes in the placeholder, not under the field. Nothing appears under the field, errors included: an error colours the border and shows a small red "!" at the end of the field, and its message (how to fix it) pops up while the field has focus, or on hovering or clicking the "!". When the form is sent with errors, the focus goes to the first wrong field, so its message shows. Buttons can sit inside the field, at the start or the end. A read-only field (Customer ID) has no border and a soft tint: you can focus it, select and copy its text, but not change it. A disabled field (Promo code) is faded and can't be focused.</p>
-        <div class="field"><div class="label-row"><label for="tf-email">Email</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Email" data-tip="What is this?" data-help="We send invoices and delivery notices here. We never share it.">i</button></div>
+        <div class="field"><div class="label-row"><label for="tf-email">Email</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Email" data-tip="What is this?" data-help="We send invoices and delivery notices here. We never share it.">i</button></div>
           <input id="tf-email" class="input" type="email" value="ana.morales@" placeholder="name@example.com" aria-describedby="tf-email-err">
           <span class="error" id="tf-email-err" hidden>Enter a full address, like name@example.com.</span></div>
-        <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Password" data-tip="What is this?" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess.">i</button></div>
+        <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Password" data-tip="What is this?" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess.">i</button></div>
           <div class="input-group"><input id="tf-pw" class="input" type="password" value="giralda-2026" placeholder="At least 8 characters">
             <button class="btn quiet" type="button" id="pw-toggle" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><svg class="icon"><use href="#i-eye"/></svg></button></div></div>
         <div class="field"><label for="tf-ro">Customer ID</label>
@@ -268,7 +268,7 @@
         <p class="out" id="sf-out"></p></div>
       <div class="spec"><h3>Spin button</h3>
         <p class="rule">A number in a range. Arrow keys or the buttons inside the field step it; holding a button repeats, slowly then faster. Page Up and Page Down step 10 times, Home and End go to the limits. A value out of range shows an error (red border and "!") instead of being corrected. Both "," and "." work as the decimal mark.</p>
-        <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
+        <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
           <div class="input-group spin">
             <button class="btn quiet" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><svg class="icon"><use href="#i-minus"/></svg></button>
             <input id="spin" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="99" data-step="1" value="2" aria-describedby="spin-err">
@@ -301,7 +301,7 @@
         <p class="rule">A value in a range where the exact number matters less. Arrow keys step it, Page Up and Page Down jump.</p>
         <div class="field"><label for="sl-vol">Volume</label>
           <div class="slider-row"><input id="sl-vol" type="range" min="0" max="100" value="60"><output for="sl-vol" id="sl-vol-out">60%</output></div></div>
-        <div class="field"><div class="label-row"><label for="sl-q">Image quality</label><button type="button" class="info-tip" popovertarget="cua-help" aria-label="About Image quality" data-tip="What is this?" data-help="Higher quality makes sharper images and larger files. Medium suits most screens.">i</button></div>
+        <div class="field"><div class="label-row"><label for="sl-q">Image quality</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Image quality" data-tip="What is this?" data-help="Higher quality makes sharper images and larger files. Medium suits most screens.">i</button></div>
           <input id="sl-q" type="range" min="1" max="5" step="1" value="3" list="q-ticks" aria-valuetext="Medium">
           <datalist id="q-ticks"><option value="1"><option value="2"><option value="3"><option value="4"><option value="5"></datalist>
           <div class="ticks" aria-hidden="true"><span>Draft</span><span>Low</span><span>Medium</span><span>High</span><span>Best</span></div></div></div>
@@ -495,13 +495,13 @@
   </div>
 
   <div class="statusbar" role="status" aria-live="polite">
-    <span id="sb-msg" data-cua-status>Ready</span><span id="sb-sel">No selection</span><span id="sb-tab"></span>
+    <span id="sb-msg" data-ayni-status>Ready</span><span id="sb-sel">No selection</span><span id="sb-tab"></span>
   </div>
 </section>
 
-<!-- Shared layers used by cua.js (it creates them when a page leaves them out): help popup for info labels, field error popup -->
-<div class="panel popup help" popover id="cua-help" role="dialog" aria-label="Help"></div>
-<div class="panel popup err-pop" popover="manual" id="cua-err" aria-hidden="true"></div>
+<!-- Shared layers used by ayni.js (it creates them when a page leaves them out): help popup for info labels, field error popup -->
+<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="Help"></div>
+<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>
 <div class="panel menu" popover id="m-filter" role="menu" aria-label="Filter">
   <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all"><svg class="icon"><use href="#i-check"/></svg>All fruits</button>
   <div role="separator"></div>
@@ -544,8 +544,8 @@
 <!-- Date popup: Panel + popover -->
 <div class="panel popup" popover id="cal-pop" aria-label="Choose date"><div class="cal" id="cal-popup"></div></div>
 <!-- Tooltip and notification layer -->
-<div class="tooltip" popover="manual" role="tooltip" id="cua-tip"></div>
-<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="cua-toasts"></div>
+<div class="tooltip" popover="manual" role="tooltip" id="ayni-tip"></div>
+<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="ayni-toasts"></div>
 
 <!-- ===== Menus (Panel + popover) ===== -->
 <div class="panel menu" popover id="m-file" role="menu" aria-label="File">
