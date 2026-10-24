@@ -20,7 +20,7 @@
     <h2 id="g-title">Ayni Components</h2>
     <span class="mode" id="mode"></span>
     <button class="btn quiet" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><svg class="icon"><use href="#i-moon"/></svg></button>
-    <label class="switch"><input type="checkbox" role="switch" id="sim-touch">Touch preview</label>
+    <label class="switch">Touch preview<input type="checkbox" role="switch" id="sim-touch"></label>
     <button class="btn quiet touch-only" id="help-btn" data-open-dialog="dlg-help" data-help="Lists every element on this page and what it does." aria-label="Help: what each element does" data-tip="Help"><svg class="icon"><use href="#i-help"/></svg></button>
   </header>
 
@@ -97,12 +97,23 @@
         </fieldset></div>
       <div class="spec"><h3>Toggles</h3>
         <p class="rule">A switch takes effect at once. A toggle button holds an on/off state.</p>
-        <label class="switch"><input type="checkbox" role="switch" checked>Autosave</label>
-        <label class="switch"><input type="checkbox" role="switch">Dark mode preview</label>
+        <label class="switch">Autosave<input type="checkbox" role="switch" checked></label>
+        <label class="switch">Dark mode preview<input type="checkbox" role="switch"></label>
         <div class="row">
           <button class="btn" aria-pressed="false" data-toggle aria-label="Favourite" data-tip="Favourite"><svg class="icon"><use href="#i-star"/></svg></button>
           <button class="btn" aria-pressed="true" data-toggle aria-label="Bold" data-tip="Bold"><svg class="icon"><use href="#i-bold"/></svg></button>
         </div></div>
+      <div class="spec"><h3>Switch as two radio buttons</h3>
+        <p class="rule">A label on each side: the thumb points at the chosen option, so neither side means "off". It does the same job as two radio buttons. Click a label or the track, press Space to flip, or Left and Right to pick a side. Both controls below hold the same value.</p>
+        <div class="switch-pair" role="radiogroup" aria-label="Theme" id="sw-theme">
+          <label><input type="radio" name="sw-theme" value="dark" checked>Dark</label><span class="track" aria-hidden="true"></span><label><input type="radio" name="sw-theme" value="light">Light</label></div>
+        <div class="row" role="radiogroup" aria-label="Theme as radio buttons" id="rb-theme">
+          <label class="choice"><input type="radio" name="rb-theme" value="dark" checked>Dark</label>
+          <label class="choice"><input type="radio" name="rb-theme" value="light">Light</label></div></div>
+      <div class="spec"><h3>Switch as a check box</h3>
+        <p class="rule">One label: the switch is on or off. It does the same job as one check box, and it takes effect at once. Click it or press Space. Both controls below hold the same value.</p>
+        <label class="switch">Visible<input type="checkbox" role="switch" id="sw-visible" checked></label>
+        <label class="choice"><input type="checkbox" id="cb-visible" checked>Visible</label></div>
       <div class="spec"><h3>Popup buttons</h3>
         <p class="rule">A small down-pointing triangle means the button opens a menu or popup, like a combo box. These buttons never have a second action, so they never show the dot.</p>
         <div class="row">
@@ -122,8 +133,10 @@
       <div class="spec"><h3>States</h3>
         <p class="rule">Disabled is faded and does nothing. Read-only has no border and a soft tint: you see the value but cannot change it. An error puts the Danger colour on the group border and a red "!" next to its label; the message pops up while the focus is in the group, or on hovering or clicking the "!".</p>
         <div class="row"><button class="btn" aria-disabled="true" aria-label="Cut" data-tip="Cut: select some text first"><svg class="icon"><use href="#i-cut"/></svg></button><button class="btn" aria-pressed="true" aria-disabled="true" aria-label="Italic" data-tip="Italic: not available in this font"><svg class="icon"><use href="#i-italic"/></svg></button></div>
-        <label class="switch"><input type="checkbox" role="switch" disabled>Sync (disabled)</label>
-        <label class="switch"><input type="checkbox" role="switch" checked aria-readonly="true">Backups (read-only)</label>
+        <label class="switch">Sync (disabled)<input type="checkbox" role="switch" disabled></label>
+        <label class="switch">Backups (read-only)<input type="checkbox" role="switch" checked aria-readonly="true"></label>
+        <div class="switch-pair" role="radiogroup" aria-label="Units (disabled)"><label><input type="radio" name="st-units" checked disabled>Metric</label><span class="track" aria-hidden="true"></span><label><input type="radio" name="st-units" disabled>Imperial (disabled)</label></div>
+        <div class="switch-pair" role="radiogroup" aria-label="Region (read-only)" aria-readonly="true"><label><input type="radio" name="st-region" aria-readonly="true">EU</label><span class="track" aria-hidden="true"></span><label><input type="radio" name="st-region" checked aria-readonly="true">US (read-only)</label></div>
         <label class="choice"><input type="checkbox" disabled>Print in colour (disabled)</label>
         <fieldset class="group" role="radiogroup" aria-readonly="true"><legend>Plan (read-only)</legend>
           <label class="choice"><input type="radio" name="st-plan" aria-readonly="true">Basic</label>
@@ -422,7 +435,7 @@
           <div role="tabpanel" id="sp-6" aria-labelledby="st-6" hidden><label class="choice"><input type="checkbox" checked>Others can comment</label></div>
           <div role="tabpanel" id="sp-7" aria-labelledby="st-7" hidden><p class="static">No comments yet.</p></div>
           <div role="tabpanel" id="sp-8" aria-labelledby="st-8" hidden><p class="static">Created 2026-09-02 by Ana Morales.</p></div>
-          <div role="tabpanel" id="sp-9" aria-labelledby="st-9" hidden><label class="switch"><input type="checkbox" role="switch">Keep offline copy</label></div>
+          <div role="tabpanel" id="sp-9" aria-labelledby="st-9" hidden><label class="switch">Keep offline copy<input type="checkbox" role="switch"></label></div>
         </div>
         <div class="row"><button class="btn" id="tabs-reopen" aria-label="Reopen closed tabs" data-tip="Reopen closed tabs: no tab is closed" aria-disabled="true"><svg class="icon"><use href="#i-refresh"/></svg></button></div></div>
       <div class="spec"><h3>Group boxes</h3>
@@ -467,7 +480,7 @@
         </div>
         <fieldset class="group" disabled><legend>Delivery (disabled)</legend>
           <div class="field"><label for="st-g1">Street</label><input id="st-g1" class="input" value="Calle Sierpes 21"></div>
-          <label class="switch"><input type="checkbox" role="switch" checked>Leave with a neighbour</label></fieldset></div>
+          <label class="switch">Leave with a neighbour<input type="checkbox" role="switch" checked></label></fieldset></div>
     </div>
   </div>
 
@@ -529,8 +542,8 @@
     <label class="choice"><input type="radio" name="pp-sort" value="Date modified">Date modified</label>
     <label class="choice"><input type="radio" name="pp-sort" value="Size">Size</label>
   </fieldset>
-  <label class="switch"><input type="checkbox" role="switch" id="pp-hidden">Show hidden files</label>
-  <label class="switch"><input type="checkbox" role="switch" id="pp-ext" checked>Show file extensions</label>
+  <label class="switch">Show hidden files<input type="checkbox" role="switch" id="pp-hidden"></label>
+  <label class="switch">Show file extensions<input type="checkbox" role="switch" id="pp-ext" checked></label>
   <div class="field"><label for="pp-zoom">Icon size</label>
     <div class="slider-row"><input id="pp-zoom" type="range" min="16" max="64" step="8" value="32"><output id="pp-zoom-out" for="pp-zoom">32 px</output></div></div>
   <fieldset><legend>Columns</legend>
@@ -595,8 +608,8 @@
   <form method="dialog" style="display:contents">
     <header><h2 id="ds-t">Gallery settings</h2><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><svg class="icon"><use href="#i-close"/></svg></button></header>
     <div class="body">
-      <label class="switch"><input type="checkbox" role="switch" id="set-compact">Compact spacing</label>
-      <label class="switch"><input type="checkbox" role="switch" id="set-status" checked>Show status bar</label>
+      <label class="switch">Compact spacing<input type="checkbox" role="switch" id="set-compact"></label>
+      <label class="switch">Show status bar<input type="checkbox" role="switch" id="set-status" checked></label>
       <p class="hint">Changes apply as you make them.</p>
     </div>
   </form>

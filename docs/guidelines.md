@@ -273,7 +273,13 @@ Pick any number. A parent box over a set of child boxes shows a mixed state when
 
 ### 5.3 Switches
 
-A switch turns a setting on or off and takes effect at once ("Autosave"). Use a switch for settings, and a toggle button (3.2) for tools such as Bold.
+A switch is its own control, not a restyled radio button or check box, and it takes effect at once. Use a switch for settings, and a toggle button (3.2) for tools such as Bold. It has two uses:
+
+- **One-sided: on or off, the same job as one check box.** One label, at the left of the switch: "Visible (o)===" does what "[x] Visible" does. The track is grey when off and accent when on.
+- **Two-sided: one of two options, the same job as two radio buttons.** A label on each side, and the thumb points at the chosen one: "Dark (o)=== Light" picks Dark, "Dark ===(o) Light" picks Light, like "(o) Dark ( ) Light". Neither side means "off", so the track keeps the accent colour on both sides, and the chosen label is shown at full contrast. Use it only when the two options are a natural pair (Dark/Light, Metric/Imperial); for three or more, or for options that need explaining, use radio buttons.
+- **Keys:** a switch is one Tab stop. Space flips it. On a two-sided switch, Left (or Up) picks the left option and Right (or Down) the right one, without wrapping.
+- **Mouse and touch:** clicking the switch or its label flips a one-sided switch. On a two-sided switch, clicking the track flips it and clicking a label picks that option. On touch, every label and the track have a 44 px hit area.
+- **States:** disabled and read-only look as for every control (5.5).
 
 ### 5.4 Slider
 
@@ -517,7 +523,7 @@ Every control has a visible label, and any control can have a small "i" that ope
 
 ### 14.1 Labels
 
-- Every control has a visible label, above it for fields, at the right of the box for radio buttons, check boxes and switches. The label is linked to the control, and clicking it moves focus to the control.
+- Every control has a visible label, above it for fields, at the right of the box for radio buttons and check boxes, at the left of a switch (a two-sided switch has one on each side). The label is linked to the control, and clicking it moves focus to the control.
 - Exceptions: list boxes may go without a visible label (8.1); buttons have no visible label and use their tooltip instead.
 - A required field shows a red mark after its label.
 - A static label shows a fixed value that is not a control ("Account 0042-1187").

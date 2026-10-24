@@ -4,6 +4,8 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
 
 ## Unreleased
 
+- Two-sided switch (`.switch-pair`): a label on each side, picks one of two options like two radio buttons. Space or a click on the track flips it; Left and Right pick a side. The gallery shows both switch uses next to their radio button and check box equivalents.
+- A switch's label now sits at its left ("Visible (o)==="), so it reads differently from a check box ("[x] Visible").
 - The library is now called Ayni. Files renamed to `ayni.css`, `ayni.js` and `ayni-icons.js`; the global is `window.Ayni`; events are `ayni:*`; shared layer ids are `ayni-help`, `ayni-err`, `ayni-tip` and `ayni-toasts`; the status hook is `data-ayni-status`; the saved theme key is `ayni-theme`.
 
 ## 0.1.0 (2026-10-22)
