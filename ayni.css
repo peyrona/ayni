@@ -523,6 +523,10 @@ fieldset:has(input[aria-readonly="true"]) { border-color: transparent; backgroun
 /* .desktop fills the screen: the window area plus the taskbar, which the user puts at the top or the bottom
    (data-edge). Windows live in .area and never cover the taskbar; a maximised window fills .area. */
 .desktop { position: fixed; inset: 0; display: grid; background: var(--ground); }
+/* RULE: there is no desktop mode below 1024 px wide. There the desktop is hidden and the app shows its normal
+   screens; .no-desktop marks what only shows below 1024 px */
+@media (max-width: 1023.98px) { .desktop { display: none; } }
+@media (min-width: 1024px) { .no-desktop { display: none !important; } }
 .desktop, .desktop[data-edge="bottom"] { grid-template: "area" 1fr "bar" auto / 1fr; }
 .desktop[data-edge="top"] { grid-template: "bar" auto "area" 1fr / 1fr; }
 .desktop > .area { grid-area: area; position: relative; overflow: hidden; min-width: 0; min-height: 0; }

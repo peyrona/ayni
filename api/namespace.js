@@ -88,6 +88,9 @@ const Ayni = {
   /** @returns {boolean} True while dark mode shows. */
   isDark() {},
 
+  /** @returns {boolean} True from 1024 px wide, where desktop mode exists; ayni:desktopmode { on } fires when it changes. */
+  isDesktop() {},
+
   /** @returns {boolean} True on touch devices, or while the touch preview is on. */
   isTouch() {},
 

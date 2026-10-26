@@ -1630,6 +1630,11 @@ const setup = () => {
    (right-click, long tap, Shift+F10); the choice is kept in localStorage
    ('ayni-taskbar-edge') and fires ayni:edge { edge } on the desktop. */
 const EDGES = ['top', 'bottom'];
+/* Desktop mode exists only from 1024 px wide (ayni.css hides .desktop below). Ayni.isDesktop() tells, and
+   ayni:desktopmode { on } fires on document when the width crosses 1024 px */
+const wideMq = matchMedia('(min-width: 1024px)');
+const isDesktop = () => wideMq.matches;
+wideMq.addEventListener('change', () => fire(document, 'ayni:desktopmode', { on: wideMq.matches }));
 let edgeMenu, edgeDesk, zTop = 10;
 const setEdge = (desk, edge, save = true) => {
   if (!EDGES.includes(edge)) return;
@@ -1839,7 +1844,7 @@ window.Ayni = {
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },
-  setTaskbarEdge: (desk, edge) => setEdge(desk, edge),
+  setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,
   icons: { use: useIcons, names: ICONS, get set() { return iconSet; } },
   dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
 };

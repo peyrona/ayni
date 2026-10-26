@@ -82,7 +82,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
 - [ ] **The final icon set.** The built-in icons are examples. Any other set can already be plugged in (see [Icons](#icons)).
-- [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows and a taskbar. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
+- [ ] **Desktop mode.** From 1024 px wide, Ayni switches on its own to a desktop with windows and a taskbar; below that there is no desktop mode. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
 
@@ -185,6 +185,7 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:load` | `[role="tree"]` | `{ item, id, path, done(items), fail(text) }`: a `data-lazy` folder opened for the first time |
 | `ayni:split` | `.split` | `{ action, pane, message }` |
 | `ayni:theme` | the toggle button | `{ theme }` |
+| `ayni:desktopmode` | `document` | `{ on }`: the width crossed 1024 px; desktop mode exists only from there |
 | `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to the top or the bottom |
 | `ayni:launch` | `.launcher` | `{ app, item }`: an app was picked |
 | `ayni:window` | `.panel.window` | `{ window, state }`: open, select, minimise, maximise, restore or close |
@@ -193,7 +194,7 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
 
 ### Icons
 

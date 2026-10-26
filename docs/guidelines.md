@@ -31,7 +31,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. On phones, where there are no tooltips, a Help dialog lists every element of the view.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
-6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows will switch on automatically (see chapter 17).
+6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows switches on automatically; below that there is none (see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
 8. **The user decides speed.** A single click never waits, except on a button that has a second action. Nothing disappears before the user can act on it: notifications pause while the pointer is on them, and errors stay until dismissed.
 
@@ -615,7 +615,7 @@ The tree uses the shared states (2.4 and 8.6): disabled items are faded and skip
 
 ## 17. Desktop mode
 
-Desktop mode gives Ayni a desktop like other operating systems: windows on a work area, and a taskbar. From 1024 px wide it switches on automatically. Two components make it: the **taskbar** and the **window**. The gallery's [desktop page](../gallery/desktop.html) shows them working.
+Desktop mode gives Ayni a desktop like other operating systems: windows on a work area, and a taskbar. From 1024 px wide it switches on automatically. **Below 1024 px there is no desktop mode**: no taskbar and no windows; the app shows its normal screens, as on phones and tablets. Two components make it: the **taskbar** and the **window**. The gallery's [desktop page](../gallery/desktop.html) shows them working.
 
 ### 17.1 Taskbar
 
@@ -647,6 +647,8 @@ Markup: `.desktop[data-edge]` holds `main.area` (the windows) and `nav.taskbar` 
 
 Events: `ayni:edge { edge }`, `ayni:launch { app, item }`, `ayni:window { window, state }` (open, select, minimise, maximise, restore, close) and `ayni:close`, cancelable, before a window closes. From code: `Ayni.windows.select(w)`, `minimise`, `maximise`, `restore`, `close`, and `Ayni.setTaskbarEdge(desktop, edge)`. The edge is kept in localStorage as `ayni-taskbar-edge`, the launch counts as `ayni-launch`.
 
+Below 1024 px `ayni.css` hides `.desktop`; anything marked `.no-desktop` shows only there. `Ayni.isDesktop()` says whether desktop mode is on, and `ayni:desktopmode { on }` fires on `document` when the width crosses 1024 px.
+
 ## 18. To be defined
 
 These points are known and deliberately left open; each will get its own decision and then its own chapter or rule.
@@ -657,7 +659,7 @@ The built-in icons are placeholders that show the style (24 px grid, 2 px stroke
 
 ### 18.2 Desktop mode, the rest
 
-Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: what happens below 1024 px (earlier idea: windows become full-width sheets), a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
+Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
 
 ### 18.3 Low-priority review items
 
