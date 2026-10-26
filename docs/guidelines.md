@@ -1,6 +1,6 @@
 # Ayni Design Guidelines
 
-Version of 2026-10-22 · Frasquito
+Version of 2026-10-25 · Frasquito
 
 ## About this book
 
@@ -8,7 +8,7 @@ This book is the rule set for Ayni, a CUA (Common User Access) interface built w
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
-**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, sizes, states, keyboard, touch and scrolling. Chapters 3 to 15 cover one control family each. Chapter 16 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
+**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, sizes, states, keyboard, touch and scrolling. Chapters 3 to 16 cover one control family each. Chapter 17 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
 
 **Words used in this book.**
 
@@ -18,7 +18,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 - **Touch**: a device whose main pointer is coarse (a finger). **Phone**: a touch device narrower than 600 px.
 - **Mouse and keyboard**: a device with a fine pointer.
 
-**Status.** The design of all controls listed here is closed, except for the points in chapter 16. Desktop mode (windows and taskbar), the tree view and the accessibility work for blind and deaf users come later.
+**Status.** The design of all controls listed here is closed, except for the points in chapter 17. Desktop mode (windows and taskbar) and the accessibility work for blind and deaf users come later.
 
 **Browsers.** Evergreen browsers from 2024 on (Chrome, Edge, Firefox, Safari), so the native popover and dialog elements and modern CSS colour functions can be used.
 
@@ -31,7 +31,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. On phones, where there are no tooltips, a Help dialog lists every element of the view.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
-6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows will switch on automatically (to be defined, see chapter 16).
+6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows will switch on automatically (to be defined, see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
 8. **The user decides speed.** A single click never waits, except on a button that has a second action. Nothing disappears before the user can act on it: notifications pause while the pointer is on them, and errors stay until dismissed.
 
@@ -42,6 +42,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 | Click, tap, Enter, Space | Run the action, or select the item |
 | Double-click, long tap or Shift+Enter on a button with a dot | Run the button's second action |
 | Long tap on an area, list item or tree item | Open its pop-up menu (same as right-click) |
+| Long tap on a tree item, then move the finger | Drag the item (in a tree that allows moving) |
 | Right-click, Shift+F10, Menu key | Open the pop-up menu for what is under the pointer or focus |
 | Enter inside a Panel | Run that Panel's default button |
 | Esc | Close the innermost popup, menu or dialog (after first clearing a search field) |
@@ -88,7 +89,7 @@ Each colour scheme (light and dark) defines at most five base colours. Every oth
 ### 2.2 Type and icons
 
 - Interface font: IBM Plex Sans, falling back to the system UI font. Monospaced text: IBM Plex Mono.
-- Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 16).
+- Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 17).
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
 
 ### 2.3 Sizes and spacing
@@ -140,7 +141,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 - A device counts as touch when its main pointer is coarse. Sizes switch to the touch values above.
 - There are no tooltips on touch. Each view has a round Help button in its title row instead (chapter 15).
-- **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area, list item or tree item it opens that element's pop-up menu. While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px cancels the long tap.
+- **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area, list item or tree item it opens that element's pop-up menu. While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
 - On phones (below 600 px), lists of the list picker open as a sheet at the bottom of the screen, kept above the on-screen keyboard.
 
 ### 2.7 Scrolling
@@ -389,7 +390,7 @@ Right-click, Shift+F10, the Menu key, or a long tap on touch opens the item's po
 | Empty | A short centred line: "No files" |
 | Error | Danger border and a red "!" next to the list's label (inside the top-right corner when the list has no label); its popup says "Pick at least one file to attach." |
 
-The tree view follows the same states but is otherwise deferred (chapter 16).
+The tree view follows the same states (chapter 16).
 
 ## 9. Menus, popups and toolbars
 
@@ -448,7 +449,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 | Confirmation | "Delete contract.pdf?" | Bottom row: Keep (default, also Esc) and Delete (danger, never default). Used only when a change cannot be applied live |
 | Modeless | Find | Stays open while the user keeps working, no backdrop. Bottom row: Close and Find next at the right, List all matches at the left |
 
-Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 16).
+Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 17).
 
 ## 11. Feedback: tooltips, notifications, progress and status bar
 
@@ -549,27 +550,85 @@ On touch devices there are no tooltips; a round Help button in the title row of 
 - **Rejected alternatives:** showing the tooltip while holding (hold-to-peek) and showing it as a notification. A long tap is reserved for "more for this thing".
 - **For developers:** every new control needs a tooltip (`data-tip`), plus a help text (`data-help`) when the built explanation would be weak, and touch CSS that meets 44 × 44 px.
 
-## 16. To be defined
+## 16. Tree view
+
+A tree shows items inside items, such as folders and files or the sections of a book. It is a list (chapter 8) with levels: it follows the same label, selection, type-ahead and state rules, and adds opening, closing and, when the page allows it, editing.
+
+### 16.1 What the page switches on
+
+- A tree only browses unless the page switches editing on, one feature at a time: moving, inserting, deleting, renaming and hiding (`data-edit="move insert delete rename hide"`). A tree that only allows renaming, for example, never offers to delete.
+- A locked item (`data-lock`) cannot be moved, deleted or renamed, even in an editable tree. Its actions stay visible but disabled, and their tooltip says "Contracts is locked".
+- A read-only tree allows no change at all.
+
+### 16.2 Root, folders and leaves
+
+- **Root (optional).** A tree either has one top item that holds everything ("My files") or shows several items at the top level. The root opens and closes, but it is never moved, deleted or hidden; it can be renamed only where renaming is allowed and it is not locked. Without a root, new top-level items come from the pop-up menu of the tree's empty area, or from the toolbar.
+- **Folders and leaves.** Any item can hold children (as in an outline). Items that never can, such as files, are leaves (`data-leaf`). Something dropped, pasted or inserted on a leaf goes right after it.
+- A triangle before the name shows that an item has children; it points right when closed and down when open.
+
+### 16.3 Hidden items
+
+- A hidden item (`data-hidden`) is not shown, the keyboard skips it, and its children are hidden with it.
+- The tree can show hidden items: the page turns this on, or the user does with "Show hidden items" in the tree's pop-up menu. Hidden items then show muted and in italics, and they work as usual. This is different from disabled, which is faded and does nothing.
+- Where hiding is allowed, the item's menu and the toolbar offer Hide, or Show for an item that is already hidden.
+
+### 16.4 Selection, opening and keyboard
+
+- Single selection by default: the selection follows the focus, as in a list.
+- Multiple selection works as in the lists (8.4): a check square after the triangle, click or Space toggles, Shift+click and Shift+arrows select a range, Ctrl+A (⌘A) selects every shown item.
+- Up and Down move; Home and End go to the first and last shown item; Page Up and Page Down jump one visible page. Right opens a folder, or enters an open one; Left closes it, or goes to the parent. Disabled and hidden items are skipped.
+- A folder opens and closes with a click on its triangle (on touch, the area around it counts), a double-click, or Enter. A click on a folder that is already selected does nothing more, so nothing opens by accident.
+- A double-click or Enter on a leaf opens it: the tree tells the page (`ayni:open`).
+- Type-ahead as in the lists (8.3). `*` opens every folder at the same level.
+
+### 16.5 Moving items
+
+- **Mouse and pen: drag and drop.** Drag an item, or all the selected items when the dragged one is selected. While dragging, an Accent **line between rows** shows that the items will go before or after a row (the upper and lower quarter of the row; half and half on a leaf), and a row **outlined in Accent** shows that they will go inside it (its middle half). Over an open folder, the lower part means "first inside it". Holding over a closed folder for 0.7 s opens it. Near the top or bottom edge the tree scrolls by itself. Items cannot be dropped inside themselves; no marker shows there. Esc cancels the drag. Dragging always moves; to copy, use Copy and Paste. Dragging between two trees is not supported.
+- **Keyboard.** Ctrl+Shift+Up and Ctrl+Shift+Down (⌘⇧ on Mac) move the item one place among its siblings. Ctrl+Shift+Left moves it out, right after its parent; Ctrl+Shift+Right moves it into the folder just above it, as its last child. Alt+arrows are not used, because Alt+Left is "back" in browsers.
+- **Cut, Copy and Paste.** Ctrl+X or Ctrl+C, then Ctrl+V: the items go inside the focused folder, at its end, or right after the focused leaf. Cut items look muted until they are pasted; Esc cancels the cut.
+- **Touch.** Hold an item: the ring fills as for any long tap. Lift the finger and the pop-up menu opens; move the finger once the ring is full and the item is dragged, with the same markers. Moving before the ring is full scrolls the tree as usual. The item's menu also has Move up, Move down, Cut and Paste, so every move is possible without dragging.
+
+### 16.6 Insert, delete and rename
+
+- **Insert:** New in the pop-up menu, the Insert key, or the toolbar. The new item goes inside the focused folder, at its end, and the folder opens; on a leaf it goes right after it. It starts in rename mode with its default name selected ("New folder"); Esc removes it again.
+- **Delete:** the Delete key, the menu or the toolbar. It removes the item with all its children. There is no confirmation dialog: a notification with Undo stays 6 s ("Ctrl+Z also undoes"), as for every undoable action (11.2). The focus goes to the next item, or the previous one, or the parent.
+- **Rename:** F2, the menu or the toolbar. The name becomes a text field in place, with the text selected. Enter or leaving the field saves; Esc cancels. An empty name, or a name a sibling already has when the tree asks for unique names (`data-unique`), shows the usual red "!" with its popup (4.6), and the field stays open. There is no "slow second click" to rename, so nothing is renamed by accident.
+
+### 16.7 Pop-up menu and toolbar
+
+- An editable tree has its own pop-up menu with what it allows: New, Rename, Hide or Show; Cut, Copy, Paste; Move up, Move down; Show hidden items; Delete. Each item shows its shortcut. Items that cannot act on the chosen item are disabled. The menu acts on the item it was opened on: that item joins the selection, or becomes it. A page can give its own menu instead (`data-menu`).
+- A page can put a small toolbar above the tree (optional) with round icon-only buttons and tooltips: New (the default button), Rename, Hide/Show and Delete (danger icon colour, never the default). A button that cannot act on the current item is disabled, and its tooltip says why ("Delete: the top item stays in place").
+
+### 16.8 Loading on demand
+
+A folder can load its children the first time it opens (`data-lazy`): a "Loading…" row with a spinner shows inside the folder until the page delivers them. If loading fails, the row says so, and closing and opening the folder tries again.
+
+### 16.9 States
+
+The tree uses the shared states (2.4 and 8.6): disabled items are faded and skipped, a read-only tree has the soft tint and allows no change, a loading tree shows the spinner row, an empty tree says so in the middle, and an error colours its border and puts the red "!" next to its label.
+
+### 16.10 For developers
+
+- Every change the user makes is announced to the page before it happens (`ayni:move`, `ayni:insert`, `ayni:delete`, `ayni:rename`, `ayni:hide`), and the page can refuse it, for example when the server says no. The tree also tells the page about selection (`ayni:select`), opening a leaf (`ayni:open`), loading (`ayni:load`) and showing hidden items (`ayni:showhidden`).
+- A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it.
+
+## 17. To be defined
 
 These points are known and deliberately left open; each will get its own decision and then its own chapter or rule.
 
-### 16.1 Icon set
+### 17.1 Icon set
 
 The icons in the gallery are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen.
 
-### 16.2 Desktop mode
+### 17.2 Desktop mode
 
 From 1024 px wide, desktop mode will switch on automatically, with windows like other desktops. Still to define: the window Panel (title row, move, resize, minimise, maximise), the taskbar, what happens below 1024 px (earlier idea: windows become full-width sheets), and how modeless dialogs behave there.
 
-### 16.3 Tree view
-
-The tree view exists in the gallery (Up and Down move; Right opens a folder or enters it; Left closes it or goes to its parent; disabled items are skipped; long tap opens the item's menu) but is deferred: no type-ahead, multi-select or other changes until it is picked up again.
-
-### 16.4 Low-priority review items
+### 17.3 Low-priority review items
 
 The low-priority items of the gap review have not been reviewed. They will be taken up only if Frasquito asks.
 
-### 16.5 Accessibility for blind and deaf users, right-to-left, High Contrast
+### 17.4 Accessibility for blind and deaf users, right-to-left, High Contrast
 
 To be done after the full design is closed:
 

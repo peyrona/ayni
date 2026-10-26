@@ -288,18 +288,47 @@ dialog.panel:not(:modal) { position: fixed; inset: auto 24px 24px auto; margin: 
 .statusbar > span:first-child { border-left: 0; flex: 1; }
 
 /* ---------- Tree view ---------- */
-[role="tree"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 280px; overflow: auto; }
+[role="tree"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 280px; overflow: auto; background: var(--panel-bg); }
+[role="tree"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
 [role="tree"] [role="group"] { list-style: none; margin: 0; padding: 0 0 0 18px; }
 [role="treeitem"] { outline: none; }
-[role="treeitem"] > .ti { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 3px; cursor: pointer; user-select: none; }
+[role="treeitem"] > .ti { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 3px; cursor: pointer; user-select: none; white-space: nowrap; position: relative; }
 [role="treeitem"] > .ti:hover { background: var(--surface-2); }
 [role="treeitem"]:focus-visible > .ti { outline: 2px solid var(--focus); outline-offset: -2px; }
 [role="treeitem"][aria-selected="true"] > .ti { background: var(--accent); color: var(--accent-ink); }
 [role="treeitem"][aria-expanded="false"] > [role="group"] { display: none; }
 .ti .icon { --icon: 16px; }
-.ti .tw { transition: transform .15s; }
+.ti .tw { transition: transform .15s; order: -2; }
 [role="treeitem"]:not([aria-expanded]) > .ti .tw { visibility: hidden; }
 [role="treeitem"][aria-expanded="true"] > .ti .tw { transform: rotate(90deg); }
+[role="group"] > .state-msg { justify-content: flex-start; padding: 4px 8px; }
+/* Hidden items: gone, unless the tree shows them; then muted and in italics (disabled stays faded and inactive) */
+[role="treeitem"][data-hidden] { display: none; }
+[role="tree"][data-show-hidden] [role="treeitem"][data-hidden] { display: block; }
+[role="tree"][data-show-hidden] [role="treeitem"][data-hidden]:not([aria-selected="true"]) > .ti { color: var(--ink-2); }
+[role="tree"][data-show-hidden] [role="treeitem"][data-hidden] > .ti .tn { font-style: italic; }
+/* Cut items look muted until they are pasted */
+[role="treeitem"].cut:not([aria-selected="true"]) > .ti { color: var(--ink-2); }
+[role="treeitem"].cut > .ti .icon:not(.tw) { opacity: .5; }
+/* Multiple selection: the check square sits after the triangle, as in the lists */
+[role="tree"][aria-multiselectable="true"] .ti::before { content: ""; order: -1; flex: none; width: 14px; height: 14px; box-sizing: border-box;
+  border: 1.5px solid var(--ink-2); border-radius: 3px; background: var(--panel-bg); }
+[role="tree"][aria-multiselectable="true"] [aria-selected="true"] > .ti::before { border-color: var(--accent-ink); background: var(--accent-ink); }
+[role="tree"][aria-multiselectable="true"] [aria-selected="true"] > .ti::after { content: ""; position: absolute; left: 33px; top: 50%;
+  width: 4px; height: 8px; border: solid var(--accent); border-width: 0 2px 2px 0; translate: 0 -65%; rotate: 45deg; }
+/* Rename in place */
+.ti .err-wrap { flex: 1; min-width: 8em; }
+.ti .tree-edit { height: 24px; width: 100%; padding: 0 6px; font: inherit; color: var(--ink); }
+html.touch .ti .tree-edit { height: 36px; }
+/* Drag and drop: a line between rows means before or after, an outlined row means inside */
+[role="tree"].dragging, [role="tree"].dragging .ti { cursor: grabbing; }
+[role="treeitem"].dragged > .ti { opacity: .45; }
+.ti.drop-in { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+.tree-drop { position: fixed; z-index: 100; height: 2px; background: var(--accent); border-radius: 1px; pointer-events: none; }
+.tree-drop::before { content: ""; position: absolute; left: -3px; top: -3px; width: 8px; height: 8px; box-sizing: border-box; border: 2px solid var(--accent); border-radius: 50%; background: var(--panel-bg); }
+.tree-ghost { position: fixed; z-index: 100; pointer-events: none; translate: 14px 10px; padding: 3px 10px; font-size: 13px; white-space: nowrap;
+  background: var(--panel-bg); color: var(--ink); border: var(--panel-border); border-radius: var(--ctl-radius); box-shadow: var(--panel-shadow); }
+html.touch .tree-ghost { translate: -50% calc(-100% - 32px); }
 
 /* ---------- Slider & calendar ---------- */
 input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }

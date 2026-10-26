@@ -196,7 +196,7 @@
           </div></div>
         <p class="out" id="combo-out"></p></div>
       <div class="spec"><h3>Tree view</h3>
-        <p class="rule">Up and Down move. Right opens a folder or enters it, Left closes it or goes to its parent.</p>
+        <p class="rule">A tree for browsing only. Up and Down move and select; Right opens a folder or enters it, Left closes it or goes to its parent. The triangle, a double-click or Enter opens and closes a folder; on a file they open it. Typing jumps to the first match, and * opens every folder at the same level.</p>
         <label for="tree" id="tree-l" class="list-label">Folders</label>
         <ul role="tree" aria-labelledby="tree-l" id="tree">
           <li role="treeitem" aria-expanded="true"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-folder"/></svg>Documents</div>
@@ -221,6 +221,31 @@
           <li role="treeitem" aria-disabled="true"><div class="ti"><svg class="icon tw"><use href="#i-chev-right"/></svg><svg class="icon"><use href="#i-file"/></svg>backup.zip (in use)</div></li>
         </ul>
         <p class="out" id="tree-out"></p></div>
+      <div class="spec"><h3>Editable tree</h3>
+        <p class="rule">Built from data, with a top item (the root) that stays in place. Drag items to move them: a line means before or after, an outlined row means inside, and holding over a closed folder opens it. Ctrl+Shift+arrows (⌘⇧ on Mac) move the item one step; Ctrl+X, Ctrl+C and Ctrl+V cut, copy and paste. Insert adds a folder, F2 renames, Delete removes (with Undo). On touch, hold an item: lift for its menu, or move to drag it. Contracts is locked. Archive loads its folders the first time it opens.</p>
+        <label for="tree-ed" id="tree-ed-l" class="list-label">Project files</label>
+        <div role="toolbar" aria-label="Project files tools" data-tree="tree-ed">
+          <button class="btn primary" aria-label="New" data-tip="New folder (Insert)" data-tree-act="new"><svg class="icon"><use href="#i-plus"/></svg></button>
+          <button class="btn quiet icon-btn" aria-label="Rename" data-tip="Rename (F2)" data-tree-act="rename"><svg class="icon"><use href="#i-edit"/></svg></button>
+          <button class="btn quiet icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><svg class="icon"><use href="#i-eye-off"/></svg></button>
+          <span class="sep" role="separator"></span>
+          <button class="btn quiet icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><svg class="icon"><use href="#i-trash"/></svg></button>
+        </div>
+        <ul role="tree" id="tree-ed" aria-labelledby="tree-ed-l" data-edit="move insert delete rename hide" data-unique data-new-name="New folder"></ul>
+        <label class="switch">Show hidden items<input type="checkbox" role="switch" id="tree-ed-hidden"></label>
+        <p class="out" id="tree-ed-out"></p></div>
+      <div class="spec"><h3>Outline, multiple selection</h3>
+        <p class="rule">No root, no icons, and several items can be chosen: click or Space toggles one, Shift+click or Shift+arrows select a range, Ctrl+A selects all. Dragging moves every chosen item. Right-click, Shift+F10 or a long tap opens the menu with New, Rename, Cut, Copy, Paste, Move up, Move down and Delete.</p>
+        <ul role="tree" id="tree-ol" aria-label="Book outline" aria-multiselectable="true" data-edit="move insert delete rename" data-new-name="New section">
+          <li role="treeitem" aria-expanded="true"><div class="ti">Introduction</div>
+            <ul role="group"><li role="treeitem"><div class="ti">Why Ayni</div></li><li role="treeitem"><div class="ti">Who it is for</div></li></ul></li>
+          <li role="treeitem" aria-expanded="true"><div class="ti">Controls</div>
+            <ul role="group"><li role="treeitem"><div class="ti">Buttons</div></li><li role="treeitem"><div class="ti">Text fields</div></li><li role="treeitem"><div class="ti">Lists</div></li><li role="treeitem"><div class="ti">Menus</div></li></ul></li>
+          <li role="treeitem" aria-expanded="false"><div class="ti">Patterns</div>
+            <ul role="group"><li role="treeitem"><div class="ti">Forms</div></li><li role="treeitem"><div class="ti">Dialogs</div></li></ul></li>
+          <li role="treeitem"><div class="ti">Index</div></li>
+        </ul>
+        <p class="out" id="tree-ol-out"></p></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">Disabled lists and items are faded and ignore the pointer. A read-only list shows its choices with a soft tint and no border. While a list loads it shows a spinner row; when it has nothing it says so in the middle. An error colours the border and puts a red "!" next to the label, which shows the message; a list with no visible label (the last one) shows the "!" inside its top-right corner. In the folder tree above, backup.zip is a disabled item.</p>
         <div class="state-grid">

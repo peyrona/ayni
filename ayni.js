@@ -133,7 +133,7 @@ const initDialog = (d) => {
 };
 
 /* ---------- Lists: shared type-ahead and multi-selection ---------- */
-/* Shared type-ahead (lists and the drop-down list; the tree is deferred): letters typed within 500 ms build one search ("me" reaches México),
+/* Shared type-ahead (lists, the drop-down list and the tree): letters typed within 500 ms build one search ("me" reaches México),
    ignoring accents and case; after a pause a new search starts; repeating one letter cycles through its items */
 const fold = (t) => t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 const makeTypeAhead = (textOf = (el) => el.textContent.trim()) => {
@@ -151,7 +151,7 @@ const makeTypeAhead = (textOf = (el) => el.textContent.trim()) => {
 };
 const plainKey = (e) => e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
 
-/* Shared multi-selection helper (lists now; reusable by the tree when it is picked up again): Shift+click and Shift+arrows select a range from the
+/* Shared multi-selection helper (lists and the tree): Shift+click and Shift+arrows select a range from the
    anchor, Ctrl+A (Cmd+A on Mac) selects all, Page Up / Page Down jump one visible page */
 const multiSelect = ({ box, items, set, done }) => ({
   range(a, b) { const lo = Math.min(a, b), hi = Math.max(a, b); items().forEach((o, j) => set(o, j >= lo && j <= hi)); done(); },
@@ -355,14 +355,15 @@ const initMenubar = (bar) => {
    list item or tree item it opens that element's pop-up menu. iOS Safari sends no contextmenu, so the hold is
    timed here, with the same ring as the buttons. */
 const openCtx = (menu, x, y, name, back) => { ctxPoint = { x, y }; invoker = back; ctxReturn = back; ctxName = name; ctxMenu = menu; menu.showPopover(); };
-let swallowUntil = 0, swallowIn = null; // after a long tap, ignore the click / mousedown its release may produce on the held element
+let swallowUntil = 0, swallowIn = []; // after a long tap, ignore the click / mousedown its release may produce on the held element, or on the menu that opened under the finger
 const holdRing = (x, y) => {
   const r = document.createElement('div'); r.className = 'hold-ring'; r.style.left = x + 'px'; r.style.top = y + 'px';
   r.style.setProperty('--hold-ms', HOLD_MS + 'ms'); document.body.append(r); return r;
 };
-/* Ayni.contextMenu(area, { menu, target, keyTarget }): target(e) returns { name, back, at? } for the element under the
-   event, or null; keyTarget(e) does the same for Shift+F10 and the Menu key (default: target) */
-const contextMenu = (root, { menu, target, keyTarget = target }) => {
+/* Ayni.contextMenu(area, { menu, target, keyTarget, onDrag }): target(e) returns { name, back, at? } for the element under
+   the event, or null; keyTarget(e) does the same for Shift+F10 and the Menu key (default: target). With onDrag(t, e),
+   moving the finger once the ring is full drags instead of opening the menu (the tree uses it) */
+const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
   let rightDown = false, timer, ring, fired = null, start;
   const stop = () => { clearTimeout(timer); ring?.remove(); ring = null; };
   root.addEventListener('pointerdown', (e) => {
@@ -372,12 +373,18 @@ const contextMenu = (root, { menu, target, keyTarget = target }) => {
     fired = null; start = { x: e.clientX, y: e.clientY }; ring = holdRing(e.clientX, e.clientY);
     timer = setTimeout(() => { ring?.remove(); ring = null; fired = { ...t, ...start }; navigator.vibrate?.(15); }, HOLD_MS);
   });
-  root.addEventListener('pointermove', (e) => { if (ring && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) stop(); });
+  root.addEventListener('pointermove', (e) => {
+    const far = Math.hypot(e.clientX - start?.x, e.clientY - start?.y) > 10;
+    if (ring && far) stop();
+    else if (fired && onDrag && far) { const f = fired; fired = null; onDrag(f, e); }
+  });
+  /* While the ring is full the page must not scroll, so that the finger can still drag */
+  if (onDrag) root.addEventListener('touchmove', (e) => { if (fired) e.preventDefault(); }, { passive: false });
   root.addEventListener('pointercancel', stop);
   /* The menu opens on release, otherwise that release would close it as an outside click */
   root.addEventListener('pointerup', () => {
     stop(); if (!fired) return;
-    const f = fired; fired = null; swallowUntil = performance.now() + 600; swallowIn = root;
+    const f = fired; fired = null; swallowUntil = performance.now() + 600; swallowIn = [root, menu];
     setTimeout(() => openCtx(menu, f.x, f.y, f.name, f.back));
   });
   root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') stop(); });
@@ -564,41 +571,570 @@ const initDateKeys = (g) => {
   });
 };
 
-/* ---------- Tree view (deferred: kept as it is until the tree is picked up again) ---------- */
-/* Fires ayni:select with { item, path } when an item is opened */
+/* ---------- Tree view ---------- */
+/* RULE (Frasquito, 2026-10-25, points T1-T12 of the tree proposal):
+   - A tree only browses unless the page switches editing on, one feature at a time: data-edit="move insert delete
+     rename hide". data-lock on an item stops moving, deleting and renaming it; aria-readonly on the tree stops everything.
+   - Optional root: one top item with data-root. It opens and closes, but is never moved, deleted or hidden.
+   - Any item can hold children, except the ones marked data-leaf (a drop or insert on a leaf goes after it).
+   - data-hidden items are not shown and the keyboard skips them. With data-show-hidden on the tree they show muted and
+     in italics, and work as usual.
+   - Selection like the lists: single by default (it follows the focus), aria-multiselectable for the check squares,
+     Shift ranges and Ctrl+A. Type-ahead, Page Up/Down, * opens every folder at the same level. A folder opens and
+     closes with its triangle, a double-click, Enter, or Right and Left; a double-click or Enter on a leaf fires ayni:open.
+   - Moving: drag (a line between rows means before/after, an outlined row means inside; 0.7 s over a closed folder
+     opens it; Esc cancels; dragging only moves). Ctrl+Shift+arrows (⌘ on Mac) move one step; Ctrl+X / C / V cut or
+     copy and paste. On touch, hold until the ring is full: lift for the pop-up menu, or move to drag.
+   - Insert (Insert key, menu, toolbar) puts a new item inside the focused folder or after the focused leaf and starts
+     renaming it; Esc removes it. Delete has no confirmation: an Undo notification. F2 renames in place; an empty name,
+     or with data-unique a name a sibling already has, shows the usual red "!".
+   - data-lazy on an item loads its children the first time it opens: ayni:load with { item, done(items), fail(text) }.
+   Every change fires a cancelable event first (ayni:move, ayni:insert, ayni:delete, ayni:rename, ayni:hide); calling
+   preventDefault() stops it. Ayni.tree(el, { root, items }) builds a tree from data and returns its controller. */
+const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, cancelable: true }));
+const TW = '<svg class="icon tw" aria-hidden="true"><use href="#i-chev-right"/></svg>';
+const trees = new WeakMap();
+let treeClip = null, treeMenuOwner = null, treeMenus = 0; // Cut / Copy keep { tree, items, cut } here until Paste
+const nameOf = (it) => ($(':scope > .ti > .tn', it) || $(':scope > .ti', it)).textContent.trim();
+/* One tree item from data: { name, id, icon (false for none), leaf, hidden, lock, disabled, open, lazy, root, children } */
+const treeItem = (d, icons = true) => {
+  const name = d.icon ?? (icons ? (d.leaf ? 'file' : 'folder') : false);
+  const li = document.createElement('li'), icon = name ? `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>` : '';
+  li.setAttribute('role', 'treeitem');
+  li.innerHTML = `<div class="ti">${TW}${icon}<span class="tn"></span></div>`;
+  $('.tn', li).textContent = d.name;
+  if (d.id != null) li.dataset.id = d.id;
+  [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy'], ['root', 'data-root']].forEach(([k, a]) => d[k] && li.setAttribute(a, ''));
+  if (d.disabled) li.setAttribute('aria-disabled', 'true');
+  if (d.children?.length) { const g = document.createElement('ul'); g.setAttribute('role', 'group'); g.append(...d.children.map((c) => treeItem(c, icons))); li.append(g); }
+  if (d.children?.length || d.lazy) li.setAttribute('aria-expanded', d.open && !d.lazy ? 'true' : 'false');
+  return li;
+};
+const treeData = (li, icons = true) => {
+  const d = { name: nameOf(li) }, u = $(':scope > .ti > svg:not(.tw) use', li), icon = u ? u.getAttribute('href').replace('#i-', '') : false;
+  if (li.dataset.id) d.id = li.dataset.id;
+  if (icon !== (icons ? (li.hasAttribute('data-leaf') ? 'file' : 'folder') : false)) d.icon = icon; // only when it is not the usual one
+  [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy']].forEach(([k, a]) => { if (li.hasAttribute(a)) d[k] = true; });
+  if (li.getAttribute('aria-disabled') === 'true') d.disabled = true;
+  if (li.getAttribute('aria-expanded') === 'true') d.open = true;
+  const kids = $$(':scope > [role="group"] > [role="treeitem"]', li); if (kids.length) d.children = kids.map((k) => treeData(k, icons));
+  return d;
+};
+/* { root, items, icons }: icons false leaves out the usual folder and file icons */
+const treeNodes = ({ root, items = [], icons = true }) => root
+  ? [treeItem({ open: true, ...(typeof root === 'string' ? { name: root } : root), root: true, children: items }, icons)]
+  : items.map((d) => treeItem(d, icons));
+/* Markup trees: the triangle and the name span are added when missing */
+const normaliseItem = (li) => {
+  const ti = $(':scope > .ti', li);
+  if (!$(':scope > .tw', ti)) ti.insertAdjacentHTML('afterbegin', TW);
+  if (!$(':scope > .tn', ti)) {
+    const tn = document.createElement('span'); tn.className = 'tn';
+    [...ti.childNodes].filter((n) => n.nodeType === 3 || (n.nodeType === 1 && !n.matches('svg'))).forEach((n) => tn.append(n));
+    tn.textContent = tn.textContent.trim(); ti.append(tn);
+  }
+  const g = $(':scope > [role="group"]', li);
+  if (g?.children.length || li.hasAttribute('data-lazy')) { if (!li.hasAttribute('aria-expanded')) li.setAttribute('aria-expanded', 'false'); }
+  else { g?.remove(); li.removeAttribute('aria-expanded'); }
+};
+
 const initTree = (tree) => {
-  const visibleItems = () => $$('[role="treeitem"]', tree).filter((it) => !it.parentElement.closest('[role="treeitem"][aria-expanded="false"]'));
-  const focusItem = (it) => { $$('[role="treeitem"]', tree).forEach((x) => (x.tabIndex = -1)); it.tabIndex = 0; it.focus(); };
-  const selectItem = (it) => {
-    if (it.getAttribute('aria-disabled') === 'true') return;
-    $$('[role="treeitem"][aria-selected="true"]', tree).forEach((x) => x.setAttribute('aria-selected', 'false'));
-    it.setAttribute('aria-selected', 'true');
-    const path = []; for (let n = it; n; n = n.parentElement.closest('[role="treeitem"]')) path.unshift($(':scope > .ti', n).textContent.trim());
-    fire(tree, 'ayni:select', { item: it, path });
+  const multi = () => tree.getAttribute('aria-multiselectable') === 'true';
+  const can = (f) => !isRO(tree) && (tree.dataset.edit || '').split(/\s+/).includes(f);
+  const all = () => $$('[role="treeitem"]', tree);
+  const rowOf = (it) => $(':scope > .ti', it);
+  const parentOf = (it) => { const p = it.parentElement.closest('[role="treeitem"], [role="tree"]'); return p?.matches('[role="treeitem"]') ? p : null; };
+  const groupOf = (p, make) => {
+    if (!p) return tree;
+    let g = $(':scope > [role="group"]', p);
+    if (!g && make) { g = document.createElement('ul'); g.setAttribute('role', 'group'); p.append(g); }
+    return g;
   };
-  $$('[role="treeitem"]', tree).forEach((it, i) => { it.tabIndex = i ? -1 : 0; it.setAttribute('aria-selected', 'false'); });
-  tree.addEventListener('click', (e) => {
-    const ti = e.target.closest('.ti'); if (!ti) return;
-    const it = ti.parentElement;
-    if (it.hasAttribute('aria-expanded') && (e.target.closest('.tw') || it.getAttribute('aria-selected') === 'true')) it.setAttribute('aria-expanded', it.getAttribute('aria-expanded') !== 'true');
-    selectItem(it); focusItem(it);
+  const kids = (p) => { const g = groupOf(p); return g ? $$(':scope > [role="treeitem"]', g) : []; };
+  const putIn = (p, it, ref) => {
+    const g = groupOf(p, true); g.insertBefore(it, ref?.parentElement === g ? ref : null);
+    if (p && !p.hasAttribute('aria-expanded')) p.setAttribute('aria-expanded', 'true');
+  };
+  /* A folder whose last child went away loses its triangle */
+  const tidy = (p) => { const g = p && groupOf(p); if (g && !g.children.length) { g.remove(); if (!p.hasAttribute('data-lazy')) p.removeAttribute('aria-expanded'); } };
+  const rootItem = () => $(':scope > [role="treeitem"][data-root]', tree);
+  const isRoot = (it) => it.hasAttribute('data-root'), locked = (it) => it.hasAttribute('data-lock');
+  const off = (it) => it.getAttribute('aria-disabled') === 'true';
+  const shown = (it) => rowOf(it).getClientRects().length > 0;
+  const nav = () => all().filter((it) => shown(it) && !off(it));
+  const pathOf = (it) => { const p = []; for (let n = it; n; n = parentOf(n)) p.unshift(nameOf(n)); return p; };
+  const topMost = (its) => its.filter((x) => !its.some((y) => y !== x && y.contains(x)));
+  const isOpen = (it) => it.getAttribute('aria-expanded') === 'true';
+  const label = () => tree.getAttribute('aria-label') || document.getElementById(tree.getAttribute('aria-labelledby'))?.textContent.trim() || 'Tree';
+
+  /* ---- Focus and selection ---- */
+  let current = null, anchor = null;
+  const selected = () => all().filter((x) => x.getAttribute('aria-selected') === 'true');
+  const report = () => { fire(tree, 'ayni:select', { item: current, items: selected(), path: current ? pathOf(current) : [] }); syncBars(); };
+  const ensureStop = () => {
+    const n = nav();
+    if (!current?.isConnected || !n.includes(current)) current = n.find((x) => x.getAttribute('aria-selected') === 'true') || n[0] || null;
+    all().forEach((x) => (x.tabIndex = x === current ? 0 : -1));
+    if (!current && tree.dataset.edit) tree.tabIndex = 0; else tree.removeAttribute('tabindex');
+  };
+  const setCurrent = (it, focus = true) => {
+    if (!it) return;
+    current = it; ensureStop();
+    if (focus) it.focus({ preventScroll: true });
+    rowOf(it).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    syncBars();
+  };
+  const selectOnly = (it) => {
+    if (isRO(tree)) return;
+    const before = selected();
+    all().forEach((x) => x.setAttribute('aria-selected', x === it));
+    if (before.length !== 1 || before[0] !== it) report();
+  };
+  const ms = multiSelect({ box: tree, items: nav, set: (o, on) => !isRO(tree) && o.setAttribute('aria-selected', on), done: report });
+  const range = (to) => { const n = nav(); ms.range(Math.max(0, n.indexOf(anchor ?? to)), n.indexOf(to)); };
+  /* Moves the focus; a single-selection tree selects what has the focus, Shift extends a multiple selection */
+  const go = (it, e) => {
+    if (!it) return;
+    setCurrent(it);
+    if (!multi()) selectOnly(it); else if (e?.shiftKey) range(it); else anchor = it;
+  };
+  const flip = (it) => { if (isRO(tree)) return; it.setAttribute('aria-selected', it.getAttribute('aria-selected') !== 'true'); anchor = it; report(); };
+  /* What an action works on: the selection when the item is part of it, otherwise the item alone */
+  const targetsFor = (it) => (!it ? [] : multi() && it.getAttribute('aria-selected') === 'true' ? topMost(selected()) : [it]);
+
+  /* ---- Opening, closing and loading ---- */
+  const expand = (it) => {
+    if (it.getAttribute('aria-expanded') !== 'false') return;
+    it.setAttribute('aria-expanded', 'true');
+    if (it.hasAttribute('data-lazy') && !kids(it).length) load(it);
+  };
+  const collapse = (it) => {
+    if (!isOpen(it)) return;
+    it.setAttribute('aria-expanded', 'false');
+    if (current && current !== it && it.contains(current)) go(it); else ensureStop();
+  };
+  const toggle = (it) => (isOpen(it) ? collapse(it) : expand(it));
+  const reveal = (it) => { for (let p = parentOf(it); p; p = parentOf(p)) if (p.getAttribute('aria-expanded') === 'false') expand(p); };
+  /* Children loaded on demand: a spinner row until the page calls done(items) or fail(text) */
+  const load = (it) => {
+    const g = groupOf(it, true); let settled = false;
+    g.innerHTML = '<li role="none" class="state-msg"><span class="busy" aria-hidden="true"></span>Loading…</li>';
+    it.setAttribute('aria-busy', 'true');
+    const done = (items = []) => {
+      if (settled) return; settled = true;
+      it.removeAttribute('aria-busy'); it.removeAttribute('data-lazy');
+      $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > svg:not(.tw)', tree)))); tidy(it); ensureStop(); syncBars();
+    };
+    const fail = (text = 'Could not load. Close and open it again to retry.') => {
+      if (settled) return; settled = true;
+      it.removeAttribute('aria-busy'); const m = $(':scope > .state-msg', g); if (m) m.textContent = text;
+    };
+    fire(tree, 'ayni:load', { item: it, id: it.dataset.id, path: pathOf(it), done, fail });
+  };
+
+  /* ---- Why an action cannot run now ('' when it can); the toolbar shows it in the tooltip ---- */
+  const NEED = { new: 'insert', rename: 'rename', hide: 'hide', showhidden: 'hide', delete: 'delete', cut: 'move', up: 'move', down: 'move', copy: 'insert' };
+  const reason = (act, its) => {
+    if (isRO(tree)) return 'the tree is read-only';
+    if (act === 'paste') {
+      const c = treeClip;
+      if (!c || c.tree !== tree || !c.items.some((x) => x.isConnected)) return 'nothing to paste';
+      return can(c.cut ? 'move' : 'insert') ? '' : 'not allowed here';
+    }
+    if (!can(NEED[act])) return 'not allowed here';
+    if (act === 'new' || act === 'showhidden') return '';
+    if (!its.length) return 'pick an item first';
+    if ((act === 'rename' || act === 'up' || act === 'down') && its.length > 1) return 'pick only one item';
+    if (act !== 'rename' && its.some(isRoot)) return 'the top item stays in place';
+    const l = its.find(locked); if (l && act !== 'hide' && act !== 'copy') return `${nameOf(l)} is locked`;
+    if ((act === 'up' || act === 'down') && !stepRef(its[0], act)) return act === 'up' ? 'already at the top' : 'already at the bottom';
+    return '';
+  };
+  /* Where a dragged or pasted item may go: not inside itself, not into a leaf or a disabled item, not beside the root */
+  const canDrop = (its, p) => (p ? !its.some((x) => x.contains(p)) && !p.hasAttribute('data-leaf') && !off(p) : !rootItem());
+
+  /* ---- Changes: each one asks the page first ---- */
+  const moveTo = (its, p, ref) => {
+    const sibs = kids(p).filter((x) => !its.includes(x)), index = ref ? sibs.indexOf(ref) : sibs.length;
+    if (!ask(tree, 'ayni:move', { items: its, parent: p, index })) return false;
+    const from = its.map(parentOf);
+    its.forEach((it) => putIn(p, it, ref)); from.forEach(tidy);
+    reveal(its[0]); setCurrent(its[0]);
+    return true;
+  };
+  /* Ctrl+Shift+arrows: one step among the siblings, out of the folder, or into the folder above */
+  const siblingsShown = (it) => kids(parentOf(it)).filter((x) => x === it || shown(x));
+  const stepRef = (it, dir) => {
+    const s = siblingsShown(it), i = s.indexOf(it);
+    if (dir === 'up') return s[i - 1] ? { p: parentOf(it), ref: s[i - 1] } : null;
+    if (dir === 'down') return s[i + 1] ? { p: parentOf(it), ref: s[i + 1].nextElementSibling } : null;
+    const p = parentOf(it);
+    if (dir === 'out') return p && !isRoot(p) ? { p: parentOf(p), ref: p.nextElementSibling } : null;
+    const above = s[i - 1]; return above && canDrop([it], above) ? { p: above, ref: null } : null;
+  };
+  const step = (it, dir) => {
+    if (reason('cut', [it])) return;
+    const t = stepRef(it, dir); if (t) moveTo([it], t.p, t.ref);
+  };
+  const insertAt = (at) => {
+    if (!at) return { p: rootItem(), ref: null };
+    return at.hasAttribute('data-leaf') ? { p: parentOf(at), ref: at.nextElementSibling } : { p: at, ref: null };
+  };
+  const insertNew = (at) => {
+    if (reason('new', [])) return;
+    const { p, ref } = insertAt(at), icons = !!$('.ti > svg:not(.tw)', tree);
+    const it = treeItem({ name: tree.dataset.newName || 'New item', icon: icons ? tree.dataset.newIcon || 'folder' : false });
+    if (p) expand(p);
+    putIn(p, it, ref); if (p) p.setAttribute('aria-expanded', 'true');
+    reveal(it); setCurrent(it); rename(it, true);
+  };
+  let editing = null;
+  const rename = (it, isNew = false) => {
+    if (editing || (!isNew && reason('rename', [it]))) return;
+    const tn = $(':scope > .ti > .tn', it), old = tn.textContent;
+    const inp = document.createElement('input'), err = document.createElement('span');
+    Object.assign(inp, { className: 'input tree-edit', value: old, spellcheck: false, autocomplete: 'off' });
+    err.className = 'error'; err.hidden = true; err.id = `ayni-tree-err-${++treeMenus}`;
+    inp.setAttribute('aria-label', 'Name'); inp.setAttribute('aria-describedby', err.id);
+    tn.hidden = true; tn.after(inp, err);
+    initError(inp); setCurrent(it, false); inp.focus(); inp.select();
+    const check = () => {
+      const v = inp.value.trim();
+      const msg = !v ? 'Type a name.'
+        : tree.hasAttribute('data-unique') && kids(parentOf(it)).some((x) => x !== it && fold(nameOf(x)) === fold(v)) ? `"${v}" is already used here.` : '';
+      err.textContent = msg; err.hidden = !msg; inp.setAttribute('aria-invalid', !!msg);
+      return !msg;
+    };
+    /* Enter or leaving the field saves; a wrong name keeps the field open with its "!"; Esc cancels (a new item goes away) */
+    const finish = (save, refocus = true) => {
+      if (save && !check()) { if (refocus) inp.focus(); return; }
+      const v = inp.value.trim();
+      errMarks.delete(inp); if (errFor === inp) hideErr();
+      inp.closest('.err-wrap').remove(); err.remove(); tn.hidden = false; editing = null;
+      if (isNew) {
+        tn.textContent = v || old;
+        if (!save || !ask(tree, 'ayni:insert', { items: [it], parent: parentOf(it), index: kids(parentOf(it)).indexOf(it), name: v })) {
+          const next = neighbour([it]), p = parentOf(it); it.remove(); tidy(p); current = null; if (next) go(next); else ensureStop();
+          if (!next && refocus) tree.focus();
+          return;
+        }
+      } else if (save && v !== old && ask(tree, 'ayni:rename', { item: it, from: old, to: v })) tn.textContent = v;
+      if (refocus) setCurrent(it);
+      syncBars();
+    };
+    editing = { it, finish };
+    inp.addEventListener('input', () => { if (inp.getAttribute('aria-invalid') === 'true') check(); });
+    inp.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); } else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    inp.addEventListener('blur', () => setTimeout(() => { if (editing?.it === it && document.activeElement !== inp) finish(true, false); }));
+    ['click', 'dblclick', 'pointerdown'].forEach((t) => inp.addEventListener(t, (e) => e.stopPropagation()));
+  };
+  /* After a delete or hide the focus goes to the next sibling, else the previous one, else the parent */
+  const neighbour = (its) => {
+    const gone = (x) => its.some((y) => y.contains(x)), first = its[0], s = kids(parentOf(first)), i = s.indexOf(first);
+    const ok = (x) => !gone(x) && shown(x) && !off(x);
+    return s.slice(i + 1).find(ok) || s.slice(0, i).reverse().find(ok) || parentOf(first) || nav().find(ok) || null;
+  };
+  const del = (its) => {
+    its = topMost(its); if (reason('delete', its) || !ask(tree, 'ayni:delete', { items: its })) return;
+    const next = neighbour(its), spots = its.map((it) => ({ it, p: parentOf(it), next: it.nextElementSibling }));
+    its.forEach((it) => it.remove()); spots.forEach((s) => tidy(s.p));
+    current = null; if (next) go(next); else { ensureStop(); tree.focus(); }
+    if (multi()) report();
+    const what = its.length === 1 ? nameOf(its[0]) : `${its.length} items`;
+    toast('ok', `Deleted ${what}.`, { action: { label: 'Undo', icon: 'undo', run: () => restore(spots) } });
+  };
+  const restore = (spots) => {
+    const its = spots.map((s) => s.it);
+    if (!ask(tree, 'ayni:insert', { items: its, undo: true })) return;
+    [...spots].reverse().forEach(({ it, p, next }) => { if (!p || tree.contains(p)) putIn(p, it, next); });
+    reveal(its[0]); go(its[0]);
+  };
+  const hide = (its, on) => {
+    its = topMost(its); if (reason('hide', its) || !ask(tree, 'ayni:hide', { items: its, hidden: on })) return;
+    const next = on && !tree.hasAttribute('data-show-hidden') ? neighbour(its) : null;
+    its.forEach((it) => it.toggleAttribute('data-hidden', on));
+    if (next) go(next); else ensureStop();
+    syncBars();
+  };
+  const showHidden = (on) => { tree.toggleAttribute('data-show-hidden', on); fire(tree, 'ayni:showhidden', { on }); ensureStop(); syncBars(); };
+  const clip = (its, cut) => {
+    its = topMost(its); if (reason(cut ? 'cut' : 'copy', its)) return;
+    $$('.cut').forEach((x) => x.classList.remove('cut'));
+    treeClip = { tree, items: its, cut };
+    if (cut) its.forEach((x) => x.classList.add('cut'));
+    syncBars();
+  };
+  const unclip = () => { $$('.cut').forEach((x) => x.classList.remove('cut')); treeClip = null; syncBars(); };
+  const paste = (at) => {
+    if (reason('paste', [])) return;
+    const its = treeClip.items.filter((x) => x.isConnected);
+    let { p, ref } = insertAt(at);
+    if (!canDrop(its, p)) return;
+    while (ref && its.includes(ref)) ref = ref.nextElementSibling;
+    if (treeClip.cut) { if (moveTo(its, p, ref)) unclip(); return; }
+    const copies = its.map((x) => {
+      const c = x.cloneNode(true);
+      [c, ...$$('[role="treeitem"]', c)].forEach((y) => { y.removeAttribute('data-id'); y.removeAttribute('data-root'); y.setAttribute('aria-selected', 'false'); y.tabIndex = -1; y.classList.remove('cut', 'dragged'); });
+      return c;
+    });
+    const sibs = kids(p), index = ref ? sibs.indexOf(ref) : sibs.length;
+    if (!ask(tree, 'ayni:insert', { items: copies, parent: p, index, copy: true, from: its })) return;
+    copies.forEach((c) => putIn(p, c, ref)); reveal(copies[0]); go(copies[0]);
+  };
+  const run = (act, at) => {
+    const its = targetsFor(at);
+    if (reason(act, its)) return;
+    ({
+      new: () => insertNew(at), rename: () => rename(its[0]), delete: () => del(its), cut: () => clip(its, true), copy: () => clip(its, false),
+      paste: () => paste(at), up: () => step(at, 'up'), down: () => step(at, 'down'),
+      hide: () => hide(its, !its.every((x) => x.hasAttribute('data-hidden'))), showhidden: () => showHidden(!tree.hasAttribute('data-show-hidden')),
+    })[act]?.();
+  };
+
+  /* ---- Drag and drop (mouse and pen at once; touch after a long tap) ---- */
+  let drag = null, justDropped = false;
+  const dropAt = (x, y) => {
+    const ti = document.elementFromPoint(x, y)?.closest('.ti'), it = ti?.parentElement;
+    if (!it || !tree.contains(it) || drag.its.some((d) => d.contains(it))) return null;
+    const r = ti.getBoundingClientRect(), f = (y - r.top) / r.height, leaf = it.hasAttribute('data-leaf') || off(it);
+    const zone = isRoot(it) ? 'in' : leaf ? (f < 0.5 ? 'before' : 'after') : f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'in';
+    if (zone === 'in') return { p: it, ref: null, row: it, zone };
+    if (zone === 'before') return { p: parentOf(it), ref: it, row: it, zone };
+    const inner = isOpen(it) && kids(it).find((k) => !drag.its.includes(k));
+    if (inner) return { p: it, ref: inner, row: it, zone, indent: rowOf(inner).getBoundingClientRect().left };
+    let ref = it.nextElementSibling; while (ref && drag.its.includes(ref)) ref = ref.nextElementSibling;
+    return { p: parentOf(it), ref, row: it, zone };
+  };
+  const mark = (t) => {
+    $$('.drop-in', tree).forEach((x) => x.classList.remove('drop-in')); drag.line.hidden = true;
+    if (!t) return;
+    if (t.zone === 'in') { rowOf(t.row).classList.add('drop-in'); return; }
+    const r = rowOf(t.row).getBoundingClientRect(), tr = tree.getBoundingClientRect(), left = t.indent ?? r.left;
+    const y = Math.max(tr.top + 1, Math.min(tr.bottom - 1, t.zone === 'before' ? r.top : r.bottom));
+    Object.assign(drag.line.style, { left: left + 'px', top: y - 1 + 'px', width: Math.max(24, tr.right - left - 6) + 'px' });
+    drag.line.hidden = false;
+  };
+  const dragUpdate = () => {
+    let t = dropAt(drag.x, drag.y); if (t && !canDrop(drag.its, t.p)) t = null;
+    drag.target = t; mark(t);
+    const wait = t?.zone === 'in' && t.row.getAttribute('aria-expanded') === 'false' ? t.row : null;
+    if (wait !== drag.wait) { clearTimeout(drag.timer); drag.wait = wait; if (wait) drag.timer = setTimeout(() => { expand(wait); drag && dragUpdate(); }, 700); }
+  };
+  const dragMove = (e) => {
+    drag.x = e.clientX; drag.y = e.clientY;
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    dragUpdate();
+  };
+  /* Near the top or bottom edge the tree scrolls by itself */
+  const autoScroll = () => {
+    if (!drag) return;
+    const r = tree.getBoundingClientRect(), dy = drag.y < r.top + 24 ? -8 : drag.y > r.bottom - 24 ? 8 : 0;
+    if (dy && drag.x > r.left && drag.x < r.right) { const before = tree.scrollTop; tree.scrollTop += dy; if (tree.scrollTop !== before) dragUpdate(); }
+    drag.raf = requestAnimationFrame(autoScroll);
+  };
+  const dragEsc = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endDrag(); } };
+  const endDrag = () => {
+    if (!drag) return;
+    clearTimeout(drag.timer); cancelAnimationFrame(drag.raf);
+    drag.ghost.remove(); drag.line.remove(); $$('.drop-in', tree).forEach((x) => x.classList.remove('drop-in'));
+    drag.its.forEach((x) => x.classList.remove('dragged')); tree.classList.remove('dragging');
+    removeEventListener('pointermove', dragMove); removeEventListener('pointerup', dragDrop); removeEventListener('pointercancel', endDrag);
+    removeEventListener('keydown', dragEsc, true);
+    drag = null; justDropped = true; setTimeout(() => { justDropped = false; });
+  };
+  const dragDrop = () => { const d = drag; endDrag(); if (d.target) moveTo(d.its, d.target.p, d.target.ref); };
+  const startDrag = (it, e) => {
+    if (editing || drag || off(it)) return;
+    const its = multi() && it.getAttribute('aria-selected') === 'true' ? topMost(selected()) : [it];
+    if (reason('cut', its)) return;
+    const ghost = document.createElement('div'), line = document.createElement('div');
+    ghost.className = 'tree-ghost'; ghost.textContent = its.length > 1 ? `${its.length} items` : nameOf(its[0]);
+    line.className = 'tree-drop'; line.hidden = true;
+    document.body.append(ghost, line);
+    its.forEach((x) => x.classList.add('dragged')); tree.classList.add('dragging');
+    drag = { its, ghost, line, target: null, wait: null, timer: 0, x: e.clientX, y: e.clientY };
+    addEventListener('pointermove', dragMove); addEventListener('pointerup', dragDrop); addEventListener('pointercancel', endDrag);
+    addEventListener('keydown', dragEsc, true);
+    dragMove(e); drag.raf = requestAnimationFrame(autoScroll);
+  };
+  tree.addEventListener('pointerdown', (e) => {
+    const ti = e.target.closest('.ti');
+    if (!ti || e.button !== 0 || e.target.closest('.tw') || !(e.pointerType === 'pen' || (e.pointerType === 'mouse' && !isTouch()))) return;
+    const it = ti.parentElement, sx = e.clientX, sy = e.clientY;
+    const watch = (ev) => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 5) { stop(); startDrag(it, ev); } };
+    const stop = () => { removeEventListener('pointermove', watch); removeEventListener('pointerup', stop); };
+    addEventListener('pointermove', watch); addEventListener('pointerup', stop);
   });
+  tree.addEventListener('touchmove', (e) => { if (drag) e.preventDefault(); }, { passive: false });
+
+  /* ---- Pointer and keyboard ---- */
+  tree.addEventListener('click', (e) => {
+    const ti = e.target.closest('.ti'); if (justDropped || !ti) return;
+    const it = ti.parentElement; if (off(it)) return;
+    const tw = $(':scope > .tw', ti), folder = it.hasAttribute('aria-expanded');
+    /* The triangle opens and closes; on touch the area around it counts too */
+    if (folder && (e.target.closest('.tw') || (isTouch() && e.clientX <= tw.getBoundingClientRect().right + 14))) { toggle(it); setCurrent(it); return; }
+    if (!multi()) go(it);
+    else { if (e.shiftKey) range(it); else flip(it); setCurrent(it); }
+  });
+  tree.addEventListener('dblclick', (e) => {
+    const ti = e.target.closest('.ti'); if (!ti || e.target.closest('.tw')) return;
+    const it = ti.parentElement; if (off(it)) return;
+    if (it.hasAttribute('aria-expanded')) toggle(it); else fire(tree, 'ayni:open', { item: it, path: pathOf(it) });
+  });
+  const ta = makeTypeAhead(nameOf);
   tree.addEventListener('keydown', (e) => {
-    const it = e.target.closest('[role="treeitem"]'); if (!it) return;
-    const vis = visibleItems(), i = vis.indexOf(it), open = it.getAttribute('aria-expanded');
-    const parent = it.parentElement.closest('[role="treeitem"]');
-    switch (e.key) {
-      case 'ArrowDown': if (vis[i + 1]) focusItem(vis[i + 1]); break;
-      case 'ArrowUp': if (vis[i - 1]) focusItem(vis[i - 1]); break;
-      case 'Home': focusItem(vis[0]); break;
-      case 'End': focusItem(vis[vis.length - 1]); break;
-      case 'ArrowRight': if (open === 'false') it.setAttribute('aria-expanded', 'true'); else if (open === 'true') focusItem($('[role="treeitem"]', it)); break;
-      case 'ArrowLeft': if (open === 'true') it.setAttribute('aria-expanded', 'false'); else if (parent) focusItem(parent); break;
-      case 'Enter': case ' ': selectItem(it); break;
-      default: return;
+    if (e.target.closest('.tree-edit') || drag) return;
+    const it = e.target.closest('[role="treeitem"]'), k = e.key, mod = isMac ? e.metaKey : e.ctrlKey;
+    if (!it) { // an empty editable tree has the focus itself
+      if (k === 'Insert') { e.preventDefault(); insertNew(null); } else if (mod && k.toLowerCase() === 'v') { e.preventDefault(); paste(null); }
+      return;
+    }
+    if (mod && e.shiftKey && !e.altKey && k.startsWith('Arrow')) { e.preventDefault(); step(it, { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'out', ArrowRight: 'in' }[k]); return; }
+    if (mod && !e.shiftKey && !e.altKey) {
+      const c = k.toLowerCase(), act = { x: () => clip(targetsFor(it), true), c: () => clip(targetsFor(it), false), v: () => paste(it), a: () => multi() && ms.all() }[c];
+      if (act) { e.preventDefault(); act(); }
+      return;
+    }
+    const n = nav(), i = n.indexOf(it);
+    const page = (dir) => { const rows = Math.max(1, Math.floor(tree.clientHeight / rowOf(it).offsetHeight) - 1); return n[Math.max(0, Math.min(n.length - 1, i + dir * rows))]; };
+    switch (k) {
+      case 'ArrowDown': go(n[i + 1], e); break;
+      case 'ArrowUp': go(n[i - 1], e); break;
+      case 'Home': go(n[0], e); break;
+      case 'End': go(n[n.length - 1], e); break;
+      case 'PageDown': go(page(1), e); break;
+      case 'PageUp': go(page(-1), e); break;
+      case 'ArrowRight': if (it.getAttribute('aria-expanded') === 'false') expand(it); else if (isOpen(it)) go(kids(it).find((x) => shown(x) && !off(x))); break;
+      case 'ArrowLeft': if (isOpen(it)) collapse(it); else if (parentOf(it)) go(parentOf(it)); break;
+      case 'Enter': if (it.hasAttribute('aria-expanded')) toggle(it); else fire(tree, 'ayni:open', { item: it, path: pathOf(it) }); break;
+      case ' ': if (ta.busy()) go(ta.find(' ', n, it)); else if (multi()) flip(it); else go(it); break;
+      case '*': kids(parentOf(it)).forEach((x) => !off(x) && expand(x)); break;
+      case 'F2': run('rename', it); break;
+      case 'Delete': run('delete', it); break;
+      case 'Insert': run('new', it); break;
+      case 'Escape': if (treeClip?.tree === tree && treeClip.cut) unclip(); else return; break;
+      default:
+        if (plainKey(e)) { const hit = ta.find(k, n, it); if (hit) { e.preventDefault(); go(hit); } }
+        return;
     }
     e.preventDefault();
   });
+  tree.addEventListener('focusin', (e) => { const it = e.target.closest('[role="treeitem"]'); if (it && it !== current && e.target === it) setCurrent(it, false); });
+
+  /* ---- Pop-up menu: the page's (data-menu="id") or, on an editable tree, one built here ---- */
+  const own = !tree.dataset.menu && !!tree.dataset.edit;
+  const menu = own ? document.createElement('div') : tree.dataset.menu && document.getElementById(tree.dataset.menu);
+  let pending = null, menuFor = null;
+  const fillMenu = () => {
+    const allowed = (act) => (act === 'paste' ? can('move') || can('insert') : can(NEED[act]));
+    const key = isMac ? '⌘' : 'Ctrl+', row = (act, icon, text, kbd) => (!allowed(act) ? ''
+      : `<button role="menuitem" data-tree-act="${act}" data-act="${text}"><svg class="icon"><use href="#i-${icon}"/></svg>${text}${kbd ? `<kbd>${kbd}</kbd>` : ''}</button>`);
+    const its = targetsFor(menuFor), shownNow = its.length && its.every((x) => x.hasAttribute('data-hidden'));
+    const groups = [
+      [row('new', 'plus', 'New', 'Ins'), row('rename', 'edit', 'Rename', 'F2'), row('hide', shownNow ? 'eye' : 'eye-off', shownNow ? 'Show' : 'Hide')],
+      [row('cut', 'cut', 'Cut', key + 'X'), row('copy', 'copy', 'Copy', key + 'C'), row('paste', 'paste', 'Paste', key + 'V')],
+      [row('up', 'arrow-up', 'Move up', key + '⇧↑'), row('down', 'arrow-down', 'Move down', key + '⇧↓')],
+      [can('hide') ? `<button role="menuitemcheckbox" aria-checked="${tree.hasAttribute('data-show-hidden')}" data-tree-act="showhidden" data-act="Show hidden items">${tree.hasAttribute('data-show-hidden') ? '<svg class="icon"><use href="#i-check"/></svg>' : ''}Show hidden items</button>` : ''],
+      [row('delete', 'trash', 'Delete', 'Del')],
+    ].map((g) => g.join('')).filter(Boolean);
+    menu.innerHTML = groups.join('<div role="separator"></div>');
+  };
+  if (menu) {
+    if (own) {
+      Object.assign(menu, { className: 'panel menu', id: `ayni-tree-menu-${++treeMenus}` });
+      menu.setAttribute('popover', ''); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', label() + ' actions');
+      document.body.append(menu); if (once('menu', menu)) initMenu(menu);
+    }
+    const target = (e) => {
+      if (editing || drag) return null;
+      const ti = e.target.closest('.ti'), it = ti?.parentElement;
+      treeMenuOwner = tree;
+      if (it) { if (off(it)) return null; pending = it; return { name: nameOf(it), back: it, at: ti }; }
+      if (!tree.dataset.edit) return null;
+      pending = null; return { name: label(), back: current || tree };
+    };
+    const keyTarget = (e) => {
+      const it = e.target.closest('[role="treeitem"]');
+      treeMenuOwner = tree;
+      if (it) { pending = it; return { name: nameOf(it), back: it, at: rowOf(it) }; }
+      if (e.target === tree && tree.dataset.edit) { pending = null; return { name: label(), back: tree }; }
+      return null;
+    };
+    contextMenu(tree, { menu, target, keyTarget, onDrag: (f, e) => f.back.matches?.('[role="treeitem"]') && startDrag(f.back, e) });
+    menu.addEventListener('beforetoggle', (e) => {
+      if (e.newState !== 'open' || treeMenuOwner !== tree) return;
+      menuFor = pending;
+      /* The menu acts on the item it was opened on: it joins the selection, or becomes it */
+      if (menuFor && menuFor.getAttribute('aria-selected') !== 'true') { if (multi() && !isRO(tree)) { all().forEach((x) => x.setAttribute('aria-selected', x === menuFor)); anchor = menuFor; report(); } else selectOnly(menuFor); }
+      if (menuFor) setCurrent(menuFor, false);
+      if (own) fillMenu();
+      $$('[data-tree-act]', menu).forEach((b) => { if (reason(b.dataset.treeAct, targetsFor(menuFor))) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled'); });
+    });
+    menu.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tree-act]'); if (!b || treeMenuOwner !== tree) return;
+      /* After the menu has closed and given the focus back, so that a rename keeps its field focused */
+      const act = b.dataset.treeAct, at = menuFor;
+      menu.addEventListener('toggle', () => run(act, at), { once: true });
+    });
+  }
+
+  /* ---- Toolbar: [role="toolbar"][data-tree="tree id"] with buttons data-tree-act="new | rename | hide | delete | ..." ----
+     Buttons that cannot act now are disabled, and their tooltip says why */
+  const bars = tree.id ? $$(`[role="toolbar"][data-tree="${tree.id}"]`) : [];
+  function syncBars() {
+    bars.forEach((bar) => $$('[data-tree-act]', bar).forEach((b) => {
+      const act = b.dataset.treeAct, its = targetsFor(current), r = reason(act, its);
+      b.dataset.baseTip ??= b.dataset.tip || b.getAttribute('aria-label');
+      let base = b.dataset.baseTip;
+      if (act === 'hide') {
+        const show = its.length > 0 && its.every((x) => x.hasAttribute('data-hidden'));
+        base = show ? 'Show' : 'Hide'; b.setAttribute('aria-label', base); $('use', b)?.setAttribute('href', show ? '#i-eye' : '#i-eye-off');
+      }
+      if (r) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
+      b.dataset.tip = r ? `${base}: ${r}` : base;
+      if (tipEl === b) showTip(b);
+    }));
+  }
+  bars.forEach((bar) => {
+    if (once('toolbar', bar)) initToolbar(bar);
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tree-act]'); if (!b) return;
+      run(b.dataset.treeAct, current);
+      if (!editing && current?.isConnected && !document.activeElement?.closest('.toasts')) current.focus();
+    });
+  });
+  new MutationObserver(() => syncBars()).observe(tree, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-selected', 'data-hidden', 'class', 'data-lock'] });
+
+  /* ---- Controller: Ayni.tree(el) returns it; its calls change the tree without asking the page ---- */
+  const refresh = () => { all().forEach(normaliseItem); all().forEach((x) => x.hasAttribute('aria-selected') || x.setAttribute('aria-selected', 'false')); current = null; ensureStop(); syncBars(); };
+  trees.set(tree, {
+    element: tree, refresh,
+    build: (opts) => { if (editing) editing.finish(false, false); tree.replaceChildren(...treeNodes(opts)); refresh(); },
+    data: () => {
+      const icons = !!$('.ti > svg:not(.tw)', tree), r = rootItem(), out = (d) => ({ ...(icons ? {} : { icons: false }), ...d });
+      if (!r) return out({ root: null, items: kids(null).map((k) => treeData(k, icons)) });
+      const { children = [], ...root } = treeData(r, icons); return out({ root, items: children });
+    },
+    add: (parent, d, index) => { const it = treeItem(d, !!$('.ti > svg:not(.tw)', tree) || !all().length); putIn(parent || rootItem(), it, kids(parent || rootItem())[index] || null); normaliseItem(it); ensureStop(); return it; },
+    remove: (it) => { const p = parentOf(it); it.remove(); tidy(p); ensureStop(); },
+    rename: (it, name) => { $(':scope > .ti > .tn', it).textContent = name; },
+    move: (it, parent, index) => { const p = parentOf(it), ref = kids(parent).filter((x) => x !== it)[index] || null; putIn(parent, it, ref); tidy(p); ensureStop(); },
+    hide: (it, on = true) => { it.toggleAttribute('data-hidden', on); ensureStop(); },
+    showHidden, expand, collapse, reveal,
+    select: (it) => { if (multi()) { it.setAttribute('aria-selected', 'true'); report(); } else selectOnly(it); setCurrent(it, false); },
+    selected, path: pathOf, current: () => current,
+  });
+  refresh();
+};
+/* Ayni.tree(el, { root, items }): builds the tree from data (or wires a markup tree) and returns its controller */
+const tree = (el, opts) => {
+  if (opts && !wired.get(el)?.has('tree')) el.replaceChildren(...treeNodes(opts));
+  if (once('tree', el)) initTree(el); else if (opts) trees.get(el).build(opts);
+  return trees.get(el);
 };
 
 /* ---------- Tooltips: data-tip on any element ---------- */
@@ -884,7 +1420,8 @@ const showErr = (c, pin = false) => {
   errPop.style.left = Math.max(8, Math.min(x, innerWidth - p.width - 8)) + 'px'; errPop.style.top = Math.max(8, y) + 'px';
 };
 const errSync = (c) => {
-  const bad = errBad(c); errMarks.get(c).hidden = !bad;
+  const m = errMarks.get(c); if (!m) return; // the field has gone (a tree item's name editor)
+  const bad = errBad(c); m.hidden = !bad;
   const focused = c === document.activeElement || (errGroup(c) && c.contains(document.activeElement));
   if (bad && (focused || errFor === c)) showErr(c, errPinned && errFor === c); else if (errFor === c) hideErr();
 };
@@ -983,7 +1520,7 @@ const setup = () => {
     const bar = $$('[role="menubar"]').find((m) => m.getClientRects().length); if (!bar) return;
     e.preventDefault(); $('button', bar).focus();
   });
-  ['click', 'mousedown'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn?.contains(e.target)) { e.stopPropagation(); e.preventDefault(); } }, true));
+  ['click', 'mousedown'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn.some((el) => el.contains(e.target))) { e.stopPropagation(); e.preventDefault(); } }, true));
 
   /* Tooltips: after half a second of hover, at once on keyboard focus; Esc hides them; none on touch */
   document.addEventListener('pointerover', (e) => {
@@ -1069,7 +1606,7 @@ const init = (root = document) => {
 
 window.Ayni = {
   version: '0.1.0', init, $, $$, status, toast, setBusy, place, contextMenu, fillHelp, focusFirstError,
-  isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead,
+  isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead, tree,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
   dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
 };

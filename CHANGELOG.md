@@ -4,6 +4,11 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
 
 ## Unreleased
 
+- Tree view, no longer deferred. Editing is switched on per tree (`data-edit="move insert delete rename hide"`), `data-lock` protects an item, an optional root (`data-root`) stays in place, `data-leaf` marks items that hold no children, and `data-hidden` items show muted and in italics only with `data-show-hidden`. Drag and drop with a line or outline marker (on touch: hold, then move), Ctrl+Shift+arrows, Cut/Copy/Paste, Insert, Delete with Undo, F2 rename in place with the field-error "!", `data-unique` names, type-ahead, multiple selection with check squares, `*`, and children loaded on demand (`data-lazy`, `ayni:load`). Each change fires a cancelable event first. Its own pop-up menu, an optional toolbar (`[role="toolbar"][data-tree]`), and `Ayni.tree(el, { root, items })` to build a tree from data and read it back.
+- `ayni:select` on a tree now fires when the selection changes, with `{ item, items, path }`; opening a leaf fires `ayni:open`.
+- After a long tap opens a pop-up menu, the click that the release produces is ignored on the menu too, so no menu item can be chosen by the lifting finger.
+- `Ayni.contextMenu` takes `onDrag(target, event)`: moving the finger once the ring is full drags instead of opening the menu.
+- New icons: `arrow-up`, `arrow-down`.
 - Switch off state: a hollow track with a grey outline and a small grey thumb, so off no longer looks like disabled. Disabled off is a filled strong grey track, faded.
 - Two-sided switch (`.switch-pair`): a label on each side, picks one of two options like two radio buttons. Space or a click on the track flips it; Left and Right pick a side. The gallery shows both switch uses next to their radio button and check box equivalents.
 - A switch's label now sits at its left ("Visible (o)==="), so it reads differently from a check box ("[x] Visible").

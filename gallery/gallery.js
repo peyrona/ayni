@@ -87,8 +87,40 @@ document.addEventListener('ayni:change', (e) => {
   const { value: v, name, field, input } = e.detail;
   status(`${name}: ${v || '(empty)'}`); $('#' + field.id + '-out') && say(field.id + '-out', `Submits ${input.name}=${v}`);
 });
-/* Tree: the path of the opened item */
-$('#tree').addEventListener('ayni:select', (e) => { const p = e.detail.path.join(' / '); say('tree-out', p); status('Opened ' + p); });
+/* Trees: every change is reported; the editable ones ask before each change, and the page could refuse it */
+const nm = (it) => it.querySelector(':scope > .ti > .tn').textContent;
+const names = (its) => (its.length === 1 ? nm(its[0]) : `${its.length} items`);
+const watchTree = (el) => {
+  const tell = (m) => { say(el.id + '-out', m); status(m); };
+  el.addEventListener('ayni:select', (e) => tell(e.detail.items.length > 1 ? `Selected ${e.detail.items.length} items` : 'Selected ' + e.detail.path.join(' / ')));
+  el.addEventListener('ayni:open', (e) => tell('Opened ' + e.detail.path.join(' / ')));
+  el.addEventListener('ayni:move', (e) => tell(`Moved ${names(e.detail.items)} into ${e.detail.parent ? nm(e.detail.parent) : 'the top level'}`));
+  el.addEventListener('ayni:insert', (e) => tell(e.detail.undo ? `Restored ${names(e.detail.items)}` : e.detail.copy ? `Pasted a copy of ${names(e.detail.from)}` : `Created ${e.detail.name}`));
+  el.addEventListener('ayni:delete', (e) => tell(`Deleted ${names(e.detail.items)}`));
+  el.addEventListener('ayni:rename', (e) => tell(`Renamed ${e.detail.from} to ${e.detail.to}`));
+  el.addEventListener('ayni:hide', (e) => tell(`${e.detail.hidden ? 'Hid' : 'Showed'} ${names(e.detail.items)}`));
+};
+['#tree', '#tree-ed', '#tree-ol'].forEach((id) => watchTree($(id)));
+/* The editable tree is built from data; Archive loads its children the first time it opens */
+const projectTree = Ayni.tree($('#tree-ed'), { root: { name: 'My files', icon: 'home' }, items: [
+  { name: 'Documents', open: true, children: [
+    { name: 'Invoices', children: [{ name: '2026-09.pdf', leaf: true }, { name: '2026-10.pdf', leaf: true }] },
+    { name: 'Contracts', lock: true, children: [{ name: 'rental.pdf', leaf: true }] },
+    { name: 'notes.txt', leaf: true },
+    { name: 'old-notes.txt', leaf: true, hidden: true },
+  ] },
+  { name: 'Pictures', children: [{ name: 'beach.jpg', leaf: true }, { name: 'giralda.jpg', leaf: true }] },
+  { name: 'Archive', id: 'archive', lazy: true },
+  { name: '.settings', hidden: true, children: [{ name: 'theme.json', leaf: true }] },
+  { name: 'todo.txt', leaf: true },
+] });
+$('#tree-ed').addEventListener('ayni:load', (e) => setTimeout(() => e.detail.done([
+  { name: '2024', children: [{ name: 'taxes-2024.pdf', leaf: true }] },
+  { name: '2025', children: [{ name: 'taxes-2025.pdf', leaf: true }] },
+]), 900));
+const showHidden = $('#tree-ed-hidden');
+showHidden.addEventListener('change', () => projectTree.showHidden(showHidden.checked));
+$('#tree-ed').addEventListener('ayni:showhidden', (e) => { showHidden.checked = e.detail.on; status('Hidden items ' + (e.detail.on ? 'shown' : 'hidden')); });
 
 /* ---------- Texts ---------- */
 const email = $('#tf-email'), emailErr = $('#tf-email-err');

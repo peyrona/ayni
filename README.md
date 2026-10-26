@@ -82,7 +82,7 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
 
 - [ ] **The final icon set.** The current icons are examples.
 - [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows that float, move and resize, plus a taskbar.
-- [ ] **Tree view.** It works in the gallery, but its design will be reviewed.
+- [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
 
 ---
@@ -169,14 +169,22 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:action` | `.panel.menu` | `{ item, menu, act }`: the chosen item, the menu's name, its `data-act` |
 | `ayni:choose` | `.panel.menu` | the chosen `menuitemradio` |
 | `ayni:tabselect`, `ayni:tabclose` | `[role="tablist"]` | the tab |
-| `ayni:select` | `[role="tree"]` | `{ item, path }` |
+| `ayni:select` | `[role="tree"]` | `{ item, items, path }`: the focused item, all selected items, the focused item's path of names |
+| `ayni:open` | `[role="tree"]` | `{ item, path }`: a leaf opened with a double-click or Enter |
+| `ayni:move` | `[role="tree"]` | `{ items, parent, index }`, before the move; `preventDefault()` refuses it |
+| `ayni:insert` | `[role="tree"]` | `{ items, parent, index, name }` for a new item, `{ …, copy: true, from }` for a paste, `{ items, undo: true }` for an Undo; cancelable |
+| `ayni:delete` | `[role="tree"]` | `{ items }`; cancelable |
+| `ayni:rename` | `[role="tree"]` | `{ item, from, to }`; cancelable |
+| `ayni:hide` | `[role="tree"]` | `{ items, hidden }`; cancelable |
+| `ayni:showhidden` | `[role="tree"]` | `{ on }` |
+| `ayni:load` | `[role="tree"]` | `{ item, id, path, done(items), fail(text) }`: a `data-lazy` folder opened for the first time |
 | `ayni:split` | `.split` | `{ action, pane, message }` |
 | `ayni:theme` | the toggle button | `{ theme }` |
 | `ayni:dismiss` | an open menu or popup, before the page scroll or a resize closes it | cancel it with `preventDefault()` to keep the popup |
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, the date helpers in `Ayni.dates`, and `version`.
 
 ### Colours
 
