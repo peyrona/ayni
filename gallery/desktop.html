@@ -17,28 +17,24 @@
 .note a { color: var(--accent); }
 .sample h4 { margin: 0; font-size: 14px; } .sample p { margin: 0; }
 .sample table { border-collapse: collapse; } .sample :is(td, th) { border-bottom: 1px solid var(--line); padding: 4px 10px; text-align: left; white-space: nowrap; }
-.widget.weather .icon { color: var(--warn); }
 </style>
 <script src="../ayni-icons.js" defer></script>
 <script src="demo-icons.js" defer></script>
 <script src="../ayni.js" defer></script>
 </head>
 <body>
-<!-- Ayni desktop mode: the taskbar (launcher, window chips, widgets) and windows. The app's own pieces (the apps,
-     the weather widget, the window contents) are examples. -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
-</svg>
-
+<!-- Ayni desktop mode: the taskbar (launcher, window chips, widgets) and windows. The app's own pieces (the apps and
+     the window contents) are examples. -->
 <div class="desktop" data-edge="bottom">
   <main class="area" aria-label="Desktop">
     <aside class="note" aria-label="About this page">
       <h3>Desktop mode, work in progress</h3>
       <ul>
-        <li><b class="ok">Decided:</b> the user glues the taskbar to any edge. Right-click the taskbar (long tap on touch, or Shift+F10).</li>
+        <li><b class="ok">Decided:</b> the taskbar goes at the top or the bottom. Right-click it (long tap on touch, or Shift+F10).</li>
         <li><b class="ok">Decided:</b> the launcher is a popup with a search field and the apps, most used first.</li>
+        <li><b class="ok">Decided:</b> launcher at the left, clock at the right, window chips between them; an app can add gadgets on either side of the clock.</li>
         <li><b class="ok">Decided:</b> chips show only the icon, except the selected window's chip: icon, name and its 3 buttons.</li>
-        <li><b class="tbd">Proposal:</b> widgets, moving and resizing windows. See 18.2 in the guidelines.</li>
+        <li><b class="tbd">Proposal:</b> moving and resizing windows. See 18.2 in the guidelines.</li>
       </ul>
       <a href="index.html">Back to the gallery</a>
     </aside>
@@ -77,12 +73,8 @@
 
   <nav class="taskbar" aria-label="Taskbar">
     <button class="btn primary" popovertarget="apps" aria-label="Applications" data-tip="Applications"><span class="icon" data-icon="apps"></span></button>
-    <span class="sep" aria-hidden="true"></span>
     <div class="chips" role="group" aria-label="Open windows"></div>
-    <span class="sep" aria-hidden="true"></span>
     <div class="widgets" role="group" aria-label="Widgets">
-      <div class="widget weather" tabindex="0" data-tip="Madrid: sunny, 18 °C (example)"><span class="icon" data-icon="sun"></span><span>18 °C</span></div>
-      <button class="btn quiet" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode"><span class="icon" data-icon="moon"></span></button>
       <div class="widget clock"></div>
     </div>
   </nav>

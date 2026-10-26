@@ -50,7 +50,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 | **Menus** | Menu bar, pull-down menus, pop-up menus (right-click, long tap, Shift+F10), toolbar, popups that hold any control |
 | **Feedback** | Tooltips, notifications with Undo (and Ctrl+Z that keeps working afterwards), status bar, loading and empty states |
 | **Layout** | Panels, tabs (closable, scrollable, keyboard-friendly), group boxes, a splitter with collapse and reset, scrolling everywhere |
-| **Desktop** | Taskbar glued to any screen edge, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar (in progress) |
+| **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar (in progress) |
 | **Dialogs** | Message, live settings, apply on close, confirmation, modeless |
 
 Everything works from the keyboard, with a mouse and by touch, and every state is shown in the gallery.
@@ -82,7 +82,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
 - [ ] **The final icon set.** The built-in icons are examples. Any other set can already be plugged in (see [Icons](#icons)).
-- [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows and a taskbar. Under way: the taskbar (glued to any screen edge, with the launcher, one chip per window and widgets) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
+- [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows and a taskbar. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
 
@@ -185,7 +185,7 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:load` | `[role="tree"]` | `{ item, id, path, done(items), fail(text) }`: a `data-lazy` folder opened for the first time |
 | `ayni:split` | `.split` | `{ action, pane, message }` |
 | `ayni:theme` | the toggle button | `{ theme }` |
-| `ayni:edge` | `.desktop` | `{ edge }`: the user glued the taskbar to another edge |
+| `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to the top or the bottom |
 | `ayni:launch` | `.launcher` | `{ app, item }`: an app was picked |
 | `ayni:window` | `.panel.window` | `{ window, state }`: open, select, minimise, maximise, restore or close |
 | `ayni:close` | `.panel.window` | `{ window }`, before it closes; cancelable |

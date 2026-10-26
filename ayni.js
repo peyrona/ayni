@@ -1625,10 +1625,11 @@ const setup = () => {
 
 /* ---------- Desktop: taskbar and windows ---------- */
 /* <div class="desktop" data-edge="bottom"> holds <main class="area"> with the windows and <nav class="taskbar"> with
-   the launcher button, <div class="chips"> and <div class="widgets">. The user glues the taskbar to any of the four
-   edges from its pop-up menu (right-click, long tap, Shift+F10); the choice is kept in localStorage
+   the launcher button at the left, <div class="chips"> and <div class="widgets"> (the clock, and any other gadget
+   on either side of it) at the right. The user puts the taskbar at the top or the bottom from its pop-up menu
+   (right-click, long tap, Shift+F10); the choice is kept in localStorage
    ('ayni-taskbar-edge') and fires ayni:edge { edge } on the desktop. */
-const EDGES = ['top', 'bottom', 'left', 'right'];
+const EDGES = ['top', 'bottom'];
 let edgeMenu, edgeDesk, zTop = 10;
 const setEdge = (desk, edge, save = true) => {
   if (!EDGES.includes(edge)) return;
@@ -1648,7 +1649,7 @@ const initDesktop = (desk) => {
     edgeMenu.addEventListener('ayni:choose', (e) => edgeDesk && setEdge(edgeDesk, e.detail.dataset.edge));
   }
   let saved = null; try { saved = localStorage.getItem('ayni-taskbar-edge'); } catch {}
-  setEdge(desk, saved || desk.dataset.edge || 'bottom', false);
+  setEdge(desk, [saved, desk.dataset.edge].find((x) => EDGES.includes(x)) || 'bottom', false);
   const t = () => { edgeDesk = desk; return { name: 'Taskbar', back: bar }; };
   contextMenu(bar, { menu: edgeMenu, target: (e) => (e.target.closest('button, .widget') ? null : t()), keyTarget: t });
 };
