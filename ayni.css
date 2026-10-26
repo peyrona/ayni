@@ -179,12 +179,14 @@ textarea.input { resize: vertical; min-height: 80px; }
 .input-group > .btn .icon { --icon: 15px; }
 .input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .input::placeholder { color: var(--placeholder); opacity: 1; }
-/* Text area count: sits on the bottom border, like a legend notch, on a fully opaque background so neither the border
-   nor the text shows through it. Kept clear of the resize grip at the bottom-right corner. */
+/* Text area count: a small rounded tag on the bottom border, on a fully opaque background so neither the border
+   nor the text shows through it. Its border follows the field's (accent on focus, Danger on error). Kept clear of the resize grip at the bottom-right corner. */
 .ta-wrap { position: relative; }
 .ta-wrap textarea { display: block; }
-.ta-count { position: absolute; right: 22px; bottom: 0; transform: translateY(50%); padding: 0 4px; font: 11px/1 var(--font-mono);
-  color: var(--ink-2); background: var(--panel-bg); pointer-events: none; }
+.ta-count { position: absolute; right: 22px; bottom: 0; transform: translateY(50%); padding: 2px 7px; font: 11px/1 var(--font-mono);
+  color: var(--ink-2); background: var(--panel-bg); border: 1px solid var(--field-line); border-radius: 999px; pointer-events: none; }
+.ta-wrap:has(textarea:focus-visible) .ta-count { border-color: var(--accent); }
+.ta-wrap:has(textarea[aria-invalid="true"]) .ta-count { border-color: var(--danger); }
 /* Info label: a small "i" in a circle next to any control; a click opens a short help popup */
 .label-row { display: flex; align-items: center; gap: 6px; }
 .info-tip { position: relative; width: 12px; height: 12px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--accent); background: var(--panel-bg);

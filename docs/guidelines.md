@@ -225,7 +225,7 @@ A text field with a show/hide button at its end. The button is a toggle (pressed
 
 ### 4.3 Text area
 
-Multi-line text, same rules as the text field. When there is a length limit, the character count sits on the bottom border of the field, near the right end, like a label cut into the line. Its background is fully opaque, so neither the border nor the text shows through it.
+Multi-line text, same rules as the text field. When there is a length limit, the character count sits on the bottom border of the field, near the right end, as a small tag with a rounded border. Its background is fully opaque, so neither the border nor the text shows through it.
 
 ### 4.4 Number field (spin button)
 
