@@ -190,8 +190,30 @@ $('#sb-busy').onclick = () => { status('Saving ana-morales.json…'); setTimeout
 document.addEventListener('ayni:split', (e) => status(e.detail.message));
 
 /* ---------- Icons ---------- */
-$('#icon-grid').innerHTML = $$('symbol').map((s) => `<div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#${s.id}"/></svg>${s.id.slice(2)}</div>`).join('');
+/* The icons the controls use, with where each one appears */
+const iconUse = {
+  'arrow-down': 'Tree menu', 'arrow-up': 'Tree menu', calendar: 'Date field', check: 'Menus', 'chev-down': 'Calendar',
+  'chev-right': 'Tree, calendar', close: 'Notifications, search, tabs', copy: 'Tree menu', cut: 'Tree menu', edit: 'Tree menu',
+  error: 'Notifications', eye: 'Password, tree', 'eye-off': 'Password, tree', file: 'Tree', filter: 'Search field', folder: 'Tree',
+  help: 'Help on touch', info: 'Notifications', minus: 'Number field', ok: 'Notifications', paste: 'Tree menu',
+  plus: 'Number field, tree', search: 'Search field', today: 'Calendar', trash: 'Tree menu', undo: 'Undo notification', warn: 'Notifications',
+};
+$('#icon-grid').innerHTML = Ayni.icons.names.map((n) => `<div class="icon-cell">${Ayni.icon(n)}<b>${n}</b><small>${iconUse[n]}</small></div>`).join('');
 $$('[name="isize"]').forEach((r) => r.addEventListener('change', () => $('#icon-grid').style.setProperty('--size', r.value)));
+/* Lucide for the whole gallery: the controls' icons from Ayni's map, plus the gallery's own icons mapped here */
+const demoLucide = {
+  'align-c': 'text-align-center', 'align-l': 'text-align-start', bell: 'bell', bold: 'bold', button: 'rectangle-horizontal',
+  italic: 'italic', home: 'house', layout: 'layout-panel-left', list: 'list', menu: 'menu', moon: 'moon', more: 'ellipsis',
+  new: 'file-plus', open: 'folder-open', print: 'printer', redo: 'redo-2', refresh: 'refresh-cw', save: 'save',
+  settings: 'settings', share: 'share-2', sliders: 'sliders-horizontal', star: 'star', table: 'table', text: 'type',
+  tree: 'list-tree', underline: 'underline', upload: 'upload', user: 'user', window: 'app-window',
+};
+$$('[name="iset"]').forEach((r) => r.addEventListener('change', () => {
+  const lucide = r.value === 'lucide';
+  Ayni.icons.use(lucide ? { ...Ayni.icons.lucide, map: { ...Ayni.icons.lucide.map, ...demoLucide } } : null)
+    .then(() => status('Icon set: ' + (lucide ? 'Lucide' : 'Ayni')))
+    .catch(() => { Ayni.toast('err', 'Could not load the Lucide icons. Check your connection and try again.'); $('[name="iset"][value="ayni"]').checked = true; Ayni.icons.use(null); });
+}));
 
 /* ---------- Pickers ---------- */
 const vol = $('#sl-vol'); vol.addEventListener('input', () => { $('#sl-vol-out').textContent = vol.value + '%'; });

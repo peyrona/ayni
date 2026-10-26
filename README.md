@@ -63,8 +63,8 @@ Copy `ayni.css`, `ayni.js` and `ayni-icons.js` next to your page:
 <script src="ayni-icons.js" defer></script>
 <script src="ayni.js" defer></script>
 
-<button class="btn primary" aria-label="Save" data-tip="Save">
-  <svg class="icon"><use href="#i-save"/></svg>
+<button class="btn primary" aria-label="New" data-tip="New">
+  <span class="icon" data-icon="plus"></span>
 </button>
 ```
 
@@ -80,7 +80,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
-- [ ] **The final icon set.** The current icons are examples.
+- [ ] **The final icon set.** The built-in icons are examples. Any other set can already be plugged in (see [Icons](#icons)).
 - [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows that float, move and resize, plus a taskbar.
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
@@ -107,7 +107,7 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
   <section class="panel">
     <header><h2>Invoices</h2></header>
     <div class="body">
-      <button class="btn primary" aria-label="Save" data-tip="Save"><svg class="icon"><use href="#i-save"/></svg></button>
+      <button class="btn primary" aria-label="New" data-tip="New"><span class="icon" data-icon="plus"></span></button>
     </div>
   </section>
 </body>
@@ -184,7 +184,32 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), the date helpers in `Ayni.dates`, and `version`.
+
+### Icons
+
+An icon is `<span class="icon" data-icon="name"></span>`, and `Ayni.icon(name)` returns the same markup for code. Ayni draws it from the icon set in use; `Ayni.setIcon(element, name)` changes it.
+
+`ayni-icons.js` holds only the 27 icons the controls need: `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `minus`, `ok`, `paste`, `plus`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
+
+To use another icon set, give Ayni a map from its names to the set's names:
+
+```js
+Ayni.icons.use({
+  sprite: 'icons/sprite.svg',          // SVG symbols, as markup or a URL (a URL is fetched, so not from file://)
+  id: 'icon-{name}',                   // the symbol ids in that sprite; default '{name}'
+  stroke: true,                        // the set draws with lines, like Ayni's own; default: filled shapes
+  map: { close: 'x', search: 'magnifier', save: 'floppy' },
+});
+// An icon font instead of a sprite:
+Ayni.icons.use({ render: (name) => `<i class="bi bi-${name}"></i>`, map: { close: 'x-lg', search: 'search' } });
+```
+
+Any name the map leaves out keeps Ayni's own icon (or your app's `i-<name>` symbol), and the console lists the control icons the set does not map. `Ayni.icons.use(null)` goes back to the built-in set. Every icon on the page is redrawn, so the set can change at any time.
+
+A ready-made map for [Lucide](https://lucide.dev), which has the same style as Ayni's icons, is in `icons/lucide.js`. Load it after `ayni.js`, then call `Ayni.icons.use(Ayni.icons.lucide)`. It fetches Lucide's sprite from a CDN; pass `sprite` to use your own copy. The gallery's Icons tab switches the whole gallery between Ayni and Lucide.
+
+Older markup, `<svg class="icon"><use href="#i-name"/></svg>`, still works but always shows the built-in icon.
 
 ### Colours
 
@@ -196,7 +221,8 @@ Each scheme, light and dark, is defined by five base colours at the top of `ayni
 | --- | --- |
 | `ayni.css` | The look of every control, both colour schemes and the touch sizes |
 | `ayni.js` | The behaviour of every control |
-| `ayni-icons.js` | The icon sprite (24×24 grid, 2px stroke) |
+| `ayni-icons.js` | The built-in icons, only those the controls use (24×24 grid, 2px stroke) |
+| `icons/lucide.js` | Map from Ayni's icon names to [Lucide](https://lucide.dev)'s, for `Ayni.icons.use()` |
 | `api/` | Proposed programming interface: one class per component, skeletons only (see `api/README.md`) |
 | `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps) |
 | `docs/guidelines.md` | The Ayni Design Guidelines: every rule, chapter by chapter |

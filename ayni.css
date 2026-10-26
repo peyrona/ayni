@@ -45,7 +45,12 @@
 [hidden] { display: none !important; }
 body { background: var(--ground); color: var(--ink); font: 14px/1.45 var(--font-ui); accent-color: var(--accent); }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.icon { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.icon { width: var(--icon); height: var(--icon); flex: none; }
+/* An icon is a span that holds the set's svg (or a font glyph); old markup puts the svg itself in the page */
+span.icon { display: inline-flex; align-items: center; justify-content: center; font-size: var(--icon); line-height: 1; }
+span.icon > svg { width: 100%; height: 100%; }
+span.icon.flip { transform: rotate(180deg); }
+svg.icon, .icon > svg.st { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- Panel ---------- */
 .panel { background: var(--panel-bg); color: var(--ink); border: var(--panel-border); border-radius: var(--panel-radius);
@@ -99,7 +104,7 @@ body { background: var(--ground); color: var(--ink); font: 14px/1.45 var(--font-
 /* RULE: a busy button swaps its icon for a small spinner in the same circle (no size change), ignores clicks and its
    tooltip says what is happening ("Saving…"). Set with one line: setBusy(button, 'Saving…') and setBusy(button, false). */
 .btn[aria-busy="true"] { cursor: progress; }
-.btn[aria-busy="true"] > svg { display: none; }
+.btn[aria-busy="true"] > .icon { display: none; }
 .btn-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
 .btn .icon { --icon: 18px; }
 /* Second action (double-click, long tap on touch, Shift+Enter): always marked with a dot, on every device */
@@ -359,7 +364,7 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
 .cal td button.today { box-shadow: inset 0 0 0 1px var(--accent); }
 .cal td button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); opacity: 1; }
 .cal-title { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; padding: 4px 8px; border-radius: 4px; }
-button.cal-title { cursor: pointer; } button.cal-title:hover { background: var(--surface-2); } .cal-title .icon { width: 14px; height: 14px; }
+button.cal-title { cursor: pointer; } button.cal-title:hover { background: var(--surface-2); } .cal-title .icon { --icon: 14px; }
 .cal-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; width: calc(7 * 34px); height: 226px; }
 .cal-grid button { border: 0; border-radius: 4px; background: none; color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
 .cal-grid button:hover { background: var(--surface-2); }
