@@ -227,6 +227,8 @@ A text field with a show/hide button at its end. The button is a toggle (pressed
 
 Multi-line text, same rules as the text field. The character count is optional, per text area: show it when the user benefits from seeing how much room is left, and leave it out otherwise (a length limit can exist without a count). When shown, it sits on the bottom border of the field, near the right end, as a small tag with a rounded border. Its background is fully opaque, so neither the border nor the text shows through it.
 
+Auto-grow is optional, per text area. With it the field starts at its normal height and grows with its text up to a maximum (240 px by default), then scrolls. It has no resize grip, since the height follows the text. Without it, the user can resize the field vertically with the grip at its bottom-right corner. Both options can be combined.
+
 ### 4.4 Number field (spin button)
 
 A number in a range, laid out as − field +.

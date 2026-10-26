@@ -211,6 +211,12 @@ const initCount = (w) => {
   const count = () => { c.textContent = `${t.value.length} / ${t.maxLength}`; };
   t.addEventListener('input', count); count();
 };
+/* Optional auto-grow (opt-in per field, textarea[data-autogrow]): the field grows with its text, from its normal minimum
+   height up to --autogrow-max, then scrolls. It has no resize grip, since the height follows the text. */
+const initGrow = (t) => {
+  const fit = () => { t.style.height = 'auto'; t.style.height = `${t.scrollHeight + t.offsetHeight - t.clientHeight}px`; };
+  t.addEventListener('input', fit); fit();
+};
 /* RULE: every search field is the standard one (.search-field): its clear button shows once there is text. The first Esc
    clears the field and stops there; a second Esc, with the field already empty, closes the popup or dialog around it. */
 const initSearch = (g) => {
@@ -1043,6 +1049,7 @@ const init = (root = document) => {
   each(root, '[data-toggle]', 'toggle', (b) => b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true')));
   each(root, '.lb', 'listbox', initListbox);
   each(root, '.ta-wrap', 'count', initCount);
+  each(root, 'textarea[data-autogrow]', 'grow', initGrow);
   each(root, '.search-field', 'search', initSearch);
   each(root, '[data-reveal]', 'reveal', initReveal);
   each(root, '.info-tip', 'infotip', (b) => b.setAttribute('aria-expanded', 'false'));

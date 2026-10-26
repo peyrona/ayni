@@ -167,6 +167,7 @@ legend { font-size: 12px; font-weight: 500; color: var(--ink-2); padding: 0; mar
    Disabled is different: faded and not focusable. */
 .input[readonly], .input[aria-readonly="true"] { border-color: transparent; background: var(--readonly-bg); color: var(--ink); cursor: text; user-select: text; }
 textarea.input { resize: vertical; min-height: 80px; }
+textarea.input[data-autogrow] { resize: none; overflow-y: auto; max-height: var(--autogrow-max, 240px); }
 /* Text field with buttons inside its border, at the start and/or the end */
 .input-group { display: flex; align-items: center; gap: 2px; min-height: var(--ctl-h); padding: 0 3px; width: 100%;
   border: 1px solid var(--field-line); border-radius: var(--ctl-radius); background: var(--panel-bg); }
