@@ -1,6 +1,6 @@
 # Ayni Design Guidelines
 
-Version of 2026-10-25 · Frasquito
+Version of 2026-10-26 · Frasquito
 
 ## About this book
 
@@ -8,17 +8,17 @@ This book is the rule set for Ayni, a CUA (Common User Access) interface built w
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
-**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, sizes, states, keyboard, touch and scrolling. Chapters 3 to 16 cover one control family each. Chapter 17 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
+**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, sizes, states, keyboard, touch and scrolling. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
 
 **Words used in this book.**
 
-- **Panel**: the base surface of Ayni. Dialogs, menus, popups and (later) windows are all Panels. Panels can nest, for example a dialog opened from a window.
+- **Panel**: the base surface of Ayni. Dialogs, menus, popups and windows are all Panels. Panels can nest, for example a dialog opened from a window.
 - **Default button**: the one button in a view that Enter runs. It is the only button with a filled background.
 - **Second action**: an extra action on a button, reached by double-click, long tap or Shift+Enter.
 - **Touch**: a device whose main pointer is coarse (a finger). **Phone**: a touch device narrower than 600 px.
 - **Mouse and keyboard**: a device with a fine pointer.
 
-**Status.** The design of all controls listed here is closed, except for the points in chapter 17. Desktop mode (windows and taskbar) and the accessibility work for blind and deaf users come later.
+**Status.** The design of all controls listed here is closed, except for the points in chapter 18. Desktop mode (chapter 17) is being designed now: its taskbar, launcher and window are decided, the rest is listed in 18.2. The accessibility work for blind and deaf users comes later.
 
 **Browsers.** Evergreen browsers from 2024 on (Chrome, Edge, Firefox, Safari), so the native popover and dialog elements and modern CSS colour functions can be used.
 
@@ -31,7 +31,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. On phones, where there are no tooltips, a Help dialog lists every element of the view.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
-6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows will switch on automatically (to be defined, see chapter 17).
+6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows will switch on automatically (see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
 8. **The user decides speed.** A single click never waits, except on a button that has a second action. Nothing disappears before the user can act on it: notifications pause while the pointer is on them, and errors stay until dismissed.
 
@@ -89,8 +89,8 @@ Each colour scheme (light and dark) defines at most five base colours. Every oth
 ### 2.2 Type and icons
 
 - Interface font: IBM Plex Sans, falling back to the system UI font. Monospaced text: IBM Plex Mono.
-- Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 17).
-- Ayni ships only the icons its controls need (27). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
+- Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 18).
+- Ayni ships only the icons its controls need (31). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
 
 ### 2.3 Sizes and spacing
@@ -450,7 +450,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 | Confirmation | "Delete contract.pdf?" | Bottom row: Keep (default, also Esc) and Delete (danger, never default). Used only when a change cannot be applied live |
 | Modeless | Find | Stays open while the user keeps working, no backdrop. Bottom row: Close and Find next at the right, List all matches at the left |
 
-Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 17).
+Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 18).
 
 ## 11. Feedback: tooltips, notifications, progress and status bar
 
@@ -613,23 +613,56 @@ The tree uses the shared states (2.4 and 8.6): disabled items are faded and skip
 - Every change the user makes is announced to the page before it happens (`ayni:move`, `ayni:insert`, `ayni:delete`, `ayni:rename`, `ayni:hide`), and the page can refuse it, for example when the server says no. The tree also tells the page about selection (`ayni:select`), opening a leaf (`ayni:open`), loading (`ayni:load`) and showing hidden items (`ayni:showhidden`).
 - A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it.
 
-## 17. To be defined
+## 17. Desktop mode
+
+Desktop mode gives Ayni a desktop like other operating systems: windows on a work area, and a taskbar. From 1024 px wide it switches on automatically. Two components make it: the **taskbar** and the **window**. The gallery's [desktop page](../gallery/desktop.html) shows them working.
+
+### 17.1 Taskbar
+
+- One bar, always visible, with three parts: the applications launcher at the start, the window selector (one chip per open window) in the middle, and the widgets area at the end (the clock, the weather or any other app widget).
+- **The user decides which screen edge it is glued to**: top, bottom, left or right. The choice is made from the taskbar's pop-up menu (right-click, long tap, Shift+F10 or the Menu key) and is kept for next time. Bottom is the default.
+- Windows never cover it. A maximised window fills the space the taskbar leaves.
+- On the left or right edge the parts stack from top to bottom. (Proposal, see 18.2: there each chip shows only its icon, with the app name in its tooltip.)
+- When there are more chips than fit, the window selector scrolls; its scrollbar shows only when needed.
+
+### 17.2 Applications launcher
+
+- A round, filled button at the start of the taskbar (the launcher is the taskbar's default button). Like every button that opens a popup, it shows the small triangle.
+- It opens a popup with a search field at the top and the apps below it, as a list with icon and name. The most used apps come first.
+- Typing filters the list (accents and case don't matter). Down and Up move between the field and the apps, Enter in the field opens the first match, and typing a letter while on the list goes back to the field.
+- Picking an app closes the popup and opens the app. Esc or a click outside closes it, like any popup.
+
+### 17.3 Window
+
+- A window is a Panel, with rounded corners. It has two parts: the **title row** and the **content**.
+- The title row starts at the top left with the app's icon and the app's name, followed by the app's toolbar.
+- **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
+- The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
+- Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. (Proposal, see 18.2: the selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.)
+
+### 17.4 For developers
+
+Markup: `.desktop[data-edge]` holds `main.area` (the windows) and `nav.taskbar` (the launcher `.btn.primary[popovertarget]`, `.chips`, `.widgets`). A window is `section.panel.window` with `header > .app` (icon and `h2`) and `header > [role="toolbar"]`, then `.body`. The launcher is `.panel.popup.launcher` with a `.search-field` and `.apps > button[data-app]`. The clock is `.widget.clock`. Ayni adds the chips and the edge menu itself; a window added later is wired with `Ayni.init(window)`.
+
+Events: `ayni:edge { edge }`, `ayni:launch { app, item }`, `ayni:window { window, state }` (open, select, minimise, maximise, restore, close) and `ayni:close`, cancelable, before a window closes. From code: `Ayni.windows.select(w)`, `minimise`, `maximise`, `restore`, `close`, and `Ayni.setTaskbarEdge(desktop, edge)`. The edge is kept in localStorage as `ayni-taskbar-edge`, the launch counts as `ayni-launch`.
+
+## 18. To be defined
 
 These points are known and deliberately left open; each will get its own decision and then its own chapter or rule.
 
-### 17.1 Icon set
+### 18.1 Icon set
 
 The built-in icons are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen. Since any set can be plugged in with a name map (a ready-made one exists for Lucide, which has the same style), the choice no longer blocks apps.
 
-### 17.2 Desktop mode
+### 18.2 Desktop mode, the rest
 
-From 1024 px wide, desktop mode will switch on automatically, with windows like other desktops. Still to define: the window Panel (title row, move, resize, minimise, maximise), the taskbar, what happens below 1024 px (earlier idea: windows become full-width sheets), and how modeless dialogs behave there.
+Being decided one point at a time. The desktop page already shows a first proposal for each. Chips: one per open window with the app's icon and name; the selected one is outlined, has an accent edge facing the work area and holds the window controls (minimise, maximise or restore, close); clicking a chip selects its window, clicking the selected chip minimises it, and a minimised window's chip shows its name in italics. Still open as well: the other widgets, how windows are moved and resized (today: by the title row, from the lower right corner, double-click on the title row to maximise), what happens below 1024 px (earlier idea: windows become full-width sheets), a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
 
-### 17.3 Low-priority review items
+### 18.3 Low-priority review items
 
 The low-priority items of the gap review have not been reviewed. They will be taken up only if Frasquito asks.
 
-### 17.4 Accessibility for blind and deaf users, right-to-left, High Contrast
+### 18.4 Accessibility for blind and deaf users, right-to-left, High Contrast
 
 To be done after the full design is closed:
 

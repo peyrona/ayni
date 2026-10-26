@@ -35,8 +35,8 @@ const layer = (id, html) => document.getElementById(id) || (document.body.insert
    Ayni.icons.use(null) goes back to the built-in set. Old markup, <svg class="icon"><use href="#i-save"/></svg>,
    still works but always shows the built-in icon. */
 const ICONS = Object.freeze(['arrow-down', 'arrow-up', 'calendar', 'check', 'chev-down', 'chev-right', 'close', 'copy', 'cut',
-  'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'minus', 'ok', 'paste', 'plus', 'search',
-  'today', 'trash', 'undo', 'warn']);
+  'apps', 'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'maximise', 'minimise', 'minus', 'ok',
+  'paste', 'plus', 'restore', 'search', 'today', 'trash', 'undo', 'warn']);
 let iconSet = null;
 const noIcon = new Set();
 const iconSvg = (id, stroke) => `<svg${stroke ? ' class="st"' : ''}><use href="#${id}"/></svg>`;
@@ -1623,6 +1623,153 @@ const setup = () => {
   });
 };
 
+/* ---------- Desktop: taskbar and windows ---------- */
+/* <div class="desktop" data-edge="bottom"> holds <main class="area"> with the windows and <nav class="taskbar"> with
+   the launcher button, <div class="chips"> and <div class="widgets">. The user glues the taskbar to any of the four
+   edges from its pop-up menu (right-click, long tap, Shift+F10); the choice is kept in localStorage
+   ('ayni-taskbar-edge') and fires ayni:edge { edge } on the desktop. */
+const EDGES = ['top', 'bottom', 'left', 'right'];
+let edgeMenu, edgeDesk, zTop = 10;
+const setEdge = (desk, edge, save = true) => {
+  if (!EDGES.includes(edge)) return;
+  desk.dataset.edge = edge;
+  $$('[role="menuitemradio"]', edgeMenu).forEach((x) => {
+    const on = x.dataset.edge === edge; x.setAttribute('aria-checked', on); $('.icon', x)?.remove();
+    if (on) x.insertAdjacentHTML('afterbegin', icon('check'));
+  });
+  if (save) { try { localStorage.setItem('ayni-taskbar-edge', edge); } catch {} fire(desk, 'ayni:edge', { edge }); }
+};
+const initDesktop = (desk) => {
+  const bar = $('.taskbar', desk);
+  if (!edgeMenu) {
+    edgeMenu = layer('ayni-edge', `<div class="panel menu" popover id="ayni-edge" aria-label="Taskbar position">${EDGES.map((e) =>
+      `<button role="menuitemradio" aria-checked="false" data-edge="${e}">Taskbar at the ${e}</button>`).join('')}</div>`);
+    initMenu(edgeMenu); once('menu', edgeMenu);
+    edgeMenu.addEventListener('ayni:choose', (e) => edgeDesk && setEdge(edgeDesk, e.detail.dataset.edge));
+  }
+  let saved = null; try { saved = localStorage.getItem('ayni-taskbar-edge'); } catch {}
+  setEdge(desk, saved || desk.dataset.edge || 'bottom', false);
+  const t = () => { edgeDesk = desk; return { name: 'Taskbar', back: bar }; };
+  contextMenu(bar, { menu: edgeMenu, target: (e) => (e.target.closest('button, .widget') ? null : t()), keyTarget: t });
+};
+
+/* A window (section.panel.window inside .area): a title row (app icon and name, then the app's toolbar) and the
+   content. Ayni adds a chip for it to the taskbar; only the selected window's chip shows the controls (minimise,
+   maximise or restore, close), and windows have none of their own. Clicking a window or its chip selects it and
+   brings it to the front; clicking the selected chip minimises it. The title row moves the window; double-click on
+   it maximises or restores. Events: ayni:window { window, state } with state open, select, minimise, maximise,
+   restore or close, and ayni:close (cancelable) on the window before it closes. Ayni.windows.select(w), minimise(w),
+   maximise(w), restore(w) and close(w) do the same from code. */
+const chipOf = new WeakMap();
+const winsOf = (desk) => $$('.area > .panel.window', desk);
+const winState = (w, state) => fire(w, 'ayni:window', { window: w, state });
+const selectWin = (desk, w) => {
+  winsOf(desk).forEach((x) => { x.classList.toggle('active', x === w); chipOf.get(x)?.setAttribute('aria-current', x === w); });
+  if (!w) return;
+  w.classList.remove('min'); chipOf.get(w)?.classList.remove('min'); w.style.zIndex = ++zTop;
+  winState(w, 'select');
+};
+const frontWin = (desk) => winsOf(desk).filter((x) => !x.classList.contains('min')).sort((a, b) => b.style.zIndex - a.style.zIndex)[0] || null;
+const minimiseWin = (w) => {
+  const desk = w.closest('.desktop'); w.classList.add('min'); chipOf.get(w)?.classList.add('min');
+  winState(w, 'minimise'); selectWin(desk, frontWin(desk));
+};
+const maximiseWin = (w, on = !w.classList.contains('max')) => {
+  w.classList.toggle('max', on);
+  const b = $('[data-win="max"]', chipOf.get(w)), label = on ? 'Restore' : 'Maximise';
+  if (b) { b.setAttribute('aria-label', label); b.dataset.tip = label; setIcon(b, on ? 'restore' : 'maximise'); if (tipEl === b) showTip(b); }
+  winState(w, on ? 'maximise' : 'restore');
+};
+const closeWin = (w) => {
+  if (!ask(w, 'ayni:close', { window: w })) return;
+  const desk = w.closest('.desktop'); chipOf.get(w)?.remove(); w.remove();
+  winState(w, 'close'); selectWin(desk, frontWin(desk));
+};
+const initWindow = (w) => {
+  const desk = w.closest('.desktop'), area = w.parentElement, head = $(':scope > header', w);
+  if (!desk || !head) return;
+  const name = $('h2', head)?.textContent.trim() || 'Window', appIcon = $('.app .icon', head);
+  const chip = document.createElement('div');
+  chip.className = 'chip'; chip.setAttribute('role', 'group'); chip.setAttribute('aria-label', name);
+  const ctl = (k, label, ic) => `<button class="btn quiet" data-win="${k}" aria-label="${label}" data-tip="${label}">${icon(ic)}</button>`;
+  chip.innerHTML = `<button class="chip-main">${icon(appIcon ? iconName(appIcon) : 'file')}<span></span></button>`
+    + `<span class="chip-ctl">${ctl('min', 'Minimise', 'minimise')}${ctl('max', 'Maximise', 'maximise')}${ctl('close', 'Close', 'close')}</span>`;
+  const main = $('.chip-main', chip); $('span:not(.icon)', main).textContent = name; main.dataset.tip = name;
+  $('.chips', desk)?.append(chip); chipOf.set(w, chip);
+  main.addEventListener('click', () => {
+    if (chip.getAttribute('aria-current') === 'true' && !w.classList.contains('min')) minimiseWin(w); else selectWin(desk, w);
+  });
+  chip.addEventListener('click', (e) => {
+    const k = e.target.closest('[data-win]')?.dataset.win;
+    if (k === 'min') minimiseWin(w); if (k === 'max') maximiseWin(w); if (k === 'close') closeWin(w);
+  });
+  /* New windows open in a cascade from the top left of the area */
+  if (!w.style.left && !w.style.top) { const n = winsOf(desk).indexOf(w) % 6; w.style.left = 32 + n * 28 + 'px'; w.style.top = 24 + n * 28 + 'px'; }
+  w.addEventListener('pointerdown', () => { if (!w.classList.contains('active')) selectWin(desk, w); });
+  w.addEventListener('focusin', () => { if (!w.classList.contains('active')) selectWin(desk, w); });
+  /* The title row moves the window (not its tools); the title row always stays inside the area */
+  head.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button, input, a') || w.classList.contains('max')) return;
+    const r = w.getBoundingClientRect(), a = area.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+    head.setPointerCapture(e.pointerId);
+    const move = (m) => {
+      w.style.left = Math.min(Math.max(m.clientX - dx - a.left, 0), Math.max(0, a.width - r.width)) + 'px';
+      w.style.top = Math.min(Math.max(m.clientY - dy - a.top, 0), a.height - head.offsetHeight) + 'px';
+    };
+    const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up); };
+    head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+  });
+  head.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input, a')) maximiseWin(w); });
+  const tools = $(':scope > [role="toolbar"]', head); if (tools && once('toolbar', tools)) initToolbar(tools);
+  winState(w, 'open'); selectWin(desk, w);
+};
+
+/* Launcher (.panel.popup.launcher): a search field (.search-field) and the apps (.apps > button[data-app]), most used
+   first; the counts are kept in localStorage ('ayni-launch'). Typing filters the apps, Down and Up move through
+   them, Enter in the field opens the first match. Picking an app closes the popup and fires ayni:launch { app, item } */
+const initLauncher = (pop) => {
+  const inp = $('.search-field input', pop), list = $('.apps', pop), empty = $('.empty', pop);
+  const items = () => $$(':scope > button', list), shown = () => items().filter((b) => !b.hidden);
+  items().forEach((b, i) => (b.dataset.pos = i));
+  const counts = () => { try { return JSON.parse(localStorage.getItem('ayni-launch')) || {}; } catch { return {}; } };
+  const filter = () => {
+    const q = fold(inp?.value.trim() || '');
+    items().forEach((b) => (b.hidden = !!q && !fold(b.textContent).includes(q)));
+    if (empty) empty.hidden = shown().length > 0;
+  };
+  pop.addEventListener('toggle', (e) => {
+    if (e.newState !== 'open') { invoker?.focus(); return; }
+    const c = counts();
+    items().sort((a, b) => (c[b.dataset.app] || 0) - (c[a.dataset.app] || 0) || a.dataset.pos - b.dataset.pos).forEach((b) => list.append(b));
+    if (inp) inp.value = ''; filter(); place(pop); (inp || shown()[0])?.focus();
+  });
+  inp?.addEventListener('input', filter);
+  pop.addEventListener('keydown', (e) => {
+    const stops = [inp, ...shown()].filter(Boolean), i = stops.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); stops[(i + (e.key === 'ArrowDown' ? 1 : -1) + stops.length) % stops.length]?.focus(); }
+    else if (e.key === 'Enter' && document.activeElement === inp) { e.preventDefault(); shown()[0]?.click(); }
+    else if (inp && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement !== inp) inp.focus();
+  });
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-app]'); if (!b) return;
+    const c = counts(); c[b.dataset.app] = (c[b.dataset.app] || 0) + 1;
+    try { localStorage.setItem('ayni-launch', JSON.stringify(c)); } catch {}
+    /* Focus goes back to the launcher button first, so the browser does not move it while the popup hides */
+    invoker?.focus(); pop.hidePopover(); fire(pop, 'ayni:launch', { app: b.dataset.app, item: b });
+  });
+};
+
+/* Clock widget (.widget.clock): the time, the short date below it, the long date in its tooltip */
+const initClock = (el) => {
+  const tick = () => {
+    const d = new Date();
+    el.innerHTML = `<span>${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><small>${d.toLocaleDateString([], { day: 'numeric', month: 'short' })}</small>`;
+    el.dataset.tip = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
+  tick(); setInterval(tick, 15000);
+};
+
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   drawIcons(root);
@@ -1658,12 +1805,19 @@ const init = (root = document) => {
   each(root, '.split', 'split', initSplit);
   each(root, '[aria-describedby]', 'error', initError);
   each(root, '[data-theme-toggle]', 'theme', initThemeToggle);
+  each(root, '.desktop', 'desktop', initDesktop);
+  each(root, '.desktop > .area > .panel.window', 'window', initWindow);
+  each(root, '.panel.popup.launcher', 'launcher', initLauncher);
+  each(root, '.widget.clock', 'clock', initClock);
 };
 
 window.Ayni = {
   version: '0.1.0', init, $, $$, status, toast, setBusy, place, icon, setIcon, contextMenu, fillHelp, focusFirstError,
   isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead, tree,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
+  windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
+    restore: (w) => maximiseWin(w, false), close: closeWin },
+  setTaskbarEdge: (desk, edge) => setEdge(desk, edge),
   icons: { use: useIcons, names: ICONS, get set() { return iconSet; } },
   dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
 };

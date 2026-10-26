@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ayni Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../ayni.css">
+<style>
+/* Demo page only: the note on the desktop background and the sample window contents */
+.note { position: absolute; right: 16px; bottom: 16px; width: min(340px, calc(100% - 32px)); font-size: 13px; color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 70%, transparent); border: 1px dashed var(--line); border-radius: 8px; padding: 12px 14px; }
+.note h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink); margin: 0 0 6px; }
+.note ul { margin: 0 0 8px; padding-left: 18px; } .note li { margin: 2px 0; }
+.note b.ok { color: var(--ok); } .note b.tbd { color: var(--warn); }
+.note a { color: var(--accent); }
+.sample h4 { margin: 0; font-size: 14px; } .sample p { margin: 0; }
+.sample table { border-collapse: collapse; } .sample :is(td, th) { border-bottom: 1px solid var(--line); padding: 4px 10px; text-align: left; white-space: nowrap; }
+.widget.weather .icon { color: var(--warn); }
+</style>
+<script src="../ayni-icons.js" defer></script>
+<script src="demo-icons.js" defer></script>
+<script src="../ayni.js" defer></script>
+</head>
+<body>
+<!-- Ayni desktop mode: the taskbar (launcher, window chips, widgets) and windows. The app's own pieces (the apps,
+     the weather widget, the window contents) are examples. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+</svg>
+
+<div class="desktop" data-edge="bottom">
+  <main class="area" aria-label="Desktop">
+    <aside class="note" aria-label="About this page">
+      <h3>Desktop mode, work in progress</h3>
+      <ul>
+        <li><b class="ok">Decided:</b> the user glues the taskbar to any edge. Right-click the taskbar (long tap on touch, or Shift+F10).</li>
+        <li><b class="ok">Decided:</b> the launcher is a popup with a search field and the apps, most used first.</li>
+        <li><b class="tbd">Proposal:</b> chips, widgets, moving and resizing windows. See 18.2 in the guidelines.</li>
+      </ul>
+      <a href="index.html">Back to the gallery</a>
+    </aside>
+
+    <section class="panel window" aria-labelledby="w-files" style="left: 40px; top: 32px; width: 460px; height: 300px">
+      <header><span class="app"><span class="icon" data-icon="folder"></span><h2 id="w-files">Files</h2></span>
+        <div role="toolbar" aria-label="Files tools">
+          <button class="btn quiet" aria-label="New folder" data-tip="New folder"><span class="icon" data-icon="new"></span></button>
+          <button class="btn quiet" aria-label="Upload" data-tip="Upload"><span class="icon" data-icon="upload"></span></button>
+          <button class="btn quiet" aria-label="Copy" data-tip="Copy"><span class="icon" data-icon="copy"></span></button>
+          <button class="btn quiet danger" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button>
+          <button class="btn quiet" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button>
+        </div></header>
+      <div class="body sample"><table>
+        <tr><th>Name</th><th>Size</th><th>Modified</th></tr>
+        <tr><td>Budget 2026.ods</td><td>48 KB</td><td>24 Oct 2026</td></tr>
+        <tr><td>Holiday photos</td><td>1.2 GB</td><td>12 Aug 2026</td></tr>
+        <tr><td>Invoice 0193.pdf</td><td>210 KB</td><td>3 Oct 2026</td></tr>
+        <tr><td>Notes.txt</td><td>2 KB</td><td>26 Oct 2026</td></tr>
+        <tr><td>Recipes</td><td>3.4 MB</td><td>2 Sep 2026</td></tr>
+        <tr><td>Tax return 2025.pdf</td><td>640 KB</td><td>30 Jun 2026</td></tr>
+      </table></div>
+    </section>
+
+    <section class="panel window" aria-labelledby="w-notes" style="left: 120px; top: 90px; width: 420px; height: 280px">
+      <header><span class="app"><span class="icon" data-icon="edit"></span><h2 id="w-notes">Notes</h2></span>
+        <div role="toolbar" aria-label="Notes tools">
+          <button class="btn quiet" aria-label="New note" data-tip="New note"><span class="icon" data-icon="new"></span></button>
+          <button class="btn quiet" aria-label="Save" data-tip="Save"><span class="icon" data-icon="save"></span></button>
+          <button class="btn quiet" aria-label="Bold" data-tip="Bold"><span class="icon" data-icon="bold"></span></button>
+          <button class="btn quiet" aria-label="Italic" data-tip="Italic"><span class="icon" data-icon="italic"></span></button>
+        </div></header>
+      <div class="body sample"><h4>Shopping list</h4><p>Bread, olive oil, oranges, coffee.</p><p>Call the plumber on Thursday morning about the kitchen tap.</p></div>
+    </section>
+  </main>
+
+  <nav class="taskbar" aria-label="Taskbar">
+    <button class="btn primary" popovertarget="apps" aria-label="Applications" data-tip="Applications"><span class="icon" data-icon="apps"></span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <div class="chips" role="group" aria-label="Open windows"></div>
+    <span class="sep" aria-hidden="true"></span>
+    <div class="widgets" role="group" aria-label="Widgets">
+      <div class="widget weather" tabindex="0" data-tip="Madrid: sunny, 18 °C (example)"><span class="icon" data-icon="sun"></span><span>18 °C</span></div>
+      <button class="btn quiet" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode"><span class="icon" data-icon="moon"></span></button>
+      <div class="widget clock"></div>
+    </div>
+  </nav>
+</div>
+
+<div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
+  <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" tabindex="-1" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div>
+  <div class="apps" role="group" aria-label="Apps">
+    <button data-app="calendar"><span class="icon" data-icon="calendar"></span>Calendar</button>
+    <button data-app="files"><span class="icon" data-icon="folder"></span>Files</button>
+    <button data-app="notes"><span class="icon" data-icon="edit"></span>Notes</button>
+    <button data-app="settings"><span class="icon" data-icon="settings"></span>Settings</button>
+    <button data-app="table"><span class="icon" data-icon="table"></span>Spreadsheet</button>
+  </div>
+  <p class="empty" hidden>No app matches</p>
+</div>
+
+<script>
+/* Demo wiring: a picked app opens a new window with example content */
+document.addEventListener('DOMContentLoaded', () => {
+  const apps = {
+    calendar: ['Calendar', 'calendar', [['today', 'Today'], ['new', 'New event'], ['refresh', 'Refresh']], '<h4>Monday 26 October</h4><p>10:00 Team review<br>13:30 Lunch with Ana<br>17:00 Dentist</p>'],
+    files: ['Files', 'folder', [['new', 'New folder'], ['upload', 'Upload']], '<p>An empty folder.</p>'],
+    notes: ['Notes', 'edit', [['new', 'New note'], ['save', 'Save']], '<p>A new note.</p>'],
+    settings: ['Settings', 'settings', [['help', 'Help']], '<p>Right-click the taskbar (long tap on touch) to glue it to another edge of the screen.</p>'],
+    table: ['Spreadsheet', 'table', [['new', 'New sheet'], ['save', 'Save'], ['print', 'Print']], '<p>Sheet 1 is empty.</p>'],
+  };
+  const area = document.querySelector('.desktop > .area');
+  document.getElementById('apps').addEventListener('ayni:launch', (e) => {
+    const [name, ic, tools, body] = apps[e.detail.app], w = document.createElement('section');
+    w.className = 'panel window'; w.style.width = '400px'; w.style.height = '260px'; w.setAttribute('aria-label', name);
+    w.innerHTML = `<header><span class="app">${Ayni.icon(ic)}<h2>${name}</h2></span><div role="toolbar" aria-label="${name} tools">`
+      + tools.map(([i, t]) => `<button class="btn quiet" aria-label="${t}" data-tip="${t}">${Ayni.icon(i)}</button>`).join('')
+      + `</div></header><div class="body sample">${body}</div>`;
+    area.append(w); Ayni.init(w);
+  });
+});
+</script>
+</body>
+</html>

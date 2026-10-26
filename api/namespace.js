@@ -11,6 +11,7 @@ const Ayni = {
   Component, Button, Field, TextField, PasswordField, SearchField, TextArea, NumberField,
   CheckBox, Switch, RadioGroup, Slider, ListBox, ListPicker, Tree,
   Calendar, DateField, DateTimeField, Tabs, Dialog, Splitter, Menu, MenuBar, Toolbar,
+  Desktop, Taskbar, Launcher, Window,
 
   /**
    * Wires every control inside `root` and creates its instance. Runs on the whole page when it loads; call it again
