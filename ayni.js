@@ -205,7 +205,7 @@ const initListbox = (lb) => {
 };
 
 /* ---------- Text fields ---------- */
-/* Text area with a limit: the count sits on the field's bottom border (.ta-wrap > textarea[maxlength] + .ta-count) */
+/* Optional count for a text area with a limit (opt-in per field): the count sits on the field's bottom border (.ta-wrap > textarea[maxlength] + .ta-count) */
 const initCount = (w) => {
   const t = $('textarea', w), c = $('.ta-count', w); if (!t || !c) return;
   const count = () => { c.textContent = `${t.value.length} / ${t.maxLength}`; };
