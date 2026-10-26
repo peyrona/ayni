@@ -14,6 +14,8 @@ class Dialog extends Component {
    * @param {HTMLDialogElement} element
    * @param {object}  [options]
    * @param {boolean} [options.modal=true]  Modal dialogs dim the page and close on a click on the backdrop.
+   * @param {'small'|'big'} [options.size='small']  Small modal dialogs fill the screen below 480 px wide, big dialogs
+   *   below 1024 px; otherwise dialogs float with their shadow.
    */
   constructor(element, options) {}
 
@@ -23,6 +25,10 @@ class Dialog extends Component {
   /** @type {boolean} Whether it opens as modal. */
   get modal() {}
   set modal(on) {}
+
+  /** @type {'small'|'big'} Its size class (`.big`). */
+  get size() {}
+  set size(size) {}
 
   /** @type {string} Title text. */
   get title() {}

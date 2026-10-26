@@ -452,6 +452,18 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 
 Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 18).
 
+### 10.3 Dialog size and screen width
+
+Dialogs are **small** (a message, a confirmation, a few fields) or **big** (a long form, a list, an editor):
+
+| Screen width | Small dialog | Big dialog |
+| --- | --- | --- |
+| Below 480 px | Full screen (when modal) | Full screen |
+| 480 to 1023 px | Floating, with shadow | Full screen |
+| 1024 px and wider | Floating, with shadow | Floating, with shadow |
+
+A full-screen dialog keeps its title row and its buttons; it has no border, corners or shadow. Markup: `dialog.panel` is small, `dialog.panel.big` is big.
+
 ## 11. Feedback: tooltips, notifications, progress and status bar
 
 Feedback never hides the only copy of important information and never disappears before the user can act on it.

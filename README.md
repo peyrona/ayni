@@ -143,7 +143,7 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Field error | `aria-invalid="true"` plus `aria-describedby` pointing at a `.error` element with the message |
 | Menu, pop-up menu | `.panel.menu[popover][role="menu"]` with `[role="menuitem"]` buttons; menu bar is `[role="menubar"]` |
 | Popup with controls | `.panel.popup.controls[popover]` |
-| Dialog | `dialog.panel`; any element with `data-open-dialog="id"` opens it |
+| Dialog | `dialog.panel` (small) or `dialog.panel.big`; any element with `data-open-dialog="id"` opens it. Small modal dialogs fill the screen below 480 px, big ones below 1024 px |
 | Splitter | `.split` (`.split.rows` for top and bottom) with two `.pane` and a `.splitter` between them |
 | Light/dark toggle | `data-theme-toggle` on a button |
 | Status bar | `.statusbar`; mark the message cell with `data-ayni-status` |

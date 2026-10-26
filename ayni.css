@@ -265,6 +265,13 @@ dialog.panel { margin: auto; width: min(420px, calc(100vw - 32px)); max-height: 
 dialog.panel:not([open]) { display: none; }
 dialog.panel::backdrop { background: var(--backdrop); }
 dialog.panel:not(:modal) { position: fixed; inset: auto 24px 24px auto; margin: 0; z-index: 50; }
+/* RULE: dialog size. A dialog is small by default; .big marks a big one (forms, lists, editors). A small modal dialog
+   fills the screen below 480 px wide, a big dialog below 1024 px; otherwise every dialog floats, with its shadow */
+dialog.panel.big { width: min(880px, calc(100vw - 32px)); height: min(640px, calc(100dvh - 32px)); }
+@media (max-width: 479.98px) { dialog.panel:modal { width: 100%; height: 100%; max-width: none; max-height: none; inset: 0; margin: 0;
+  border: 0; border-radius: 0; box-shadow: none; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } }
+@media (max-width: 1023.98px) { dialog.panel.big { width: 100%; height: 100%; max-width: none; max-height: none; inset: 0; margin: 0;
+  border: 0; border-radius: 0; box-shadow: none; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } }
 .msg { display: flex; gap: 12px; align-items: flex-start; }
 /* Bottom row: Close/Accept-type buttons sit at the right; any extra actions go in the same row, at the left */
 .panel footer > .extra, .panel > form > footer > .extra { display: flex; gap: 8px; margin-right: auto; }

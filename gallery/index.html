@@ -53,6 +53,9 @@
       <div class="spec"><h3>Confirmation</h3>
         <p class="rule">Used only when a change can't be applied live, like a deletion. It needs more than Close, so its buttons go in a bottom row. Keep (also Esc) is the default, and Delete is never the default.</p>
         <div class="row"><button class="btn danger" data-open-dialog="dlg-confirm" aria-label="Delete file…" data-tip="Delete file…"><span class="icon" data-icon="trash"></span></button></div></div>
+      <div class="spec"><h3>Big dialog</h3>
+        <p class="rule">A big dialog (a long form, a list, an editor) fills the screen below 1024 px wide; from 1024 px it floats with its shadow. A small dialog fills the screen only below 480 px, when modal.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-big" aria-label="Preferences…" data-tip="Preferences…"><span class="icon" data-icon="settings"></span></button></div></div>
       <div class="spec"><h3>Modeless dialog</h3>
         <p class="rule">Stays open while you keep working, with no backdrop. It has more than Close, so its buttons go in the bottom row: Close and Find next at the right, the extra action (List all matches) at the left.</p>
         <div class="row"><button class="btn" id="open-modeless" aria-label="Find…" data-tip="Find…"><span class="icon" data-icon="search"></span></button></div></div>
@@ -628,6 +631,18 @@
 </div>
 
 <!-- ===== Dialogs (Panel + <dialog>) ===== -->
+<dialog class="panel big" id="dlg-big" aria-labelledby="db-t">
+  <form method="dialog" style="display:contents">
+    <header><h2 id="db-t">Preferences</h2><button class="btn quiet" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <div class="body">
+      <p>A big dialog: full screen below 1024 px wide, floating with its shadow from 1024 px. Every change applies at once.</p>
+      <div class="field"><label for="db-name">Display name</label><input id="db-name" class="input" value="Frasquito"></div>
+      <div class="field"><label for="db-mail">Email</label><input id="db-mail" class="input" type="email" placeholder="name@example.com"></div>
+      <label class="switch">Send me a weekly summary<input type="checkbox" role="switch" checked></label>
+      <label class="switch">Play a sound for new messages<input type="checkbox" role="switch"></label>
+    </div>
+  </form>
+</dialog>
 <dialog class="panel" id="dlg-msg" aria-labelledby="dm-t">
   <form method="dialog" style="display:contents">
     <header><h2 id="dm-t">Upload complete</h2><button class="btn quiet" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
