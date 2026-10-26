@@ -567,8 +567,18 @@ fieldset:has(input[aria-readonly="true"]) { border-color: transparent; backgroun
 .launcher .empty { margin: 0; padding: 10px; color: var(--ink-2); text-align: center; }
 html.touch .launcher .apps > button { min-height: var(--touch); }
 /* A window is a Panel: a title row (app icon and name at the left, then the app's toolbar) and the content below.
-   Moved by its title row, resized from its lower right corner, and it scrolls only when its content does not fit */
-.panel.window { position: absolute; min-width: 260px; min-height: 160px; max-width: 100%; max-height: 100%; resize: both; }
+   Moved by its title row, resized from any edge or corner, and it scrolls only when its content does not fit */
+.panel.window { position: absolute; min-width: 260px; min-height: 160px; max-width: 100%; max-height: 100%; }
+/* Resize grips: invisible strips along the edges and squares at the corners, added by ayni.js */
+.win-grip { position: absolute; z-index: 1; touch-action: none; --g: 6px; }
+html.touch .win-grip { --g: 12px; }
+.win-grip[data-dir="n"], .win-grip[data-dir="s"] { left: var(--g); right: var(--g); height: var(--g); cursor: ns-resize; }
+.win-grip[data-dir="e"], .win-grip[data-dir="w"] { top: var(--g); bottom: var(--g); width: var(--g); cursor: ew-resize; }
+.win-grip[data-dir="n"] { top: 0; } .win-grip[data-dir="s"] { bottom: 0; } .win-grip[data-dir="e"] { right: 0; } .win-grip[data-dir="w"] { left: 0; }
+.win-grip:is([data-dir="ne"], [data-dir="nw"], [data-dir="se"], [data-dir="sw"]) { width: calc(var(--g) * 2); height: calc(var(--g) * 2); }
+.win-grip[data-dir="nw"] { top: 0; left: 0; cursor: nwse-resize; } .win-grip[data-dir="se"] { bottom: 0; right: 0; cursor: nwse-resize; }
+.win-grip[data-dir="ne"] { top: 0; right: 0; cursor: nesw-resize; } .win-grip[data-dir="sw"] { bottom: 0; left: 0; cursor: nesw-resize; }
+.panel.window.max > .win-grip { display: none; }
 .panel.window > header { gap: 10px; padding: 4px 8px 4px 12px; user-select: none; touch-action: none; }
 .panel.window > header > .app { flex: none; display: flex; align-items: center; gap: 8px; }
 .panel.window > header > .app .icon { --icon: 18px; color: var(--accent); }
@@ -577,5 +587,5 @@ html.touch .launcher .apps > button { min-height: var(--touch); }
 .panel.window > header > [role="toolbar"] .btn { --btn: 32px; }
 .panel.window:not(.active) > header { background: var(--panel-bg); }
 .panel.window:not(.active) > header > .app .icon { color: var(--ink-2); }
-.panel.window.max { inset: 0 !important; width: auto !important; height: auto !important; border: 0; border-radius: 0; resize: none; }
+.panel.window.max { inset: 0 !important; width: auto !important; height: auto !important; border: 0; border-radius: 0; }
 .panel.window.min { display: none; }

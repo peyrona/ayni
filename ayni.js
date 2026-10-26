@@ -1657,8 +1657,9 @@ const initDesktop = (desk) => {
 /* A window (section.panel.window inside .area): a title row (app icon and name, then the app's toolbar) and the
    content. Ayni adds a chip for it to the taskbar; only the selected window's chip shows the controls (minimise,
    maximise or restore, close), and windows have none of their own. Clicking a window or its chip selects it and
-   brings it to the front; clicking the selected chip minimises it. The title row moves the window; double-click on
-   it maximises or restores. Events: ayni:window { window, state } with state open, select, minimise, maximise,
+   brings it to the front; clicking the selected chip minimises it. The title row moves the window, any edge or
+   corner resizes it (no snapping), and its title row always stays inside the area; double-click on the title row
+   maximises or restores. Events: ayni:window { window, state } with state open, select, minimise, maximise,
    restore or close, and ayni:close (cancelable) on the window before it closes. Ayni.windows.select(w), minimise(w),
    maximise(w), restore(w) and close(w) do the same from code. */
 const chipOf = new WeakMap();
@@ -1721,6 +1722,26 @@ const initWindow = (w) => {
     head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
   });
   head.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input, a')) maximiseWin(w); });
+  /* Any edge or corner resizes it, down to its CSS minimum and never past the area */
+  ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].forEach((d) => w.insertAdjacentHTML('beforeend', `<span class="win-grip" data-dir="${d}" aria-hidden="true"></span>`));
+  w.addEventListener('pointerdown', (e) => {
+    const g = e.target.closest('.win-grip'); if (!g || e.button !== 0 || g.parentElement !== w) return;
+    e.preventDefault(); g.setPointerCapture(e.pointerId);
+    const d = g.dataset.dir, a = area.getBoundingClientRect(), cs = getComputedStyle(w);
+    const min = { w: parseFloat(cs.minWidth) || 0, h: parseFloat(cs.minHeight) || 0 };
+    const s = { x: e.clientX, y: e.clientY, l: w.offsetLeft, t: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight };
+    const move = (m) => {
+      const dx = m.clientX - s.x, dy = m.clientY - s.y;
+      let { l, t, w: wd, h } = s;
+      if (d.includes('e')) wd = Math.min(Math.max(s.w + dx, min.w), a.width - s.l);
+      if (d.includes('s')) h = Math.min(Math.max(s.h + dy, min.h), a.height - s.t);
+      if (d.includes('w')) { l = Math.min(Math.max(s.l + dx, 0), s.l + s.w - min.w); wd = s.w + s.l - l; }
+      if (d.includes('n')) { t = Math.min(Math.max(s.t + dy, 0), s.t + s.h - min.h); h = s.h + s.t - t; }
+      Object.assign(w.style, { left: l + 'px', top: t + 'px', width: wd + 'px', height: h + 'px' });
+    };
+    const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up); };
+    g.addEventListener('pointermove', move); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+  });
   const tools = $(':scope > [role="toolbar"]', head); if (tools && once('toolbar', tools)) initToolbar(tools);
   winState(w, 'open'); selectWin(desk, w);
 };

@@ -4,7 +4,8 @@
  * A window (`section.panel.window`) on the desktop. It is a Panel: a title row with the app's icon and name at the
  * left followed by the app's toolbar, and the content below, which scrolls only when it does not fit. A window has
  * no minimise, maximise or close buttons of its own: they are in its taskbar chip, shown while it is selected.
- * The title row moves it, double-click on the title row maximises or restores it, the lower right corner resizes it.
+ * The title row moves it, any edge or corner resizes it (no snapping), double-click on the title row maximises or
+ * restores it, and its title row always stays inside the window area.
  * Exposed as `Ayni.Window`, so it never clashes with the browser's `window`.
  * @extends Component
  * @fires window  { window, state } with state open, select, minimise, maximise, restore or close.
