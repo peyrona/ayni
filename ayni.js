@@ -23,6 +23,61 @@ const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textCon
 let helpPop, errPop, tip, toasts;
 const layer = (id, html) => document.getElementById(id) || (document.body.insertAdjacentHTML('beforeend', html), document.getElementById(id));
 
+/* ---------- Icons ---------- */
+/* An icon is <span class="icon" data-icon="name"></span>; Ayni draws it from the icon set in use. The built-in set
+   (ayni-icons.js) has the icons the controls need, as symbols with id "i-<name>"; an app adds its own the same way.
+   Ayni.icons.use(set) plugs in another set and maps Ayni's names to the set's names:
+     { map: { close: 'x', ... },          Ayni name → the set's name; a name left out uses the symbol "i-<name>"
+       sprite: '<svg>…</svg>' or a URL,   symbols added to the page (a URL is fetched, so not from file://)
+       id: 'icon-{name}',                 symbol id in the sprite (default '{name}')
+       stroke: true,                      the set draws with lines, like Ayni's own (default: filled shapes)
+       render: (name) => html }           instead of a sprite: any markup, e.g. an icon font's <i class="…">
+   Ayni.icons.use(null) goes back to the built-in set. Old markup, <svg class="icon"><use href="#i-save"/></svg>,
+   still works but always shows the built-in icon. */
+const ICONS = Object.freeze(['arrow-down', 'arrow-up', 'calendar', 'check', 'chev-down', 'chev-right', 'close', 'copy', 'cut',
+  'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'minus', 'ok', 'paste', 'plus', 'search',
+  'today', 'trash', 'undo', 'warn']);
+let iconSet = null;
+const noIcon = new Set();
+const iconSvg = (id, stroke) => `<svg${stroke ? ' class="st"' : ''}><use href="#${id}"/></svg>`;
+const iconInner = (name) => {
+  const ext = iconSet?.map[name];
+  if (ext) return iconSet.render ? iconSet.render(ext, name) : iconSvg(iconSet.id.replace('{name}', ext), iconSet.stroke);
+  if (document.getElementById('i-' + name)) return iconSvg('i-' + name, true);
+  if (!noIcon.has(name)) { noIcon.add(name); console.warn(`Ayni icons: no icon named "${name}"`); }
+  return '';
+};
+/* Ayni.icon(name) returns the markup of one icon; extra classes go after "icon" */
+const icon = (name, cls = '') => `<span class="icon${cls && ' ' + cls}" data-icon="${name}" aria-hidden="true">${iconInner(name)}</span>`;
+const drawIcon = (el) => { el.setAttribute('aria-hidden', 'true'); el.innerHTML = iconInner(el.dataset.icon); };
+/* Name of an icon element, also for the old <svg class="icon"><use href="#i-name"/></svg> */
+const iconName = (el) => el.dataset.icon || $('use', el)?.getAttribute('href').replace('#i-', '');
+/* Ayni.setIcon(el, name) changes the icon of el, or of the first icon inside el (a button, a menu item...) */
+const setIcon = (el, name) => {
+  let ic = el.matches('.icon') ? el : $('.icon:not(.tw)', el);
+  if (!ic) return;
+  if (ic.tagName.toLowerCase() === 'svg') { const s = document.createElement('span'); s.className = ic.getAttribute('class'); ic.replaceWith(s); ic = s; }
+  ic.dataset.icon = name; drawIcon(ic);
+};
+const drawIcons = (root, all) => [...(root.matches?.('.icon[data-icon]') ? [root] : []), ...$$('.icon[data-icon]', root)]
+  .forEach((el) => { if (all || !el.firstElementChild) drawIcon(el); });
+const useIcons = async (set) => {
+  document.getElementById('ayni-iconset')?.remove();
+  iconSet = null; noIcon.clear();
+  if (set) {
+    let sprite = set.sprite;
+    if (sprite && !sprite.trimStart().startsWith('<')) {
+      const r = await fetch(sprite); if (!r.ok) throw new Error(`Ayni icons: could not load ${sprite} (${r.status})`);
+      sprite = await r.text();
+    }
+    if (sprite) document.body.insertAdjacentHTML('afterbegin', `<div id="ayni-iconset" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">${sprite}</div>`);
+    iconSet = { map: {}, id: '{name}', ...set };
+    const missing = ICONS.filter((n) => !iconSet.map[n]);
+    if (missing.length) console.warn(`Ayni icons: the set has no icon for ${missing.join(', ')}; Ayni's own is used`);
+  }
+  drawIcons(document, true);
+};
+
 /* ---------- Touch ---------- */
 /* Browsers can't read the system double-click time, so a fixed 250 ms window is used */
 const HOLD_MS = 500, DBL_MS = 250, coarse = matchMedia('(pointer: coarse)');
@@ -232,7 +287,7 @@ const initReveal = (b) => b.addEventListener('click', () => {
   const show = b.getAttribute('aria-pressed') !== 'true', pw = $('input', b.closest('.input-group'));
   pw.type = show ? 'text' : 'password'; b.setAttribute('aria-pressed', show);
   const label = show ? 'Hide password' : 'Show password'; b.setAttribute('aria-label', label); b.dataset.tip = label;
-  $('use', b).setAttribute('href', show ? '#i-eye-off' : '#i-eye'); if (tipEl === b) showTip(b);
+  setIcon(b, show ? 'eye-off' : 'eye'); if (tipEl === b) showTip(b);
 });
 
 /* ---------- Labels: clicking a label focuses its control; a list is focused through its current item ---------- */
@@ -323,13 +378,13 @@ const initMenu = (menu) => {
   menu.addEventListener('click', (e) => {
     const it = e.target.closest('[role^="menuitem"]'); if (!it) return;
     if (it.getAttribute('role') === 'menuitemradio') {
-      $$('[role="menuitemradio"]', menu).forEach((x) => { x.setAttribute('aria-checked', x === it); $('svg', x)?.remove(); });
-      it.insertAdjacentHTML('afterbegin', '<svg class="icon"><use href="#i-check"/></svg>');
+      $$('[role="menuitemradio"]', menu).forEach((x) => { x.setAttribute('aria-checked', x === it); $('.icon', x)?.remove(); });
+      it.insertAdjacentHTML('afterbegin', icon('check'));
       fire(menu, 'ayni:choose', it);
     }
     if (it.getAttribute('role') === 'menuitemcheckbox') {
       const on = it.getAttribute('aria-checked') !== 'true'; it.setAttribute('aria-checked', on);
-      const ic = $('svg', it); if (on && !ic) it.insertAdjacentHTML('afterbegin', '<svg class="icon"><use href="#i-check"/></svg>'); if (!on && ic) ic.remove();
+      const ic = $('.icon', it); if (on && !ic) it.insertAdjacentHTML('afterbegin', icon('check')); if (!on && ic) ic.remove();
     }
     fire(menu, 'ayni:action', { item: it, menu: menu === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
     menu.hidePopover();
@@ -479,13 +534,13 @@ const makeCalendar = (root, onPick) => {
       }).join('')}</div>`;
     }
     const titleEl = view === 'years' ? `<span class="cal-title" aria-live="polite">${title}</span>`
-      : `<button type="button" class="cal-title" data-view aria-live="polite" data-tip="${view === 'days' ? 'Choose the month' : 'Choose the year'}">${title}<svg class="icon"><use href="#i-chev-down"/></svg></button>`;
+      : `<button type="button" class="cal-title" data-view aria-live="polite" data-tip="${view === 'days' ? 'Choose the month' : 'Choose the year'}">${title}${icon('chev-down')}</button>`;
     root.innerHTML = `<div class="cal-head">
-      <button type="button" class="btn quiet icon-btn" data-nav="-1" aria-label="Previous ${unit}" data-tip="Previous ${unit}"${off(prevOk)}><svg class="icon" style="transform:rotate(180deg)"><use href="#i-chev-right"/></svg></button>
+      <button type="button" class="btn quiet icon-btn" data-nav="-1" aria-label="Previous ${unit}" data-tip="Previous ${unit}"${off(prevOk)}>${icon('chev-right', 'flip')}</button>
       ${titleEl}
-      <button type="button" class="btn quiet icon-btn" data-nav="1" aria-label="Next ${unit}" data-tip="Next ${unit}"${off(nextOk)}><svg class="icon"><use href="#i-chev-right"/></svg></button></div>
+      <button type="button" class="btn quiet icon-btn" data-nav="1" aria-label="Next ${unit}" data-tip="Next ${unit}"${off(nextOk)}>${icon('chev-right')}</button></div>
       <div class="cal-body">${body}</div>
-      <div class="cal-foot"><button type="button" class="btn quiet" data-today aria-label="Today" data-tip="${dayOk(today) ? 'Today: ' + fmtLong.format(today) : 'Today: not available'}"${off(dayOk(today))}><svg class="icon"><use href="#i-today"/></svg></button></div>`;
+      <div class="cal-foot"><button type="button" class="btn quiet" data-today aria-label="Today" data-tip="${dayOk(today) ? 'Today: ' + fmtLong.format(today) : 'Today: not available'}"${off(dayOk(today))}>${icon('today')}</button></div>`;
     if (focus === 'title') $('.cal-title', root).focus?.();
     else if (focus) $('.cal-body [tabindex="0"]', root).focus();
   };
@@ -592,16 +647,16 @@ const initDateKeys = (g) => {
    Every change fires a cancelable event first (ayni:move, ayni:insert, ayni:delete, ayni:rename, ayni:hide); calling
    preventDefault() stops it. Ayni.tree(el, { root, items }) builds a tree from data and returns its controller. */
 const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, cancelable: true }));
-const TW = '<svg class="icon tw" aria-hidden="true"><use href="#i-chev-right"/></svg>';
+const TW = () => icon('chev-right', 'tw');
 const trees = new WeakMap();
 let treeClip = null, treeMenuOwner = null, treeMenus = 0; // Cut / Copy keep { tree, items, cut } here until Paste
 const nameOf = (it) => ($(':scope > .ti > .tn', it) || $(':scope > .ti', it)).textContent.trim();
 /* One tree item from data: { name, id, icon (false for none), leaf, hidden, lock, disabled, open, lazy, root, children } */
 const treeItem = (d, icons = true) => {
   const name = d.icon ?? (icons ? (d.leaf ? 'file' : 'folder') : false);
-  const li = document.createElement('li'), icon = name ? `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>` : '';
+  const li = document.createElement('li'), ic = name ? icon(name) : '';
   li.setAttribute('role', 'treeitem');
-  li.innerHTML = `<div class="ti">${TW}${icon}<span class="tn"></span></div>`;
+  li.innerHTML = `<div class="ti">${TW()}${ic}<span class="tn"></span></div>`;
   $('.tn', li).textContent = d.name;
   if (d.id != null) li.dataset.id = d.id;
   [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy'], ['root', 'data-root']].forEach(([k, a]) => d[k] && li.setAttribute(a, ''));
@@ -611,9 +666,9 @@ const treeItem = (d, icons = true) => {
   return li;
 };
 const treeData = (li, icons = true) => {
-  const d = { name: nameOf(li) }, u = $(':scope > .ti > svg:not(.tw) use', li), icon = u ? u.getAttribute('href').replace('#i-', '') : false;
+  const d = { name: nameOf(li) }, ic = $(':scope > .ti > .icon:not(.tw)', li), nm = ic ? iconName(ic) : false;
   if (li.dataset.id) d.id = li.dataset.id;
-  if (icon !== (icons ? (li.hasAttribute('data-leaf') ? 'file' : 'folder') : false)) d.icon = icon; // only when it is not the usual one
+  if (nm !== (icons ? (li.hasAttribute('data-leaf') ? 'file' : 'folder') : false)) d.icon = nm; // only when it is not the usual one
   [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy']].forEach(([k, a]) => { if (li.hasAttribute(a)) d[k] = true; });
   if (li.getAttribute('aria-disabled') === 'true') d.disabled = true;
   if (li.getAttribute('aria-expanded') === 'true') d.open = true;
@@ -627,10 +682,10 @@ const treeNodes = ({ root, items = [], icons = true }) => root
 /* Markup trees: the triangle and the name span are added when missing */
 const normaliseItem = (li) => {
   const ti = $(':scope > .ti', li);
-  if (!$(':scope > .tw', ti)) ti.insertAdjacentHTML('afterbegin', TW);
+  if (!$(':scope > .tw', ti)) ti.insertAdjacentHTML('afterbegin', TW());
   if (!$(':scope > .tn', ti)) {
     const tn = document.createElement('span'); tn.className = 'tn';
-    [...ti.childNodes].filter((n) => n.nodeType === 3 || (n.nodeType === 1 && !n.matches('svg'))).forEach((n) => tn.append(n));
+    [...ti.childNodes].filter((n) => n.nodeType === 3 || (n.nodeType === 1 && !n.matches('.icon'))).forEach((n) => tn.append(n));
     tn.textContent = tn.textContent.trim(); ti.append(tn);
   }
   const g = $(':scope > [role="group"]', li);
@@ -723,7 +778,7 @@ const initTree = (tree) => {
     const done = (items = []) => {
       if (settled) return; settled = true;
       it.removeAttribute('aria-busy'); it.removeAttribute('data-lazy');
-      $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > svg:not(.tw)', tree)))); tidy(it); ensureStop(); syncBars();
+      $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > .icon:not(.tw)', tree)))); tidy(it); ensureStop(); syncBars();
     };
     const fail = (text = 'Could not load. Close and open it again to retry.') => {
       if (settled) return; settled = true;
@@ -782,7 +837,7 @@ const initTree = (tree) => {
   };
   const insertNew = (at) => {
     if (reason('new', [])) return;
-    const { p, ref } = insertAt(at), icons = !!$('.ti > svg:not(.tw)', tree);
+    const { p, ref } = insertAt(at), icons = !!$('.ti > .icon:not(.tw)', tree);
     const it = treeItem({ name: tree.dataset.newName || 'New item', icon: icons ? tree.dataset.newIcon || 'folder' : false });
     if (p) expand(p);
     putIn(p, it, ref); if (p) p.setAttribute('aria-expanded', 'true');
@@ -1031,14 +1086,14 @@ const initTree = (tree) => {
   let pending = null, menuFor = null;
   const fillMenu = () => {
     const allowed = (act) => (act === 'paste' ? can('move') || can('insert') : can(NEED[act]));
-    const key = isMac ? '⌘' : 'Ctrl+', row = (act, icon, text, kbd) => (!allowed(act) ? ''
-      : `<button role="menuitem" data-tree-act="${act}" data-act="${text}"><svg class="icon"><use href="#i-${icon}"/></svg>${text}${kbd ? `<kbd>${kbd}</kbd>` : ''}</button>`);
+    const key = isMac ? '⌘' : 'Ctrl+', row = (act, ic, text, kbd) => (!allowed(act) ? ''
+      : `<button role="menuitem" data-tree-act="${act}" data-act="${text}">${icon(ic)}${text}${kbd ? `<kbd>${kbd}</kbd>` : ''}</button>`);
     const its = targetsFor(menuFor), shownNow = its.length && its.every((x) => x.hasAttribute('data-hidden'));
     const groups = [
       [row('new', 'plus', 'New', 'Ins'), row('rename', 'edit', 'Rename', 'F2'), row('hide', shownNow ? 'eye' : 'eye-off', shownNow ? 'Show' : 'Hide')],
       [row('cut', 'cut', 'Cut', key + 'X'), row('copy', 'copy', 'Copy', key + 'C'), row('paste', 'paste', 'Paste', key + 'V')],
       [row('up', 'arrow-up', 'Move up', key + '⇧↑'), row('down', 'arrow-down', 'Move down', key + '⇧↓')],
-      [can('hide') ? `<button role="menuitemcheckbox" aria-checked="${tree.hasAttribute('data-show-hidden')}" data-tree-act="showhidden" data-act="Show hidden items">${tree.hasAttribute('data-show-hidden') ? '<svg class="icon"><use href="#i-check"/></svg>' : ''}Show hidden items</button>` : ''],
+      [can('hide') ? `<button role="menuitemcheckbox" aria-checked="${tree.hasAttribute('data-show-hidden')}" data-tree-act="showhidden" data-act="Show hidden items">${tree.hasAttribute('data-show-hidden') ? icon('check') : ''}Show hidden items</button>` : ''],
       [row('delete', 'trash', 'Delete', 'Del')],
     ].map((g) => g.join('')).filter(Boolean);
     menu.innerHTML = groups.join('<div role="separator"></div>');
@@ -1092,7 +1147,7 @@ const initTree = (tree) => {
       let base = b.dataset.baseTip;
       if (act === 'hide') {
         const show = its.length > 0 && its.every((x) => x.hasAttribute('data-hidden'));
-        base = show ? 'Show' : 'Hide'; b.setAttribute('aria-label', base); $('use', b)?.setAttribute('href', show ? '#i-eye' : '#i-eye-off');
+        base = show ? 'Show' : 'Hide'; b.setAttribute('aria-label', base); setIcon(b, show ? 'eye' : 'eye-off');
       }
       if (r) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
       b.dataset.tip = r ? `${base}: ${r}` : base;
@@ -1115,11 +1170,11 @@ const initTree = (tree) => {
     element: tree, refresh,
     build: (opts) => { if (editing) editing.finish(false, false); tree.replaceChildren(...treeNodes(opts)); refresh(); },
     data: () => {
-      const icons = !!$('.ti > svg:not(.tw)', tree), r = rootItem(), out = (d) => ({ ...(icons ? {} : { icons: false }), ...d });
+      const icons = !!$('.ti > .icon:not(.tw)', tree), r = rootItem(), out = (d) => ({ ...(icons ? {} : { icons: false }), ...d });
       if (!r) return out({ root: null, items: kids(null).map((k) => treeData(k, icons)) });
       const { children = [], ...root } = treeData(r, icons); return out({ root, items: children });
     },
-    add: (parent, d, index) => { const it = treeItem(d, !!$('.ti > svg:not(.tw)', tree) || !all().length); putIn(parent || rootItem(), it, kids(parent || rootItem())[index] || null); normaliseItem(it); ensureStop(); return it; },
+    add: (parent, d, index) => { const it = treeItem(d, !!$('.ti > .icon:not(.tw)', tree) || !all().length); putIn(parent || rootItem(), it, kids(parent || rootItem())[index] || null); normaliseItem(it); ensureStop(); return it; },
     remove: (it) => { const p = parentOf(it); it.remove(); tidy(p); ensureStop(); },
     rename: (it, name) => { $(':scope > .ti > .tn', it).textContent = name; },
     move: (it, parent, index) => { const p = parentOf(it), ref = kids(parent).filter((x) => x !== it)[index] || null; putIn(parent, it, ref); tidy(p); ensureStop(); },
@@ -1175,7 +1230,7 @@ const helpIcon = (el) => {
   ico.className = 'btn help-ico ' + [...b.classList].filter((c) => ['primary', 'danger', 'ok', 'warn'].includes(c)).join(' ');
   if (b.dataset.alt) ico.dataset.alt = '';
   if (b.hasAttribute('popovertarget') && !b.dataset.openDialog) ico.setAttribute('aria-haspopup', 'true');
-  const svg = $('svg', el); if (svg) ico.append(svg.cloneNode(true));
+  const ic = $('.icon:not(.tw)', el); if (ic) ico.append(ic.cloneNode(true));
   return ico;
 };
 const fillHelp = (body, entries) => {
@@ -1204,9 +1259,9 @@ let lastUndo = null;
 const toast = (kind, text, { action, persist = kind === 'err' } = {}) => {
   const t = document.createElement('div');
   t.className = 'toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-  t.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#i-${{ info: 'info', ok: 'ok', warn: 'warn', err: 'error' }[kind]}"/></svg><p></p>`
-    + (action ? '<button class="btn quiet act"><svg class="icon"><use href="#i-' + action.icon + '"/></svg></button>' : '')
-    + '<button class="btn quiet icon-btn" aria-label="Dismiss" data-tip="Dismiss"><svg class="icon"><use href="#i-close"/></svg></button>';
+  t.innerHTML = `${icon({ info: 'info', ok: 'ok', warn: 'warn', err: 'error' }[kind])}<p></p>`
+    + (action ? `<button class="btn quiet act">${icon(action.icon)}</button>` : '')
+    + `<button class="btn quiet icon-btn" aria-label="Dismiss" data-tip="Dismiss">${icon('close')}</button>`;
   $('p', t).textContent = text;
   /* RULE: an Undo toast keeps the 6 s timeout, says the keyboard shortcut also undoes, and has a close button.
      The shortcut keeps working after the toast is gone, until another undoable action replaces it. */
@@ -1570,6 +1625,7 @@ const setup = () => {
 
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
+  drawIcons(root);
   each(root, '[role="tablist"]', 'tabs', initTabs);
   each(root, 'dialog.panel', 'dialog', initDialog);
   /* Rule check: a danger button is never the default (no .primary, no autofocus) */
@@ -1605,9 +1661,10 @@ const init = (root = document) => {
 };
 
 window.Ayni = {
-  version: '0.1.0', init, $, $$, status, toast, setBusy, place, contextMenu, fillHelp, focusFirstError,
+  version: '0.1.0', init, $, $$, status, toast, setBusy, place, icon, setIcon, contextMenu, fillHelp, focusFirstError,
   isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead, tree,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
+  icons: { use: useIcons, names: ICONS, get set() { return iconSet; } },
   dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
 };
 const start = () => { setup(); init(document); };

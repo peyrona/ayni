@@ -90,6 +90,7 @@ Each colour scheme (light and dark) defines at most five base colours. Every oth
 
 - Interface font: IBM Plex Sans, falling back to the system UI font. Monospaced text: IBM Plex Mono.
 - Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 17).
+- Ayni ships only the icons its controls need (27). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
 
 ### 2.3 Sizes and spacing
@@ -618,7 +619,7 @@ These points are known and deliberately left open; each will get its own decisio
 
 ### 17.1 Icon set
 
-The icons in the gallery are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen.
+The built-in icons are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen. Since any set can be plugged in with a name map (a ready-made one exists for Lucide, which has the same style), the choice no longer blocks apps.
 
 ### 17.2 Desktop mode
 

@@ -22,7 +22,7 @@ class Button extends Component {
    * @param {HTMLButtonElement} element
    * @param {object}  [options]
    * @param {string}  [options.tip]              Tooltip. Defaults to the element's data-tip.
-   * @param {string}  [options.icon]             Icon id from ayni-icons.js.
+   * @param {string}  [options.icon]             Icon name, drawn from the icon set in use (see Ayni.icons).
    * @param {'normal'|'danger'|'ok'|'warn'} [options.kind='normal']  Meaning, shown by the icon colour.
    * @param {boolean} [options.isDefault=false]  The filled default button of its panel (Enter runs it).
    * @param {string}  [options.secondAction]     What the second action does; shows the dot.
@@ -36,7 +36,7 @@ class Button extends Component {
   get tip() {}
   set tip(text) {}
 
-  /** @type {string} Icon id. */
+  /** @type {string} Icon name. */
   get icon() {}
   set icon(id) {}
 

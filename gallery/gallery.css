@@ -29,4 +29,5 @@ body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 /* ---------- Icons tab ---------- */
 .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; border: var(--panel-border); border-radius: var(--ctl-radius); font: 11px var(--font-mono); color: var(--ink-2); }
-.icon-cell .icon { color: var(--ink); width: var(--size, 24px); height: var(--size, 24px); }
+.icon-cell .icon { --icon: var(--size, 24px); color: var(--ink); }
+.icon-cell b { font-weight: 500; color: var(--ink); } .icon-cell small { font: 11px/1.3 var(--font-ui); text-align: center; }

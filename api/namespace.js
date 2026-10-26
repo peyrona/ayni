@@ -40,6 +40,39 @@ const Ayni = {
   toast(kind, text, options) {},
 
   /**
+   * Markup of one icon, `<span class="icon" data-icon="name">`, drawn from the icon set in use.
+   * @param {string} name  An Ayni icon name, or the app's own (a symbol with id "i-<name>", or a name in the set's map).
+   * @returns {string}
+   */
+  icon(name) {},
+
+  /**
+   * Changes the icon of an element, or of the first icon inside it (a button, a menu item).
+   * @param {HTMLElement} element
+   * @param {string} name
+   */
+  setIcon(element, name) {},
+
+  /** Icon sets. */
+  icons: {
+    /** @type {string[]} The icon names the controls use. A set's map should cover all of them. */
+    names: [],
+
+    /**
+     * Plugs in another icon set and redraws every icon on the page; null goes back to the built-in set. A name the
+     * map leaves out keeps the built-in icon, and the console lists the control icons the set does not map.
+     * @param {object|null} set
+     * @param {Object<string, string>} set.map  Ayni name → the set's name.
+     * @param {string} [set.sprite]  SVG symbols, as markup or a URL to fetch.
+     * @param {string} [set.id='{name}']  Symbol id in the sprite.
+     * @param {boolean} [set.stroke=false]  The set draws with lines, like Ayni's own icons.
+     * @param {(name: string) => string} [set.render]  Instead of a sprite: markup for one icon, e.g. an icon font.
+     * @returns {Promise<void>} Rejects when the sprite cannot be fetched.
+     */
+    use(set) {},
+  },
+
+  /**
    * Writes the status line (the element with data-ayni-status).
    * @param {string} text
    */
