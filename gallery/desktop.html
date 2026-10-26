@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ayni Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../ayni.css">
+<style>
+/* Demo page only: the note on the desktop background and the sample window contents */
+.note { position: absolute; right: 16px; bottom: 16px; width: min(340px, calc(100% - 32px)); font-size: 13px; color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 70%, transparent); border: 1px dashed var(--line); border-radius: 8px; padding: 12px 14px; }
+.note h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink); margin: 0 0 6px; }
+.note ul { margin: 0 0 8px; padding-left: 18px; } .note li { margin: 2px 0; }
+.note b.ok { color: var(--ok); } .note b.tbd { color: var(--warn); }
+.note a { color: var(--accent); }
+.narrow { max-width: 60ch; margin: 0 auto; padding: 32px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+.narrow h1 { font-size: 18px; margin: 0 0 8px; } .narrow p { margin: 0 0 12px; } .narrow a { color: var(--accent); }
+.sample h4 { margin: 0; font-size: 14px; } .sample p { margin: 0; }
+.sample table { border-collapse: collapse; } .sample :is(td, th) { border-bottom: 1px solid var(--line); padding: 4px 10px; text-align: left; white-space: nowrap; }
+</style>
+<script src="../ayni-icons.js" defer></script>
+<script src="demo-icons.js" defer></script>
+<script src="../ayni.js" defer></script>
+</head>
+<body>
+<!-- Ayni desktop mode: the taskbar (launcher, window chips, widgets) and windows. The app's own pieces (the apps and
+     the window contents) are examples. -->
+<section class="no-desktop narrow"><h1>Desktop mode</h1><p>Desktop mode needs a window at least 1024 px wide. Below that there is no taskbar and there are no windows: the app shows its normal screens. Widen the window, or open this page on a larger screen.</p><p><a href="index.html">Back to the gallery</a></p></section>
+
+<div class="desktop" data-edge="bottom">
+  <main class="area" aria-label="Desktop">
+    <aside class="note" aria-label="About this page">
+      <h3>Desktop mode</h3>
+      <ul>
+        <li><b class="ok">Decided:</b> the taskbar goes at the top or the bottom. Right-click it (long tap on touch, or Shift+F10).</li>
+        <li><b class="ok">Decided:</b> the launcher is a popup with a search field and the apps, most used first.</li>
+        <li><b class="ok">Decided:</b> launcher at the left, clock at the right, window chips between them; an app can add gadgets on either side of the clock.</li>
+        <li><b class="ok">Decided:</b> chips show only the icon, except the selected window's chip: icon, name and its 3 buttons.</li>
+        <li><b class="ok">Decided:</b> drag the title row to move a window, any edge or corner to resize it; double-click the title row to maximise. No snapping.</li>
+        <li><b class="ok">Decided:</b> no desktop mode below 1024 px wide.</li>
+        <li><b class="ok">Decided:</b> toolbar tools that don't fit go into a "more" button at the end of the title row.</li>
+        <li><b class="ok">Decided:</b> a modeless dialog belongs to its window: it floats above it, has no chip, hides and closes with it. Try Find in the Files window.</li>
+      </ul>
+      <a href="index.html">Back to the gallery</a>
+    </aside>
+
+    <section class="panel window" aria-labelledby="w-files" style="left: 40px; top: 32px; width: 460px; height: 300px">
+      <header><span class="app"><span class="icon" data-icon="folder"></span><h2 id="w-files">Files</h2></span>
+        <div role="toolbar" aria-label="Files tools">
+          <button class="btn quiet" aria-label="New folder" data-tip="New folder"><span class="icon" data-icon="new"></span></button>
+          <button class="btn quiet" aria-label="Upload" data-tip="Upload"><span class="icon" data-icon="upload"></span></button>
+          <button class="btn quiet" aria-label="Copy" data-tip="Copy"><span class="icon" data-icon="copy"></span></button>
+          <button class="btn quiet danger" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button>
+          <button class="btn quiet" id="files-find" aria-label="Find…" data-tip="Find…"><span class="icon" data-icon="search"></span></button>
+        </div></header>
+      <div class="body sample"><table>
+        <tr><th>Name</th><th>Size</th><th>Modified</th></tr>
+        <tr><td>Budget 2026.ods</td><td>48 KB</td><td>24 Oct 2026</td></tr>
+        <tr><td>Holiday photos</td><td>1.2 GB</td><td>12 Aug 2026</td></tr>
+        <tr><td>Invoice 0193.pdf</td><td>210 KB</td><td>3 Oct 2026</td></tr>
+        <tr><td>Notes.txt</td><td>2 KB</td><td>26 Oct 2026</td></tr>
+        <tr><td>Recipes</td><td>3.4 MB</td><td>2 Sep 2026</td></tr>
+        <tr><td>Tax return 2025.pdf</td><td>640 KB</td><td>30 Jun 2026</td></tr>
+      </table></div>
+    </section>
+
+    <section class="panel window" aria-labelledby="w-notes" style="left: 120px; top: 90px; width: 420px; height: 280px">
+      <header><span class="app"><span class="icon" data-icon="edit"></span><h2 id="w-notes">Notes</h2></span>
+        <div role="toolbar" aria-label="Notes tools">
+          <button class="btn quiet" aria-label="New note" data-tip="New note"><span class="icon" data-icon="new"></span></button>
+          <button class="btn quiet" aria-label="Save" data-tip="Save"><span class="icon" data-icon="save"></span></button>
+          <button class="btn quiet" aria-label="Bold" data-tip="Bold"><span class="icon" data-icon="bold"></span></button>
+          <button class="btn quiet" aria-label="Italic" data-tip="Italic"><span class="icon" data-icon="italic"></span></button>
+          <button class="btn quiet" aria-label="Underline" data-tip="Underline"><span class="icon" data-icon="underline"></span></button>
+          <button class="btn quiet" aria-label="Align left" data-tip="Align left"><span class="icon" data-icon="align-l"></span></button>
+          <button class="btn quiet" aria-label="Centre" data-tip="Centre"><span class="icon" data-icon="align-c"></span></button>
+          <button class="btn quiet" aria-label="Share" data-tip="Share"><span class="icon" data-icon="share"></span></button>
+          <button class="btn quiet" aria-label="Print" data-tip="Print"><span class="icon" data-icon="print"></span></button>
+        </div></header>
+      <div class="body sample"><p><i>Make this window narrower: the tools that don't fit move into the "more" button.</i></p><h4>Shopping list</h4><p>Bread, olive oil, oranges, coffee.</p><p>Call the plumber on Thursday morning about the kitchen tap.</p></div>
+    </section>
+  </main>
+
+  <nav class="taskbar" aria-label="Taskbar">
+    <button class="btn primary" popovertarget="apps" aria-label="Applications" data-tip="Applications"><span class="icon" data-icon="apps"></span></button>
+    <div class="chips" role="group" aria-label="Open windows"></div>
+    <div class="widgets" role="group" aria-label="Widgets">
+      <div class="widget clock"></div>
+    </div>
+  </nav>
+</div>
+
+<dialog class="panel" id="dlg-find" aria-labelledby="find-t">
+  <header><h2 id="find-t">Find in Files</h2><button class="btn quiet" aria-label="Close" data-tip="Close (Esc)" id="find-close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body"><div class="input-group search-field"><input id="find-q" class="input" type="search" placeholder="Part of a file name" aria-label="Find"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" tabindex="-1" aria-label="Find" data-tip="Find"><span class="icon" data-icon="search"></span></button></div>
+    <p class="sample">A modeless dialog: it belongs to the Files window, floats above it, moves by its title row, hides when Files is minimised and closes with it.</p></div>
+</dialog>
+
+<div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
+  <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" tabindex="-1" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div>
+  <div class="apps" role="group" aria-label="Apps">
+    <button data-app="calendar"><span class="icon" data-icon="calendar"></span>Calendar</button>
+    <button data-app="files"><span class="icon" data-icon="folder"></span>Files</button>
+    <button data-app="notes"><span class="icon" data-icon="edit"></span>Notes</button>
+    <button data-app="settings"><span class="icon" data-icon="settings"></span>Settings</button>
+    <button data-app="table"><span class="icon" data-icon="table"></span>Spreadsheet</button>
+  </div>
+  <p class="empty" hidden>No app matches</p>
+</div>
+
+<script>
+/* Demo wiring: a picked app opens a new window with example content */
+document.addEventListener('DOMContentLoaded', () => {
+  const apps = {
+    calendar: ['Calendar', 'calendar', [['today', 'Today'], ['new', 'New event'], ['refresh', 'Refresh']], '<h4>Monday 26 October</h4><p>10:00 Team review<br>13:30 Lunch with Ana<br>17:00 Dentist</p>'],
+    files: ['Files', 'folder', [['new', 'New folder'], ['upload', 'Upload']], '<p>An empty folder.</p>'],
+    notes: ['Notes', 'edit', [['new', 'New note'], ['save', 'Save']], '<p>A new note.</p>'],
+    settings: ['Settings', 'settings', [['help', 'Help']], '<p>Right-click the taskbar (long tap on touch) to glue it to another edge of the screen.</p>'],
+    table: ['Spreadsheet', 'table', [['new', 'New sheet'], ['save', 'Save'], ['print', 'Print']], '<p>Sheet 1 is empty.</p>'],
+  };
+  const area = document.querySelector('.desktop > .area');
+  document.getElementById('files-find').addEventListener('click', () => { const d = document.getElementById('dlg-find'); if (!d.open) d.show(); document.getElementById('find-q').focus(); });
+  document.getElementById('find-close').addEventListener('click', () => document.getElementById('dlg-find').close());
+  document.getElementById('apps').addEventListener('ayni:launch', (e) => {
+    const [name, ic, tools, body] = apps[e.detail.app], w = document.createElement('section');
+    w.className = 'panel window'; w.style.width = '400px'; w.style.height = '260px'; w.setAttribute('aria-label', name);
+    w.innerHTML = `<header><span class="app">${Ayni.icon(ic)}<h2>${name}</h2></span><div role="toolbar" aria-label="${name} tools">`
+      + tools.map(([i, t]) => `<button class="btn quiet" aria-label="${t}" data-tip="${t}">${Ayni.icon(i)}</button>`).join('')
+      + `</div></header><div class="body sample">${body}</div>`;
+    area.append(w); Ayni.init(w);
+  });
+});
+</script>
+</body>
+</html>

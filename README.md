@@ -50,6 +50,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 | **Menus** | Menu bar, pull-down menus, pop-up menus (right-click, long tap, Shift+F10), toolbar, popups that hold any control |
 | **Feedback** | Tooltips, notifications with Undo (and Ctrl+Z that keeps working afterwards), status bar, loading and empty states |
 | **Layout** | Panels, tabs (closable, scrollable, keyboard-friendly), group boxes, a splitter with collapse and reset, scrolling everywhere |
+| **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar and their own modeless dialogs |
 | **Dialogs** | Message, live settings, apply on close, confirmation, modeless |
 
 Everything works from the keyboard, with a mouse and by touch, and every state is shown in the gallery.
@@ -81,7 +82,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
 - [ ] **The final icon set.** The built-in icons are examples. Any other set can already be plugged in (see [Icons](#icons)).
-- [ ] **Desktop mode.** From 1024 px wide, Ayni will switch on its own to a desktop with windows that float, move and resize, plus a taskbar.
+- [ ] **Desktop mode.** From 1024 px wide, Ayni switches on its own to a desktop with windows and a taskbar; below that there is no desktop mode. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
 
@@ -142,10 +143,14 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Field error | `aria-invalid="true"` plus `aria-describedby` pointing at a `.error` element with the message |
 | Menu, pop-up menu | `.panel.menu[popover][role="menu"]` with `[role="menuitem"]` buttons; menu bar is `[role="menubar"]` |
 | Popup with controls | `.panel.popup.controls[popover]` |
-| Dialog | `dialog.panel`; any element with `data-open-dialog="id"` opens it |
+| Dialog | `dialog.panel` (small) or `dialog.panel.big`; any element with `data-open-dialog="id"` opens it. Small modal dialogs fill the screen below 480 px, big ones below 1024 px |
 | Splitter | `.split` (`.split.rows` for top and bottom) with two `.pane` and a `.splitter` between them |
 | Light/dark toggle | `data-theme-toggle` on a button |
 | Status bar | `.statusbar`; mark the message cell with `data-ayni-status` |
+| Desktop | `.desktop[data-edge]` with `main.area` and `nav.taskbar` (launcher `.btn.primary[popovertarget]`, `.chips`, `.widgets`); see `gallery/desktop.html` |
+| Window | `section.panel.window` inside `.area`: `header` with `.app` (icon and `h2`) and `[role="toolbar"]`, then `.body`. Its chip is added by Ayni |
+| Launcher | `.panel.popup.launcher[popover]` with a `.search-field` and `.apps > button[data-app]` |
+| Clock widget | `.widget.clock` (any app widget is a `.widget`) |
 
 A few controls need one call because they take options:
 
@@ -180,17 +185,22 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:load` | `[role="tree"]` | `{ item, id, path, done(items), fail(text) }`: a `data-lazy` folder opened for the first time |
 | `ayni:split` | `.split` | `{ action, pane, message }` |
 | `ayni:theme` | the toggle button | `{ theme }` |
+| `ayni:desktopmode` | `document` | `{ on }`: the width crossed 1024 px; desktop mode exists only from there |
+| `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to the top or the bottom |
+| `ayni:launch` | `.launcher` | `{ app, item }`: an app was picked |
+| `ayni:window` | `.panel.window` | `{ window, state }`: open, select, minimise, maximise, restore or close |
+| `ayni:close` | `.panel.window` | `{ window }`, before it closes; cancelable |
 | `ayni:dismiss` | an open menu or popup, before the page scroll or a resize closes it | cancel it with `preventDefault()` to keep the popup |
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
 
 ### Icons
 
 An icon is `<span class="icon" data-icon="name"></span>`, and `Ayni.icon(name)` returns the same markup for code. Ayni draws it from the icon set in use; `Ayni.setIcon(element, name)` changes it.
 
-`ayni-icons.js` holds only the 27 icons the controls need: `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `minus`, `ok`, `paste`, `plus`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
+`ayni-icons.js` holds only the 32 icons the controls need: `apps`, `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `maximise`, `minimise`, `minus`, `more`, `ok`, `paste`, `plus`, `restore`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
 
 To use another icon set, give Ayni a map from its names to the set's names:
 
@@ -224,7 +234,7 @@ Each scheme, light and dark, is defined by five base colours at the top of `ayni
 | `ayni-icons.js` | The built-in icons, only those the controls use (24×24 grid, 2px stroke) |
 | `icons/lucide.js` | Map from Ayni's icon names to [Lucide](https://lucide.dev)'s, for `Ayni.icons.use()` |
 | `api/` | Proposed programming interface: one class per component, skeletons only (see `api/README.md`) |
-| `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps) |
+| `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps); `gallery/desktop.html` shows desktop mode |
 | `docs/guidelines.md` | The Ayni Design Guidelines: every rule, chapter by chapter |
 | `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
 | `docs/*.png` | Images for this page |

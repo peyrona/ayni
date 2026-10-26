@@ -11,6 +11,7 @@ const Ayni = {
   Component, Button, Field, TextField, PasswordField, SearchField, TextArea, NumberField,
   CheckBox, Switch, RadioGroup, Slider, ListBox, ListPicker, Tree,
   Calendar, DateField, DateTimeField, Tabs, Dialog, Splitter, Menu, MenuBar, Toolbar,
+  Desktop, Taskbar, Launcher, Window,
 
   /**
    * Wires every control inside `root` and creates its instance. Runs on the whole page when it loads; call it again
@@ -86,6 +87,9 @@ const Ayni = {
 
   /** @returns {boolean} True while dark mode shows. */
   isDark() {},
+
+  /** @returns {boolean} True from 1024 px wide, where desktop mode exists; ayni:desktopmode { on } fires when it changes. */
+  isDesktop() {},
 
   /** @returns {boolean} True on touch devices, or while the touch preview is on. */
   isTouch() {},

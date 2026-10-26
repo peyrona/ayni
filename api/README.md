@@ -48,6 +48,10 @@ save.on('press', async () => { save.busy('Saving…'); await store(); save.idle(
 | `Menu` | Component | `menu.js` | Popup menu and pop-up (context) menu |
 | `MenuBar` | Component | `menu-bar.js` | Menu bar |
 | `Toolbar` | Component | `toolbar.js` | Toolbar |
+| `Desktop` | Component | `desktop.js` | Desktop mode: the window area and the taskbar |
+| `Taskbar` | Component | `taskbar.js` | Taskbar on any screen edge: launcher, window chips, widgets |
+| `Launcher` | Component | `launcher.js` | Applications popup with search |
+| `Window` | Component | `window.js` | Window: title row with icon, name and toolbar; controls in its chip |
 
 `namespace.js` holds `window.Ayni`: the classes plus the page-wide services, which are not controls and stay plain
 functions (`init`, `get`, `toast`, `status`, `setTheme`, `isDark`, `isTouch`, `setTouchPreview`, `fillHelp`,
@@ -57,9 +61,10 @@ functions (`init`, `get`, `toast`, `status`, `setTheme`, `isDark`, `isTouch`, `s
 
 - Plain markup and CSS: labels, the info label, tooltips (`data-tip`), group boxes and the read-only look. Field
   errors are the `error` property of `Field`.
-- Left out on purpose: windows, the taskbar and desktop mode (a later phase), the data table (its own project) and
+- Plain markup: the clock widget (`.widget.clock`) and app widgets (`.widget`).
+- Left out on purpose: the data table (its own project) and
   the accessibility work (after the design is closed, see `docs/accessibility-backlog.md`).
 
 ## Load order
 
-Base classes first: `component.js`, `button.js`, `field.js`, `text-field.js`, then the rest, and `namespace.js` last.
+Base classes first: `component.js`, `button.js`, `field.js`, `text-field.js`, then the rest (`desktop.js` after `taskbar.js` and `window.js`), and `namespace.js` last.
