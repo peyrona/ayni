@@ -197,6 +197,7 @@ Each scheme, light and dark, is defined by five base colours at the top of `ayni
 | `ayni.css` | The look of every control, both colour schemes and the touch sizes |
 | `ayni.js` | The behaviour of every control |
 | `ayni-icons.js` | The icon sprite (24×24 grid, 2px stroke) |
+| `api/` | Proposed programming interface: one class per component, skeletons only (see `api/README.md`) |
 | `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps) |
 | `docs/guidelines.md` | The Ayni Design Guidelines: every rule, chapter by chapter |
 | `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
