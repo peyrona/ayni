@@ -136,7 +136,8 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Text field with buttons inside | `.input-group` |
 | Search field | `.input-group.search-field` with a `[data-clear]` button |
 | Password with show/hide | a `.btn` with `data-reveal` inside the `.input-group` |
-| Text area with a count | `.ta-wrap` with `textarea[maxlength]` and `.ta-count` |
+| Text area that grows with its text (optional) | `textarea.input[data-autogrow]`; set `--autogrow-max` to change the 240px limit |
+| Text area with a count (optional) | `.ta-wrap` with `textarea[maxlength]` and `.ta-count`; a plain `textarea.input` has none |
 | Number field | `.input-group.spin` with `data-min`, `data-max`, `data-step` on the input |
 | Field error | `aria-invalid="true"` plus `aria-describedby` pointing at a `.error` element with the message |
 | Menu, pop-up menu | `.panel.menu[popover][role="menu"]` with `[role="menuitem"]` buttons; menu bar is `[role="menubar"]` |
