@@ -29,6 +29,7 @@ Ayni.icons.lucide = {
     maximise: 'square',
     minimise: 'minus',
     minus: 'minus',
+    more: 'ellipsis',
     ok: 'circle-check',
     paste: 'clipboard-paste',
     plus: 'plus',

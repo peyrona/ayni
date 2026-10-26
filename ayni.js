@@ -35,7 +35,7 @@ const layer = (id, html) => document.getElementById(id) || (document.body.insert
    Ayni.icons.use(null) goes back to the built-in set. Old markup, <svg class="icon"><use href="#i-save"/></svg>,
    still works but always shows the built-in icon. */
 const ICONS = Object.freeze(['arrow-down', 'arrow-up', 'calendar', 'check', 'chev-down', 'chev-right', 'close', 'copy', 'cut',
-  'apps', 'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'maximise', 'minimise', 'minus', 'ok',
+  'apps', 'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'maximise', 'minimise', 'minus', 'more', 'ok',
   'paste', 'plus', 'restore', 'search', 'today', 'trash', 'undo', 'warn']);
 let iconSet = null;
 const noIcon = new Set();
@@ -459,10 +459,9 @@ const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
 };
 /* Ayni.toolbar(el): one Tab stop, arrow keys move between tools (roving tabindex). Called by the page, not automatic */
 const initToolbar = (bar) => {
-  const tools = $$('button', bar);
-  tools.forEach((t, i) => (t.tabIndex = i ? -1 : 0));
+  $$('button', bar).forEach((t, i) => (t.tabIndex = i ? -1 : 0));
   bar.addEventListener('keydown', (e) => {
-    const i = tools.indexOf(document.activeElement);
+    const tools = $$('button', bar).filter((t) => !t.hidden), i = tools.indexOf(document.activeElement);
     const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tools.length - 1 }[e.key];
     if (n !== undefined) { e.preventDefault(); tools.forEach((t) => (t.tabIndex = -1)); const t = tools[(n + tools.length) % tools.length]; t.tabIndex = 0; t.focus(); }
   });
@@ -1583,7 +1582,11 @@ const setup = () => {
     hideTip(); if (e.pointerType === 'touch' || document.documentElement.classList.contains('touch')) return; // touch: the Help dialog replaces tooltips
     if (el) { tipEl = el; tipTimer = setTimeout(() => showTip(el), 500); }
   });
-  document.addEventListener('focusin', (e) => { const el = e.target.closest('[data-tip]'); hideTip(); if (el && el.matches(':focus-visible')) { tipEl = el; showTip(el); } });
+  /* Shown a moment later: the focus may come back while a popup is still closing, when no other popup can open */
+  document.addEventListener('focusin', (e) => {
+    const el = e.target.closest('[data-tip]'); hideTip();
+    if (el && el.matches(':focus-visible')) { tipEl = el; setTimeout(() => { if (tipEl === el && document.activeElement === el) showTip(el); }); }
+  });
   document.addEventListener('focusout', hideTip);
   document.addEventListener('pointerdown', hideTip);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(); });
@@ -1747,8 +1750,37 @@ const initWindow = (w) => {
     const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up); };
     g.addEventListener('pointermove', move); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
   });
-  const tools = $(':scope > [role="toolbar"]', head); if (tools && once('toolbar', tools)) initToolbar(tools);
+  const tools = $(':scope > [role="toolbar"]', head);
+  if (tools) { fitTools(tools); if (once('toolbar', tools)) initToolbar(tools); }
   winState(w, 'open'); selectWin(desk, w);
+};
+
+/* A window's toolbar that does not fit: the app's icon and name never shrink; the tools that do not fit move, from the
+   end, into a round "more" button at the end of the row, whose menu lists them (icon and tooltip text) and runs them.
+   They come back as the window widens */
+let fitN = 0;
+const fitTools = (bar) => {
+  const id = 'ayni-more-' + ++fitN;
+  bar.insertAdjacentHTML('beforeend', `<button class="btn quiet more" popovertarget="${id}" aria-haspopup="menu" aria-label="More tools" data-tip="More tools" hidden>${icon('more')}</button>`);
+  const more = $(':scope > .more', bar);
+  const menu = layer(id, `<div class="panel menu" popover id="${id}" role="menu" aria-label="More tools"></div>`);
+  initMenu(menu); once('menu', menu);
+  const tools = () => $$(':scope > button:not(.more)', bar);
+  /* The row fits when its last visible button ends inside the toolbar */
+  const fits = () => { const v = $$(':scope > button:not([hidden])', bar).pop(); return !v || v.getBoundingClientRect().right <= bar.getBoundingClientRect().right + .5; };
+  const fit = () => {
+    tools().forEach((t) => (t.hidden = false)); more.hidden = true;
+    if (fits()) { if (more.tabIndex === 0) { more.tabIndex = -1; if (tools()[0]) tools()[0].tabIndex = 0; } menu.innerHTML = ''; return; }
+    more.hidden = false;
+    for (const t of tools().reverse()) { if (fits()) break; t.hidden = true; }
+    /* The toolbar's one Tab stop must stay on a visible button */
+    const all = [...tools(), more];
+    if (!all.some((t) => !t.hidden && t.tabIndex === 0)) { all.forEach((t) => (t.tabIndex = -1)); all.find((t) => !t.hidden).tabIndex = 0; }
+    menu.innerHTML = tools().filter((t) => t.hidden).map((t) => `<button role="menuitem" data-tool="${tools().indexOf(t)}">${icon(iconName($('.icon', t)) || 'more')}<span></span></button>`).join('');
+    $$('[data-tool]', menu).forEach((it) => { const t = tools()[it.dataset.tool]; $('span:not(.icon)', it).textContent = t.dataset.tip || t.getAttribute('aria-label'); it.setAttribute('aria-disabled', t.getAttribute('aria-disabled') || 'false'); });
+  };
+  menu.addEventListener('click', (e) => { const it = e.target.closest('[data-tool]'); if (it) tools()[it.dataset.tool]?.click(); });
+  new ResizeObserver(fit).observe(bar.parentElement);
 };
 
 /* Launcher (.panel.popup.launcher): a search field (.search-field) and the apps (.apps > button[data-app]), most used

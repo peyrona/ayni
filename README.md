@@ -200,7 +200,7 @@ Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { 
 
 An icon is `<span class="icon" data-icon="name"></span>`, and `Ayni.icon(name)` returns the same markup for code. Ayni draws it from the icon set in use; `Ayni.setIcon(element, name)` changes it.
 
-`ayni-icons.js` holds only the 31 icons the controls need: `apps`, `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `maximise`, `minimise`, `minus`, `ok`, `paste`, `plus`, `restore`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
+`ayni-icons.js` holds only the 32 icons the controls need: `apps`, `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `maximise`, `minimise`, `minus`, `more`, `ok`, `paste`, `plus`, `restore`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
 
 To use another icon set, give Ayni a map from its names to the set's names:
 

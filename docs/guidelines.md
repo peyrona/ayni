@@ -90,7 +90,7 @@ Each colour scheme (light and dark) defines at most five base colours. Every oth
 
 - Interface font: IBM Plex Sans, falling back to the system UI font. Monospaced text: IBM Plex Mono.
 - Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 18).
-- Ayni ships only the icons its controls need (31). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
+- Ayni ships only the icons its controls need (32). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
 
 ### 2.3 Sizes and spacing
@@ -638,6 +638,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
 - **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the app's name and the three window buttons: minimise, maximise (restore while maximised) and close. A minimised window's icon is greyed.
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
+- **A toolbar that does not fit:** the app's icon and name never shrink. The tools that do not fit move, from the end, into a round "more" (⋯) button at the end of the title row; its menu lists them with their icon and tooltip text. They come back as the window widens.
 - **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. There is no snapping: dragging to a screen edge does nothing special. The title row always stays inside the work area.
 - Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. (Proposal, see 18.2: the selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.)
 
@@ -659,7 +660,7 @@ The built-in icons are placeholders that show the style (24 px grid, 2 px stroke
 
 ### 18.2 Desktop mode, the rest
 
-Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
+Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: how modeless dialogs behave in desktop mode.
 
 ### 18.3 Low-priority review items
 
