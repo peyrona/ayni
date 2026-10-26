@@ -622,7 +622,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - One bar, always visible, with three parts: the applications launcher at the start, the window selector (one chip per open window) in the middle, and the widgets area at the end (the clock, the weather or any other app widget).
 - **The user decides which screen edge it is glued to**: top, bottom, left or right. The choice is made from the taskbar's pop-up menu (right-click, long tap, Shift+F10 or the Menu key) and is kept for next time. Bottom is the default.
 - Windows never cover it. A maximised window fills the space the taskbar leaves.
-- On the left or right edge the parts stack from top to bottom. (Proposal, see 18.2: there each chip shows only its icon, with the app name in its tooltip.)
+- On the left or right edge the parts stack from top to bottom.
 - When there are more chips than fit, the window selector scrolls; its scrollbar shows only when needed.
 
 ### 17.2 Applications launcher
@@ -637,6 +637,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - A window is a Panel, with rounded corners. It has two parts: the **title row** and the **content**.
 - The title row starts at the top left with the app's icon and the app's name, followed by the app's toolbar.
 - **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
+- **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the app's name and the three window buttons: minimise, maximise (restore while maximised) and close. On a left or right taskbar the selected chip shows the icon and the three buttons, without the name. A minimised window's icon is greyed.
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
 - Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. (Proposal, see 18.2: the selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.)
 
@@ -656,7 +657,7 @@ The built-in icons are placeholders that show the style (24 px grid, 2 px stroke
 
 ### 18.2 Desktop mode, the rest
 
-Being decided one point at a time. The desktop page already shows a first proposal for each. Chips: one per open window with the app's icon and name; the selected one is outlined, has an accent edge facing the work area and holds the window controls (minimise, maximise or restore, close); clicking a chip selects its window, clicking the selected chip minimises it, and a minimised window's chip shows its name in italics. Still open as well: the other widgets, how windows are moved and resized (today: by the title row, from the lower right corner, double-click on the title row to maximise), what happens below 1024 px (earlier idea: windows become full-width sheets), a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
+Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: the other widgets, how windows are moved and resized (today: by the title row, from the lower right corner, double-click on the title row to maximise), what happens below 1024 px (earlier idea: windows become full-width sheets), a title row toolbar that does not fit, and how modeless dialogs behave in desktop mode.
 
 ### 18.3 Low-priority review items
 

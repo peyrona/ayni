@@ -4,7 +4,7 @@
  * The taskbar (`.taskbar`): the launcher button at the start, the window selector (one chip per window) in the
  * middle, the widgets (clock, weather, any app widget) at the end. The user glues it to any of the four screen edges
  * from its pop-up menu (right-click, long tap, Shift+F10); the choice is kept in localStorage ('ayni-taskbar-edge').
- * On a side edge the chips show only their icon, with the name in the tooltip.
+ * Window chips show only the app icon, except the selected window's chip, which adds the name and the window buttons.
  * @extends Component
  * @fires edge  { edge } when the user moves it to another edge.
  */

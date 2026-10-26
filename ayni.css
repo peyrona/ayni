@@ -542,23 +542,26 @@ fieldset:has(input[aria-readonly="true"]) { border-color: transparent; backgroun
 .desktop:is([data-edge="left"], [data-edge="right"]) .chips { flex-direction: column; }
 .taskbar > .widgets { flex: none; display: flex; align-items: center; gap: 4px; }
 .desktop:is([data-edge="left"], [data-edge="right"]) .widgets { flex-direction: column; }
-/* A chip: the window's icon and name. The chip of the selected window also holds its controls (minimise, maximise
-   or restore, close); windows have none of their own */
+/* A chip per window. Only the selected window's chip shows the app's name and the window's controls (minimise,
+   maximise or restore, close); every other chip shows just the app's icon, with the name in its tooltip. Windows have
+   no controls of their own */
 .chip { flex: none; display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid transparent; border-radius: 22px; }
 .chip:hover { background: var(--surface-2); }
 .chip > .chip-main { font: 500 13px var(--font-ui); color: var(--ink); background: none; border: 0; border-radius: 18px; cursor: pointer;
   display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; max-width: 200px; }
-.chip > .chip-main > span:not(.icon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip > .chip-main > span:not(.icon) { display: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip[aria-current="true"] > .chip-main > span:not(.icon) { display: inline; }
+.chip:not([aria-current="true"]) > .chip-main { padding: 0 9px; }
 .chip > .chip-main .icon { --icon: 18px; }
-.chip.min > .chip-main { color: var(--ink-2); font-style: italic; }
+.chip.min > .chip-main { color: var(--ink-2); }
 .chip[aria-current="true"] { background: var(--surface); border-color: var(--line); box-shadow: inset 0 -3px 0 var(--accent); }
 .chip > .chip-ctl { display: none; gap: 2px; }
 .chip[aria-current="true"] > .chip-ctl { display: flex; }
 .chip-ctl .btn { --btn: 30px; } .chip-ctl .btn .icon { --icon: 15px; }
-/* On a side taskbar a chip shows only its icon (the name is in its tooltip) and stacks its controls */
+/* On a side taskbar even the selected chip shows only its icon, and stacks its controls */
 .desktop:is([data-edge="left"], [data-edge="right"]) .chip { flex-direction: column; }
 .desktop:is([data-edge="left"], [data-edge="right"]) .chip > .chip-main { padding: 0 9px; }
-.desktop:is([data-edge="left"], [data-edge="right"]) .chip > .chip-main > span:not(.icon) { display: none; }
+.desktop:is([data-edge="left"], [data-edge="right"]) .chip > .chip-main > span:not(.icon) { display: none !important; }
 .desktop:is([data-edge="left"], [data-edge="right"]) .chip > .chip-ctl { flex-direction: column; }
 .desktop:is([data-edge="left"], [data-edge="right"]) .chip[aria-current="true"] { box-shadow: inset 3px 0 0 var(--accent); }
 .desktop[data-edge="right"] .chip[aria-current="true"] { box-shadow: inset -3px 0 0 var(--accent); }
