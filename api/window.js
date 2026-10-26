@@ -7,6 +7,7 @@
  * Tools that do not fit in the title row move into a "more" (⋯) button at its end, and come back as it widens.
  * The title row moves it, any edge or corner resizes it (no snapping), double-click on the title row maximises or
  * restores it, and its title row always stays inside the window area.
+ * A modeless dialog opened from it belongs to it: it floats above it, has no chip, hides and closes with it.
  * Exposed as `Ayni.Window`, so it never clashes with the browser's `window`.
  * @extends Component
  * @fires window  { window, state } with state open, select, minimise, maximise, restore or close.

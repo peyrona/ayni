@@ -1677,11 +1677,13 @@ const selectWin = (desk, w) => {
   winsOf(desk).forEach((x) => { x.classList.toggle('active', x === w); chipOf.get(x)?.setAttribute('aria-current', x === w); });
   if (!w) return;
   w.classList.remove('min'); chipOf.get(w)?.classList.remove('min'); w.style.zIndex = ++zTop;
+  ownedOf(w).forEach((d) => { d.hidden = false; d.style.zIndex = ++zTop; });
   winState(w, 'select');
 };
 const frontWin = (desk) => winsOf(desk).filter((x) => !x.classList.contains('min')).sort((a, b) => b.style.zIndex - a.style.zIndex)[0] || null;
 const minimiseWin = (w) => {
   const desk = w.closest('.desktop'); w.classList.add('min'); chipOf.get(w)?.classList.add('min');
+  ownedOf(w).forEach((d) => (d.hidden = true));
   winState(w, 'minimise'); selectWin(desk, frontWin(desk));
 };
 const maximiseWin = (w, on = !w.classList.contains('max')) => {
@@ -1692,9 +1694,42 @@ const maximiseWin = (w, on = !w.classList.contains('max')) => {
 };
 const closeWin = (w) => {
   if (!ask(w, 'ayni:close', { window: w })) return;
-  const desk = w.closest('.desktop'); chipOf.get(w)?.remove(); w.remove();
+  const desk = w.closest('.desktop'); ownedOf(w).forEach((d) => d.close('close')); chipOf.get(w)?.remove(); w.remove();
   winState(w, 'close'); selectWin(desk, frontWin(desk));
 };
+/* The title row (head) moves el inside area, but not from its buttons or fields; the title row always stays inside */
+const dragBy = (el, head, area, can = () => true) => head.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.target.closest('button, input, select, textarea, a') || !can()) return;
+  const r = el.getBoundingClientRect(), a = area.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+  head.setPointerCapture(e.pointerId);
+  const move = (m) => {
+    el.style.left = Math.min(Math.max(m.clientX - dx - a.left, 0), Math.max(0, a.width - r.width)) + 'px';
+    el.style.top = Math.min(Math.max(m.clientY - dy - a.top, 0), a.height - head.offsetHeight) + 'px';
+  };
+  const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up); };
+  head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+});
+
+/* A modeless dialog opened from a window belongs to it: it floats above that window inside the area, moves by its title
+   row, has no chip, hides while the window is minimised and closes with it */
+const ownedBy = new WeakMap();
+const ownedOf = (w) => $$('.area > dialog.panel[open]', w.closest('.desktop') || document).filter((d) => ownedBy.get(d) === w);
+const adoptDialog = (d) => {
+  /* The owner is the selected window: a modeless dialog is opened from the window the user is working in */
+  const w = $('.desktop > .area > .panel.window.active');
+  if (!w || !isDesktop() || d.matches(':modal')) return;
+  const area = w.parentElement, first = !ownedBy.has(d);
+  ownedBy.set(d, w); d.classList.add('owned');
+  if (d.parentElement !== area) area.append(d);
+  if (first || d.dataset.owner !== w.id) {
+    d.style.left = Math.max(0, w.offsetLeft + (w.offsetWidth - d.offsetWidth) / 2) + 'px';
+    d.style.top = Math.max(0, w.offsetTop + 48) + 'px';
+  }
+  d.dataset.owner = w.id || '';
+  if (first) { dragBy(d, $('header', d) || d, area); d.addEventListener('pointerdown', () => { const o = ownedBy.get(d); if (o && d.open) selectWin(o.closest('.desktop'), o); }); }
+  d.style.zIndex = ++zTop;
+};
+
 const initWindow = (w) => {
   const desk = w.closest('.desktop'), area = w.parentElement, head = $(':scope > header', w);
   if (!desk || !head) return;
@@ -1717,18 +1752,7 @@ const initWindow = (w) => {
   if (!w.style.left && !w.style.top) { const n = winsOf(desk).indexOf(w) % 6; w.style.left = 32 + n * 28 + 'px'; w.style.top = 24 + n * 28 + 'px'; }
   w.addEventListener('pointerdown', () => { if (!w.classList.contains('active')) selectWin(desk, w); });
   w.addEventListener('focusin', () => { if (!w.classList.contains('active')) selectWin(desk, w); });
-  /* The title row moves the window (not its tools); the title row always stays inside the area */
-  head.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || e.target.closest('button, input, a') || w.classList.contains('max')) return;
-    const r = w.getBoundingClientRect(), a = area.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
-    head.setPointerCapture(e.pointerId);
-    const move = (m) => {
-      w.style.left = Math.min(Math.max(m.clientX - dx - a.left, 0), Math.max(0, a.width - r.width)) + 'px';
-      w.style.top = Math.min(Math.max(m.clientY - dy - a.top, 0), a.height - head.offsetHeight) + 'px';
-    };
-    const up = () => { head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up); };
-    head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
-  });
+  dragBy(w, head, area, () => !w.classList.contains('max'));
   head.addEventListener('dblclick', (e) => { if (!e.target.closest('button, input, a')) maximiseWin(w); });
   /* Any edge or corner resizes it, down to its CSS minimum and never past the area */
   ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].forEach((d) => w.insertAdjacentHTML('beforeend', `<span class="win-grip" data-dir="${d}" aria-hidden="true"></span>`));
@@ -1868,6 +1892,7 @@ const init = (root = document) => {
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);
   each(root, '.panel.popup.launcher', 'launcher', initLauncher);
   each(root, '.widget.clock', 'clock', initClock);
+  each(root, 'dialog.panel', 'owned', (d) => new MutationObserver(() => { if (d.open) adoptDialog(d); else d.hidden = false; }).observe(d, { attributes: true, attributeFilter: ['open'] }));
 };
 
 window.Ayni = {

@@ -18,7 +18,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 - **Touch**: a device whose main pointer is coarse (a finger). **Phone**: a touch device narrower than 600 px.
 - **Mouse and keyboard**: a device with a fine pointer.
 
-**Status.** The design of all controls listed here is closed, except for the points in chapter 18. Desktop mode (chapter 17) is being designed now: its taskbar, launcher, chips and window are decided, the rest is listed in 18.2. The accessibility work for blind and deaf users comes later.
+**Status.** The design of all controls listed here is closed, except for the points in chapter 18. Desktop mode is covered in chapter 17. The accessibility work for blind and deaf users comes later.
 
 **Browsers.** Evergreen browsers from 2024 on (Chrome, Edge, Firefox, Safari), so the native popover and dialog elements and modern CSS colour functions can be used.
 
@@ -450,7 +450,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 | Confirmation | "Delete contract.pdf?" | Bottom row: Keep (default, also Esc) and Delete (danger, never default). Used only when a change cannot be applied live |
 | Modeless | Find | Stays open while the user keeps working, no backdrop. Bottom row: Close and Find next at the right, List all matches at the left |
 
-Modal dialogs dim the page behind them with the backdrop colour. How modeless dialogs behave in desktop mode is still to be defined (chapter 18).
+Modal dialogs dim the page behind them with the backdrop colour. In desktop mode a modeless dialog belongs to the window that opened it (17.3).
 
 ### 10.3 Dialog size and screen width
 
@@ -652,7 +652,8 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
 - **A toolbar that does not fit:** the app's icon and name never shrink. The tools that do not fit move, from the end, into a round "more" (⋯) button at the end of the title row; its menu lists them with their icon and tooltip text. They come back as the window widens.
 - **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. There is no snapping: dragging to a screen edge does nothing special. The title row always stays inside the work area.
-- Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. (Proposal, see 18.2: the selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.)
+- **Modeless dialogs** belong to the window that opened them: such a dialog floats above its window inside the work area, moves by its title row, has no chip of its own, hides while its window is minimised and closes when its window closes. Modal dialogs dim the whole screen, as everywhere (10.3 says when they fill it).
+- Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. The selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.
 
 ### 17.4 For developers
 
@@ -670,15 +671,11 @@ These points are known and deliberately left open; each will get its own decisio
 
 The built-in icons are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen. Since any set can be plugged in with a name map (a ready-made one exists for Lucide, which has the same style), the choice no longer blocks apps.
 
-### 18.2 Desktop mode, the rest
-
-Being decided one point at a time. The desktop page already shows a first proposal for each. Chips (what is decided is in 17.3): the selected one is outlined with an accent edge facing the work area; clicking a chip selects its window, and clicking the selected chip minimises it. Still open as well: how modeless dialogs behave in desktop mode.
-
-### 18.3 Low-priority review items
+### 18.2 Low-priority review items
 
 The low-priority items of the gap review have not been reviewed. They will be taken up only if Frasquito asks.
 
-### 18.4 Accessibility for blind and deaf users, right-to-left, High Contrast
+### 18.3 Accessibility for blind and deaf users, right-to-left, High Contrast
 
 To be done after the full design is closed:
 

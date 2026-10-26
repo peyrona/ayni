@@ -601,3 +601,6 @@ html.touch .win-grip { --g: 12px; }
 .panel.window:not(.active) > header > .app .icon { color: var(--ink-2); }
 .panel.window.max { inset: 0 !important; width: auto !important; height: auto !important; border: 0; border-radius: 0; }
 .panel.window.min { display: none; }
+/* A modeless dialog owned by a window floats above it inside the area (placed by ayni.js) */
+.desktop > .area > dialog.panel.owned:not(:modal) { position: absolute; inset: auto; margin: 0; }
+.desktop > .area > dialog.panel.owned > header { touch-action: none; user-select: none; }

@@ -50,7 +50,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 | **Menus** | Menu bar, pull-down menus, pop-up menus (right-click, long tap, Shift+F10), toolbar, popups that hold any control |
 | **Feedback** | Tooltips, notifications with Undo (and Ctrl+Z that keeps working afterwards), status bar, loading and empty states |
 | **Layout** | Panels, tabs (closable, scrollable, keyboard-friendly), group boxes, a splitter with collapse and reset, scrolling everywhere |
-| **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar (in progress) |
+| **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar and their own modeless dialogs |
 | **Dialogs** | Message, live settings, apply on close, confirmation, modeless |
 
 Everything works from the keyboard, with a mouse and by touch, and every state is shown in the gallery.

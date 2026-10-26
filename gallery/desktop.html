@@ -32,7 +32,7 @@
 <div class="desktop" data-edge="bottom">
   <main class="area" aria-label="Desktop">
     <aside class="note" aria-label="About this page">
-      <h3>Desktop mode, work in progress</h3>
+      <h3>Desktop mode</h3>
       <ul>
         <li><b class="ok">Decided:</b> the taskbar goes at the top or the bottom. Right-click it (long tap on touch, or Shift+F10).</li>
         <li><b class="ok">Decided:</b> the launcher is a popup with a search field and the apps, most used first.</li>
@@ -41,7 +41,7 @@
         <li><b class="ok">Decided:</b> drag the title row to move a window, any edge or corner to resize it; double-click the title row to maximise. No snapping.</li>
         <li><b class="ok">Decided:</b> no desktop mode below 1024 px wide.</li>
         <li><b class="ok">Decided:</b> toolbar tools that don't fit go into a "more" button at the end of the title row.</li>
-        <li><b class="tbd">Still open:</b> modeless dialogs. See 18.2 in the guidelines.</li>
+        <li><b class="ok">Decided:</b> a modeless dialog belongs to its window: it floats above it, has no chip, hides and closes with it. Try Find in the Files window.</li>
       </ul>
       <a href="index.html">Back to the gallery</a>
     </aside>
@@ -53,7 +53,7 @@
           <button class="btn quiet" aria-label="Upload" data-tip="Upload"><span class="icon" data-icon="upload"></span></button>
           <button class="btn quiet" aria-label="Copy" data-tip="Copy"><span class="icon" data-icon="copy"></span></button>
           <button class="btn quiet danger" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button>
-          <button class="btn quiet" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button>
+          <button class="btn quiet" id="files-find" aria-label="Find…" data-tip="Find…"><span class="icon" data-icon="search"></span></button>
         </div></header>
       <div class="body sample"><table>
         <tr><th>Name</th><th>Size</th><th>Modified</th></tr>
@@ -92,6 +92,12 @@
   </nav>
 </div>
 
+<dialog class="panel" id="dlg-find" aria-labelledby="find-t">
+  <header><h2 id="find-t">Find in Files</h2><button class="btn quiet" aria-label="Close" data-tip="Close (Esc)" id="find-close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body"><div class="input-group search-field"><input id="find-q" class="input" type="search" placeholder="Part of a file name" aria-label="Find"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" tabindex="-1" aria-label="Find" data-tip="Find"><span class="icon" data-icon="search"></span></button></div>
+    <p class="sample">A modeless dialog: it belongs to the Files window, floats above it, moves by its title row, hides when Files is minimised and closes with it.</p></div>
+</dialog>
+
 <div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
   <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" tabindex="-1" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div>
   <div class="apps" role="group" aria-label="Apps">
@@ -115,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
     table: ['Spreadsheet', 'table', [['new', 'New sheet'], ['save', 'Save'], ['print', 'Print']], '<p>Sheet 1 is empty.</p>'],
   };
   const area = document.querySelector('.desktop > .area');
+  document.getElementById('files-find').addEventListener('click', () => { const d = document.getElementById('dlg-find'); if (!d.open) d.show(); document.getElementById('find-q').focus(); });
+  document.getElementById('find-close').addEventListener('click', () => document.getElementById('dlg-find').close());
   document.getElementById('apps').addEventListener('ayni:launch', (e) => {
     const [name, ic, tools, body] = apps[e.detail.app], w = document.createElement('section');
     w.className = 'panel window'; w.style.width = '400px'; w.style.height = '260px'; w.setAttribute('aria-label', name);
