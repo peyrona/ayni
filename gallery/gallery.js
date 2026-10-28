@@ -1,5 +1,7 @@
 /* Ayni Components gallery: the demo wiring of this page only (outputs, status messages, sample data).
-   Every control's behaviour comes from the library (../ayni.js); nothing here is needed by a real app. */
+   Every control's behaviour comes from the library (../ayni.js); nothing here is needed by a real app.
+   A module, so it can wait for Ayni to start (its texts must be in first). */
+await Ayni.ready;
 const { $, $$, status } = Ayni;
 const say = (id, msg) => { $('#' + id).textContent = msg; };
 

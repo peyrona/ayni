@@ -1,6 +1,6 @@
 # Ayni Design Guidelines
 
-Version of 2026-10-26 · Frasquito
+Version of 2026-10-28 · Frasquito
 
 ## About this book
 
@@ -8,7 +8,7 @@ This book is the rule set for Ayni, a CUA (Common User Access) interface built w
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
-**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, sizes, states, keyboard, touch and scrolling. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
+**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, type and icons, sizes, states, keyboard, touch, scrolling and language. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
 
 **Words used in this book.**
 
@@ -20,7 +20,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 
 **Status.** The design of all controls listed here is closed, except for the points in chapter 18. Desktop mode is covered in chapter 17. The accessibility work for blind and deaf users comes later.
 
-**Browsers.** Evergreen browsers from 2024 on (Chrome, Edge, Firefox, Safari), so the native popover and dialog elements and modern CSS colour functions can be used.
+**Browsers.** Evergreen browsers from 2024 on: Chrome and Edge 119, Firefox 128, Safari 18 or newer. They all have the native popover and dialog elements and the modern CSS colour functions Ayni needs. On an older browser `Ayni.supported()` returns false, so the page can tell the user to update.
 
 ## 1. Principles
 
@@ -31,7 +31,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. On phones, where there are no tooltips, a Help dialog lists every element of the view.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
-6. **Responsive by default.** The same screens work from a 320 px phone up. Touch targets grow to 44 px on touch devices. From 1024 px wide, desktop mode with windows switches on automatically; below that there is none (see chapter 17).
+6. **Responsive by default.** The same screens work from a 320 px phone up. On touch devices every target takes at least 44 px, as an invisible hit area around what is drawn. From 1024 px wide, desktop mode with windows switches on automatically; below that there is none (see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
 8. **The user decides speed.** A single click never waits, except on a button that has a second action. Nothing disappears before the user can act on it: notifications pause while the pointer is on them, and errors stay until dismissed.
 
@@ -54,43 +54,76 @@ Every control is built on the same colours, sizes, states, keys and touch rules,
 
 ### 2.1 Colour
 
-Each colour scheme (light and dark) defines at most five base colours. Every other colour is derived from them at runtime with CSS colour functions (color-mix and relative oklch), so a new scheme only needs five values.
+Each colour scheme, light and dark, sets the colours below by hand. A few more are derived from them at runtime with CSS colour functions (color-mix and relative oklch). An app can set any of them, set by hand or derived, to give itself its own look.
 
-| Base colour | Used for | Light | Dark |
+| Colour | Used for | Light | Dark |
 | --- | --- | --- | --- |
-| Paper | Backgrounds of Panels and fields | #ffffff | #1d232c |
-| Ink | Text, icons, lines | #1b2330 | #e5e9f0 |
-| Accent | Default button fill, selection, active marks (dot, triangle, active filter), links | #1f5fbf | #5b9bff |
-| Alert | Focus ring, warning colour | #b86e00 | #ffb340 |
-| Danger | Danger icons, errors, required mark | #b3261e | #ff7a6e |
+| `--bg` | Page background behind Panels | #D8D0C0 | #1E1F23 |
+| `--card` | Panels: dialogs, menus, popups, windows | #E3DCCC | #25272B |
+| `--card2` | Fields, inner cards, chips | #F2ECDF | #2F3034 |
+| `--line` | Panel borders, separators | #86714B | #424349 |
+| `--text` | Text, icons | #242732 | #E7E7E9 |
+| `--text-dim` | Secondary text, quiet icons, field labels, placeholders | #484C5B | #9597A1 |
+| `--text-faint` | Done items, disabled text | #5E6472 | #6B6E77 |
+| `--accent` | Default button fill, selection, focus ring, active marks (dot, triangle, active filter) | #61410A | #1F80B1 |
+| `--on-accent` | Text and icons on an Accent fill | #F9F9FB | #0D0F17 |
+| `--on-solid` | Icons on a solid Success or Danger fill, a switch's knob | #FFFFFF | #FFFFFF |
+| `--danger` | Danger icons, errors, required mark | #9C4150 | #D9707D |
+| `--ok` | Success icons, "saved" | #2E6B4E | #7BA88F |
+| `--warn` | Warning icons, "offline, changes waiting" | #8A5A0B | #E0A21E |
+| `--busy` | "Sending or fetching data" | #1C5FA6 | #2179CF |
+| `--link` | Links | #1A4F9E | #5B9DF9 |
+| `--shadow` | Shadow colour | black at 14% | black at 35% |
 
-**Derived colours** (as built in the gallery):
+**Derived colours** (the same formulas serve both schemes):
 
-| Name | Derived as | Used for |
+| Colour | Derived as | Used for |
 | --- | --- | --- |
-| Surface 2 | Ink 5% into Paper | Panel title rows |
-| Ground | Paper slightly darker, with 4% Accent | Page background behind Panels |
-| Ink 2 | Ink 66% into Paper | Secondary text, quiet icons |
-| Line | Ink 22% into Paper | Panel borders, separators |
-| Field line | Ink 46% into Paper | Field and control borders |
-| Placeholder | Ink 60% into Paper | Placeholder text |
-| Accent soft | Accent 16% into Paper | Selected list rows, highlights |
-| Read-only background | Ink 7% into Paper | Read-only fields and controls |
-| Warning | Alert 85% into Ink | Warning icons |
-| Success | Accent with hue moved to 152 (green), chroma 80% | Success icons |
-| Shade, backdrop | Paper darkened to 15% lightness; backdrop is shade at 50% | Shadows, modal backdrop |
+| `--card-head` | Text 5% into Card | Panel title rows |
+| `--field-line` | Text 50% into Card 2 | Field and control borders |
+| `--accent-soft` | Accent 16% into Card | Selected list rows, highlights |
+| `--readonly-bg` | Text 7% into Card | Read-only fields and controls |
+| `--track` | Accent 18% into Bg | The empty part of a bar (progress, slider) |
+| `--scrim` | Black at 50% | Modal backdrop |
 
-**Contrast targets** (checked on both schemes): text and placeholder at least 4.5:1 against Paper; focus ring and field borders at least 3:1.
+**Hover and pressed tints** mix Text into the colour below (`color-mix(in srgb, var(--text) N%, transparent)`), so the same rule gives a light tint on dark and a dark tint on light. Accent never means hover: it means active, selected or default.
 
-**Light and dark.** A round moon button in the title row (a toggle, tooltip "Dark mode") switches between the two schemes. Until the user chooses, the scheme follows the system setting; the choice is then remembered on that device.
+**Contrast targets:** text and placeholders at least 4.5:1 against what they sit on; focus ring and field borders at least 3:1. Both schemes meet them. Text faint is lower on purpose: it is only for things that are off or done (disabled text, done items), which the rule does not cover. Text that must be read never uses it. Field borders use Field line, not Line, because Line on Card 2 reaches only 1.3:1 in the dark scheme.
+
+**Schemes.** Light and dark are the two built-in schemes. A user can make their own schemes and pick one for light and one for dark; a scheme sets Bg, Card, Card 2, Line, Accent and On accent, and everything else keeps the built-in value. The schemes are kept on the device (`ayni-schemes`), and a page can also hand Ayni a scheme from code.
+
+**Choosing light or dark.** There are four modes:
+
+- **System** (the default): follows the setting of the phone or computer, and changes with it.
+- **Light** or **Dark**: the user's own choice.
+- **Sun**: light by day, dark by night, worked out from where the device is. It goes light once the sun is 5° above the horizon and dark once it is 4° below, so it does not switch while the sky is still dim. The page gives Ayni the place (rounded to about 10 km, kept only on the device); without one, Ayni uses the main city of the device's time zone.
+
+A round button in the title row (a toggle, `data-theme-toggle`) switches between light and dark: it shows a moon while light is on and a sun while dark is on, and its tooltip says what it will do ("Dark mode"). Pressing it is a choice by hand, so it also ends System and Sun modes. The choice is kept on the device (`ayni-theme`) and every open tab and window of the same site follows it at once. The browser's own bar (`<meta name="theme-color">`) takes the Bg colour. Each change fires `ayni:theme` on `document`, so a page can repaint widgets that CSS cannot reach.
+
+**No flash.** A short inline script in the page's `<head>` applies the saved choice, or the system's, before the first paint. From then on `data-theme` on `<html>` always says which scheme is showing (`light` or `dark`), so a page can style either one with a plain selector.
 
 **Colour carries meaning only through icons and borders.** Danger, success and warning colour the icon of a button, never its fill. Errors colour the border of the field or group and a small red "!" circle that holds the message.
 
 ### 2.2 Type and icons
 
-- Interface font: IBM Plex Sans, falling back to the system UI font. Monospaced text: IBM Plex Mono.
-- Icons are drawn on one 24 × 24 grid with a 2 px stroke and rounded ends, and take their colour from the text. They are used at 16, 20, 24 and 32 px. The current icons are placeholders (see chapter 18).
-- Ayni ships only the icons its controls need (32). An app adds its own, and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
+- **Font:** the system's own interface font (`--font-sans`: San Francisco on Apple, Segoe UI on Windows, Roboto on Android). Monospaced text (paths, code, ids): the system's monospaced font (`--font-mono`). Ayni loads no font from the network, so it works offline and tells no font server who is using it. An app may load its own font and set `--font-sans`.
+- **Sizes** are in rem, so they follow the browser's text size:
+
+| Text | Size | Weight |
+| --- | --- | --- |
+| App title | 1.1 rem, Accent | Bold |
+| Dialog title | 1.15 rem | Bold |
+| Body text, list rows | 0.9 rem | Normal |
+| Field label, extra details | 0.8 rem, Text dim | Normal |
+| Section label | 0.72 rem, Text dim, capitals, letter spacing 0.06 em | Bold |
+| Text typed into a field (`--field-fs`) | 0.77 rem; 16 px on phones | Normal |
+
+  On phones every field uses 16 px: with anything smaller, Safari on iPhone zooms the page in when the field gets the focus and never zooms back out.
+- **Dates** shown to a person are always written YYYY-MM-DD. Month and day names (in the calendar) follow the page's language (2.8).
+- **Icons** are drawn on one 24 × 24 grid with rounded ends, and take their colour from the text. The stroke is 2 px; an icon may use another width when it reads better. They are used at 16, 20, 24 and 32 px. The drawings are Nayive's.
+- **Names** are plain English words, joined with a hyphen when there are several: `close`, `more`, `eye-off`, `arrow-up`, `folder-plus`, `save-as`.
+- An icon is written in the page as `<span class="icon" data-icon="name"></span>`; code uses `Ayni.icon(name)`. No SVG is pasted into a page.
+- Ayni ships only the icons its controls need. An app adds its own set (`Ayni.icons.add`), and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
 
 ### 2.3 Sizes and spacing
@@ -98,14 +131,32 @@ Each colour scheme (light and dark) defines at most five base colours. Every oth
 | Item | Mouse and keyboard | Touch |
 | --- | --- | --- |
 | Control height (fields, list picker) | 32 px | 44 px |
-| Push button (circle) | 36 px, icon 18 px | 44 px |
-| Toolbar and notification buttons | 30 px | 44 px |
-| Buttons inside a field | 26 px, icon 15 px | 44 px |
+| Push button (circle) | 36 px, icon 18 px | Drawn 36 px, hit area 44 px |
+| Small button (`.sm`, in rows and cards) | 30 px, icon 15 px | Drawn 30 px, hit area 44 px |
+| Toolbar and notification buttons | 30 px (36 px in a tall toolbar, `[role="toolbar"].tall`, for an app's title row) | Drawn the same, hit area 44 px |
+| Buttons in a dialog's bottom row | 36 px | 44 px |
+| Buttons inside a field | 26 px, icon 15 px | Hit area 44 px |
 | List rows, menu items, calendar days | Compact | At least 44 px high |
-| Corner radius | Panels 6 px, controls 4 px, buttons round | Same |
 | Panel padding / gap | 16 px / 12 px | Same |
 
-**Touch targets.** On touch devices every touchable thing has a hit area of at least 44 × 44 px, and separate targets keep at least 8 px apart. Things that should look small (the info "i", a tab's close button, the splitter glyphs) keep their small look and get a larger invisible hit area. Tiled targets such as list rows, menu items and calendar days need no gap between them.
+**Corners** (one scale, nothing else is used):
+
+| Name | Radius | Used for |
+| --- | --- | --- |
+| `--radius-s` | 8 px | Fields, small buttons, chips |
+| `--radius-m` | 12 px | Inner cards, list rows, menus, popups |
+| `--radius-l` | 16 px | Dialogs, windows, page cards |
+| `--radius-pill` | fully round ends | Pills, round tags |
+
+Buttons and avatars are circles.
+
+**Spacing** comes in multiples of 4: `--space-1` to `--space-5` are 4, 8, 12, 16 and 24 px. Gaps, padding and margins between parts use them.
+
+**Shadows:** `--elev-card` for popups, menus and page cards, `--elev-dialog` for dialogs over the scrim.
+
+**Motion** is quick and plain, with no entrance animations: `--tr-fast` (0.12 s) for colour, background and opacity, `--tr-move` (0.15 s) for movement. When the system asks for less motion, nothing moves.
+
+**Touch targets.** On touch devices every touchable thing has a hit area of at least 44 × 44 px, and separate targets keep at least 8 px apart. Buttons keep their drawn size and get the rest as an invisible hit area, so more fits in a phone's title row; only the buttons of a dialog's bottom row are drawn at 44 px. Things that should look small (the info "i", a tab's close button, the splitter glyphs) do the same. Tiled targets such as list rows, menu items and calendar days need no gap between them.
 
 **Very narrow phones** (below 360 px, touch): calendar days are drawn 6 px smaller inside their full 44 px cell, and popups keep 4 px from the screen edge, so the date picker fits a 320 px screen without scrolling.
 
@@ -116,7 +167,7 @@ Every control shows each state with the same look.
 | State | Look | Behaviour |
 | --- | --- | --- |
 | Normal | Border in Field line colour | Fully interactive |
-| Focus | 2 px ring in the Alert colour, 2 px outside the control (fields: border turns Accent) | Shown on keyboard focus |
+| Focus | 2 px ring in the Accent colour, 2 px outside the control (fields: border turns Accent) | Shown on keyboard focus |
 | Disabled | Faded to 45% opacity | Does nothing. Fields and list items cannot be focused. Buttons can (see 3.6) |
 | Read-only | No border, soft tint (Read-only background), text at full contrast | Can be focused, selected and copied; value cannot change |
 | Loading | Short centred line with a spinner: "Loading…" | Control is marked busy |
@@ -140,7 +191,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 ### 2.6 Touch
 
-- A device counts as touch when its main pointer is coarse. Sizes switch to the touch values above.
+- A device counts as touch when its main pointer is coarse; Ayni marks the page with the class `touch` on `<html>`. An app can switch it by hand (a tablet with a mouse plugged in, a preview), and every touch rule follows. Sizes switch to the touch values above.
 - There are no tooltips on touch. Each view has a round Help button in its title row instead (chapter 15).
 - **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area, list item or tree item it opens that element's pop-up menu. While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
 - On phones (below 600 px), lists of the list picker open as a sheet at the bottom of the screen, kept above the on-screen keyboard.
@@ -149,26 +200,43 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 Every container (Panel bodies, dialogs, menus, popups, lists, tables, panes) can scroll vertically and horizontally, and shows a scrollbar only when its content does not fit. Menus and popups are never larger than the screen: they scroll instead.
 
+### 2.8 Language
+
+Every text Ayni shows (tooltips, "Loading…", the calendar's month names, the Help dialog) comes in the page's language. Ayni ships English, Spanish, Portuguese, French and German.
+
+- **No text lives in the code.** Every text is a key in one file per language (`i18n/<lang>.json`). Ayni has its own files, and an app keeps its own beside them; both are read with the same functions.
+- **In the page:** `<span data-i18n="key"></span>` for text, `data-i18n-attr="title:key, aria-label:key2"` for attributes. Content added later is translated by `Ayni.i18n.apply(element)`, and on its own when it is added to the page.
+- **In code:** `Ayni.t(key)`, and `Ayni.tf(key, { n: 3 })` for texts with `{n}` places.
+- **Which language:** the user's choice when there is one (`ayni-lang`, kept on the device), else the first of the browser's languages the page offers, else English. Changing it reloads the page, in every open tab.
+- **Missing texts:** a key missing in a language falls back to the page's reference language (English for Ayni's own texts; an app names its own), then to the key itself.
+- **No half-translated screen:** the language script loads first, without `defer`, and keeps the page hidden until the texts are in, for 2.5 s at most, so a dead network never leaves a blank screen. Ayni itself starts only then, and `Ayni.ready` says when: code that builds controls or text waits for it.
+
 ## 3. Buttons
 
-Every button is a circle with an icon and no text label, and every button has a tooltip that names its action.
+Every button is a circle with an icon and no text label, and every button has a tooltip that names its action. The one exception is the text button (3.9), kept for wide calls to action that an icon cannot say.
 
 This applies to push buttons and toggle buttons. It does not apply to tabs, menu items, menu bar items, radio buttons or check boxes, which keep their text.
 
 ### 3.1 Look
 
 - Round, icon only. The tooltip (and the accessible name) says what it does: "Save", "Print (Ctrl+P)".
-- **Background fill marks only the default button.** There is at most one default button per view, and Enter runs it. All other buttons have a Paper background and a thin border, or no border when quiet (in title rows and inside fields).
-- **Meaning goes in the icon colour:** red (Danger) for destructive actions, green (Success) for approve or confirm, amber (Warning) for caution. Neutral buttons use the Ink colour.
-- **A danger button is never the default.** In a confirmation, the safe choice is the default. The gallery removes the default mark from any danger button and warns developers in the console.
+- **At rest a button has no border and no fill, and its icon is in Text dim.** It shows itself when it matters: on hover a grey tint (Text mixed into what is below) comes in and the icon takes the full Text colour; when pressed the tint is a little stronger and the button moves down 1 px. Accent never means hover.
+- **A bordered button** (`.bordered`) is the option for a button that stands alone on a plain surface: a Card disc with a thin border and a full-colour icon.
+- **Background fill marks only the default button.** There is at most one default button per view, and Enter runs it. It is an Accent disc with the icon in On accent.
+- **Meaning goes in the icon colour:** red (Danger) for destructive actions, green (Success) for approve or confirm, amber (Warning) for caution. Neutral buttons use Text dim at rest.
+- **One icon per meaning:** confirm is a check (✓), close is ×, delete is the bin, help is "?", new is "+". The same action never takes another icon, and these icons never mean anything else.
+- **A danger button is never the default.** In a confirmation, the safe choice is the default. Ayni removes the default mark from any danger button and warns developers in the console.
+- **Sizes** (2.3): 36 px, icon 18 px; small (`.sm`) 30 px, icon 15 px, for buttons in list rows and cards. On touch the drawn size stays and the hit area grows to 44 px.
 
 ### 3.2 Toggle buttons
 
-A toggle button holds an on/off state (Bold, Favourite). It looks like a push button and shows "on" with a pressed look. For a setting that takes effect at once, prefer a switch (chapter 5).
+A toggle button holds an on/off state (Bold, Favourite, the Day / Week / Month views). It looks like a push button. When on, it has a soft Accent tint behind an Accent icon; it is never filled, since a fill means the default button. The state is `aria-pressed`, so screen readers say it too. For a setting that takes effect at once, prefer a switch (chapter 5).
 
 ### 3.3 Buttons that open a popup
 
-A button that opens a menu or popup shows a small down-pointing triangle in the Accent colour at its lower right, as a combo box does. The triangle stays small (9 × 6 px on a 36 px button). Such a button can never have a second action, so it never shows the dot.
+A button that opens a menu or popup shows a small down-pointing triangle in the Accent colour at its lower right, as a combo box does. The triangle stays small (9 × 6 px on a 36 px button). Ayni adds it to every button that opens one. Such a button can never have a second action, so it never shows the dot.
+
+The "more" button (⋮, three dots one above the other) is the one exception: its dots already say "a menu of more things", so it shows no triangle.
 
 A button that opens a dialog gets no marker: no triangle and no dot. Its tooltip ends with an ellipsis ("Rename…", "Delete file…") to show that a dialog follows. Like a popup button, it can never have a second action.
 
@@ -181,7 +249,8 @@ A button may have one second action, for example Print (first action) and Print 
 - **Timing:** a single click on a button with a dot waits about 250 ms in case a second click follows. A double-click runs only the second action, never the first. Taps and Enter act at once. Buttons without a dot never wait. (Browsers cannot read the system double-click time, so 250 ms is fixed.)
 - **Hold feedback:** while the finger holds, a ring paints in around the button over the hold time.
 - **Tooltip:** generated from both actions and the ways to reach them. Mouse and keyboard: "Print · Double-click or Shift+Enter: Print with the last settings". Touch (in the Help dialog): "Print · Hold: Print with the last settings".
-- **Never on a button that opens a popup, menu or dialog.** The gallery strips the second action from such buttons and warns.
+- **Never on a button that opens a popup, menu or dialog.** Ayni strips the second action from such buttons and warns.
+- **Use it only where it helps:** a second action is a shortcut for people who know it; the first action must make sense alone.
 
 ### 3.5 Default button
 
@@ -189,24 +258,41 @@ Enter anywhere inside a Panel clicks that Panel's default button. It does not wh
 
 ### 3.6 Disabled buttons
 
-A disabled button is faded to 45%. Clicks and Enter are ignored, but it stays focusable and its tooltip still shows and says why it is off: "Paste: nothing copied yet". A default button can be disabled until the input is valid: it stays filled but faded.
+A disabled button is faded to 45%, the same on every button. Clicks and Enter are ignored, but it stays focusable and its tooltip still shows and says why it is off: "Paste: nothing copied yet". A default button can be disabled until the input is valid: it stays filled but faded. Markup: `aria-disabled="true"`, never the `disabled` attribute (which hides the button from the keyboard and its tooltip).
 
 ### 3.7 Busy buttons
 
-While its action runs, a button is busy: a spinner replaces the icon in the same circle (the size does not change), clicks are ignored, and the tooltip shows what is running ("Saving…"). When the action ends the icon and tooltip come back. A failure is shown with the usual error notification.
+While its action runs, a button is busy: a spinner replaces the icon in the same circle (the size does not change), clicks are ignored, and the tooltip shows what is running ("Saving…"). When the action ends the icon and tooltip come back. A failure is shown with the usual error notification. Use it for every button that waits on a server: it also stops a second click from sending twice.
 
-### 3.8 For developers
+### 3.8 Buttons over pictures
 
-| Need | Markup in the gallery |
+A button that sits on a photo or a video (an editor's tools, a player's controls) is a glass disc (`.on-media`): a dark see-through disc with a white icon, readable on any picture, in both schemes.
+
+### 3.9 Text buttons
+
+A text button carries a short label, with an optional icon before it. It is only for a wide call to action whose meaning an icon cannot carry: "Extract here", "Add stage", "Show all 240 photos". It never goes in a toolbar or a title row, where every button is round.
+
+- **Look:** a pill (fully round ends) with the same states as a round button: no fill at rest, grey tint on hover, a fill only when it is the default button.
+- **Kinds:** plain (`.btn.text`), with a border (`.bordered`), with a dashed border for "add one more" rows (`.dashed`), and small (`.sm`).
+- **Label:** a verb first, two or three words, no full stop. It is the accessible name, so no tooltip is needed unless it adds something.
+
+### 3.10 For developers
+
+| Need | Markup |
 | --- | --- |
-| Button | `.btn` with an icon, `aria-label` and `data-tip` |
+| Button | `.btn` with an icon, `aria-label` and `data-tip` (Ayni fills in `aria-label` from `data-tip` when it is missing) |
+| Small | `.btn.sm` |
+| With a border | `.btn.bordered` |
 | Default | `.btn.primary` (one per view) |
 | Meaning | `.danger`, `.ok`, `.warn` |
 | Toggle | `aria-pressed` |
-| Opens a popup | `popovertarget` or `aria-haspopup` (triangle is added by CSS) |
+| Opens a popup | `popovertarget` or `aria-haspopup` (the triangle is added by CSS; not on the "more" button) |
 | Second action | `data-alt="Print with the last settings"` |
 | Disabled | `aria-disabled="true"`, not the `disabled` attribute |
 | Busy | `Ayni.setBusy(button, "Saving…")`, then `Ayni.setBusy(button, false)` |
+| Over a picture | `.btn.on-media` |
+| Text button | `button.btn.text` with an optional icon and the label |
+| A dialog's buttons | written in the page with their class and icon (`.btn.primary` + check, `.btn` + close, `.btn.danger` + bin); nothing rewrites them when the page loads |
 
 ## 4. Text, number and search fields
 
@@ -281,6 +367,7 @@ A switch is its own control, not a restyled radio button or check box, and it ta
 
 - **One-sided: on or off, the same job as one check box.** One label, at the left of the switch: "Visible (o)===" does what "[x] Visible" does. Off is hollow: a grey outline with a small grey thumb. On is filled with the accent colour, with a full thumb. Disabled off is a filled strong grey track, faded like every disabled control, so it never looks like an enabled off switch.
 - **Two-sided: one of two options, the same job as two radio buttons.** A label on each side, and the thumb points at the chosen one: "Dark (o)=== Light" picks Dark, "Dark ===(o) Light" picks Light, like "(o) Dark ( ) Light". Neither side means "off", so the track keeps the accent colour on both sides, and the chosen label is shown at full contrast. Use it only when the two options are a natural pair (Dark/Light, Metric/Imperial); for three or more, or for options that need explaining, use radio buttons.
+- **In a list of settings** the switch sits at the end of its row, and its label (with its info mark, if any) at the start, so the switches line up down the list: "Show the date (i) ······ (o)===". Markup: `label.switch.end`.
 - **Keys:** a switch is one Tab stop. Space flips it. On a two-sided switch, Left (or Up) picks the left option and Right (or Down) the right one, without wrapping.
 - **Mouse and touch:** clicking the switch or its label flips a one-sided switch. On a two-sided switch, clicking the track flips it and clicking a label picks that option. On touch, every label and the track have a 44 px hit area.
 - **States:** disabled and read-only look as for every control (5.5).
@@ -471,7 +558,8 @@ Feedback never hides the only copy of important information and never disappears
 ### 11.1 Tooltips
 
 - Appear after half a second of hover, or at once on keyboard focus. Esc hides them.
-- Every button has one. It names the action, and may add the shortcut ("Print (Ctrl+P)") or a short explanation ("Share: sends a copy to everyone in the list").
+- Every button has one. It names the action, and may add the shortcut in brackets ("Print (Ctrl+P)") or a short explanation ("Share: sends a copy to everyone in the list"). The middle dot "·" is kept for the second action (3.4).
+- They are Ayni's own (`data-tip`), not the browser's `title`: they show at once on keyboard focus, look the same everywhere and also show on a disabled button.
 - A disabled control's tooltip says why it is off. A second-action button's tooltip names both actions (3.4).
 - Tooltips never hold the only copy of important text.
 - On touch there are no tooltips: the Help dialog replaces them (chapter 15).
@@ -667,15 +755,11 @@ Below 1024 px `ayni.css` hides `.desktop`; anything marked `.no-desktop` shows o
 
 These points are known and deliberately left open; each will get its own decision and then its own chapter or rule.
 
-### 18.1 Icon set
-
-The built-in icons are placeholders that show the style (24 px grid, 2 px stroke, rounded ends). The real icon set is still to be chosen. Since any set can be plugged in with a name map (a ready-made one exists for Lucide, which has the same style), the choice no longer blocks apps.
-
-### 18.2 Low-priority review items
+### 18.1 Low-priority review items
 
 The low-priority items of the gap review have not been reviewed. They will be taken up only if Frasquito asks.
 
-### 18.3 Accessibility for blind and deaf users, right-to-left, High Contrast
+### 18.2 Accessibility for blind and deaf users, right-to-left, High Contrast
 
 To be done after the full design is closed:
 
@@ -703,5 +787,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | Native select, datalist or date wheels | Rejected: the Ayni list picker and calendar |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |
-| Text labels on buttons | Not used: icon-only round buttons with tooltips |
+| Text labels on every button | Not used: icon-only round buttons with tooltips; text buttons only for wide calls to action (3.9) |
+| An accent wash on hover | Dropped: a grey tint; Accent means active, selected or default |
+| A filled disc for a toggle that is on | Dropped: a soft tint; a fill means the default button |
+| Buttons drawn 44 px on touch | Dropped: drawn size kept, 44 px hit area (only a dialog's bottom row is drawn at 44 px) |
+| Filled green and red buttons (phone calls) | Not in Ayni: an app with call screens keeps its own |
+| Fonts from Google Fonts (IBM Plex) | Dropped: the system font, nothing loaded from the network |
+| Five base colours, everything else derived | Replaced: each scheme sets its colours by hand (2.1); a few are still derived |
+| An amber focus ring | Dropped: the focus ring is Accent |
 | Data table | Out of this book: it will be a separate project |

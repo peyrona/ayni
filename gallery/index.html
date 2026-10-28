@@ -4,15 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ayni Components</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
 <script src="demo-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
-<script src="gallery.js" defer></script>
+<script src="gallery.js" type="module"></script>
 </head>
 <body>
 <!-- Ayni Components gallery: every control and state, built with the Ayni library. The living reference for the
@@ -21,9 +25,9 @@
   <header>
     <h2 id="g-title">Ayni Components</h2>
     <span class="mode" id="mode"></span>
-    <button class="btn quiet" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><span class="icon" data-icon="moon"></span></button>
+    <button class="btn" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><span class="icon" data-icon="moon"></span></button>
     <label class="switch">Touch preview<input type="checkbox" role="switch" id="sim-touch"></label>
-    <button class="btn quiet touch-only" id="help-btn" data-open-dialog="dlg-help" data-help="Lists every element on this page and what it does." aria-label="Help: what each element does" data-tip="Help"><span class="icon" data-icon="help"></span></button>
+    <button class="btn touch-only" id="help-btn" data-open-dialog="dlg-help" data-help="Lists every element on this page and what it does." aria-label="Help: what each element does" data-tip="Help"><span class="icon" data-icon="help"></span></button>
   </header>
 
   <div role="tablist" aria-label="Component families" id="tabs" data-hash>
@@ -63,7 +67,7 @@
         <p class="rule">Esc always closes a dialog. Avoid Accept and Cancel wherever possible: apply changes as they happen, or when the dialog closes. With Close as the only button, it goes at the right of the title row. Otherwise all buttons, Close included, go in a bottom row: the usual ones (Close, Accept, Cancel) at the right, any extra actions at the left. Enter anywhere in a Panel runs its default (filled) button, except in a text area, on another button, or while a list or menu is open.</p></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">Every control shares one look per state. In a dialog the default button can be disabled until the input is valid: it stays filled but faded, can still be focused, and its tooltip says why.</p>
-        <div class="row"><button class="btn primary" aria-disabled="true" aria-label="Save" data-tip="Save: type a name first"><span class="icon" data-icon="save"></span></button><button class="btn quiet" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></div></div>
+        <div class="row"><button class="btn primary" aria-disabled="true" aria-label="Save" data-tip="Save: type a name first"><span class="icon" data-icon="save"></span></button><button class="btn" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></div></div>
     </div>
     <p class="out" id="dlg-out" role="status" style="margin-top:12px"></p>
   </div>
@@ -75,7 +79,7 @@
         <p class="rule">Always round with an icon and no label. The tooltip names the action. The filled background marks only the default button (one per view, run by Enter). Meaning goes in the icon colour: red for danger, green for success, amber for warning. A danger button is never the default. A disabled button is faded and does nothing, but it can still be focused and its tooltip says why (see Paste). While an action runs, the button is busy: a spinner replaces the icon and clicks are ignored (try Save).</p>
         <div class="row">
           <button class="btn primary" id="save-demo" aria-label="Save" data-tip="Save"><span class="icon" data-icon="save"></span></button><button class="btn" aria-label="Cancel" data-tip="Cancel"><span class="icon" data-icon="close"></span></button>
-          <button class="btn danger" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button><button class="btn ok" aria-label="Approve" data-tip="Approve"><span class="icon" data-icon="check"></span></button><button class="btn warn" aria-label="Report a problem" data-tip="Report a problem"><span class="icon" data-icon="warn"></span></button><button class="btn quiet" aria-label="Help" data-tip="Help"><span class="icon" data-icon="help"></span></button>
+          <button class="btn danger" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button><button class="btn ok" aria-label="Approve" data-tip="Approve"><span class="icon" data-icon="check"></span></button><button class="btn warn" aria-label="Report a problem" data-tip="Report a problem"><span class="icon" data-icon="warn"></span></button><button class="btn" aria-label="Help" data-tip="Help"><span class="icon" data-icon="help"></span></button>
         </div>
         <div class="row">
           <button class="btn" aria-label="New" data-tip="New"><span class="icon" data-icon="plus"></span></button>
@@ -231,10 +235,10 @@
         <label for="tree-ed" id="tree-ed-l" class="list-label">Project files</label>
         <div role="toolbar" aria-label="Project files tools" data-tree="tree-ed">
           <button class="btn primary" aria-label="New" data-tip="New folder (Insert)" data-tree-act="new"><span class="icon" data-icon="plus"></span></button>
-          <button class="btn quiet icon-btn" aria-label="Rename" data-tip="Rename (F2)" data-tree-act="rename"><span class="icon" data-icon="edit"></span></button>
-          <button class="btn quiet icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><span class="icon" data-icon="eye-off"></span></button>
+          <button class="btn icon-btn" aria-label="Rename" data-tip="Rename (F2)" data-tree-act="rename"><span class="icon" data-icon="edit"></span></button>
+          <button class="btn icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><span class="icon" data-icon="eye-off"></span></button>
           <span class="sep" role="separator"></span>
-          <button class="btn quiet icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><span class="icon" data-icon="trash"></span></button>
+          <button class="btn icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><span class="icon" data-icon="trash"></span></button>
         </div>
         <ul role="tree" id="tree-ed" aria-labelledby="tree-ed-l" data-edit="move insert delete rename hide" data-unique data-new-name="New folder"></ul>
         <label class="switch">Show hidden items<input type="checkbox" role="switch" id="tree-ed-hidden"></label>
@@ -291,7 +295,7 @@
           <span class="error" id="tf-email-err" hidden>Enter a full address, like name@example.com.</span></div>
         <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Password" data-tip="What is this?" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess.">i</button></div>
           <div class="input-group"><input id="tf-pw" class="input" type="password" value="giralda-2026" placeholder="At least 8 characters">
-            <button class="btn quiet" type="button" id="pw-toggle" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><span class="icon" data-icon="eye"></span></button></div></div>
+            <button class="btn" type="button" id="pw-toggle" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><span class="icon" data-icon="eye"></span></button></div></div>
         <div class="field"><label for="tf-ro">Customer ID</label>
           <input id="tf-ro" class="input" value="C-20931" readonly></div>
         <div class="field"><label for="tf-dis">Promo code</label>
@@ -307,23 +311,23 @@
         <p class="rule">Filters as you type. The magnifier sits at the right edge. An optional filter button sits just before it, and a clear button appears once there is text. The first Esc clears the field; a second Esc closes the popup or dialog it sits in, like View options in the Menus tab.</p>
         <div class="field"><label for="sf">Search fruits</label>
           <div class="input-group search-field"><input id="sf" class="input" type="search" placeholder="Type a fruit, like mango">
-            <button class="btn quiet" type="button" id="sf-clear" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button>
-            <button class="btn quiet filter-btn" type="button" id="sf-filter" popovertarget="m-filter" aria-haspopup="menu" aria-label="Filter" data-tip="Filter: all fruits"><span class="icon" data-icon="filter"></span></button>
-            <button class="btn quiet" type="button" id="sf-go" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
+            <button class="btn" type="button" id="sf-clear" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button>
+            <button class="btn filter-btn" type="button" id="sf-filter" popovertarget="m-filter" aria-haspopup="menu" aria-label="Filter" data-tip="Filter: all fruits"><span class="icon" data-icon="filter"></span></button>
+            <button class="btn" type="button" id="sf-go" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
         <p class="out" id="sf-out"></p></div>
       <div class="spec"><h3>Spin button</h3>
         <p class="rule">A number in a range. Arrow keys or the buttons inside the field step it; holding a button repeats, slowly then faster. Page Up and Page Down step 10 times, Home and End go to the limits. A value out of range shows an error (red border and "!") instead of being corrected. Both "," and "." work as the decimal mark.</p>
         <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
           <div class="input-group spin">
-            <button class="btn quiet" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+            <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
             <input id="spin" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="99" data-step="1" value="2" aria-describedby="spin-err">
-            <button class="btn quiet" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button>
+            <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button>
           </div><span class="error" id="spin-err" hidden></span></div>
         <div class="field"><label for="spin-kg">Weight in kg (0–50, steps of 0.5)</label>
           <div class="input-group spin">
-            <button class="btn quiet" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+            <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
             <input id="spin-kg" class="input" role="spinbutton" inputmode="decimal" data-min="0" data-max="50" data-step="0.5" value="2,5" aria-describedby="spin-kg-err">
-            <button class="btn quiet" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button>
+            <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button>
           </div><span class="error" id="spin-kg-err" hidden></span></div></div>
       <div class="spec"><h3>Progress</h3>
         <p class="rule">A bar when the amount is known, a spinner when it is not.</p>
@@ -354,13 +358,13 @@
         <p class="rule">Type the date as YYYY-MM-DD, or pick it from the calendar: the button, or Alt+Down or F4 while in the field.</p>
         <div class="field"><label for="date-f">Delivery date</label>
           <div class="input-group date-field"><input id="date-f" class="input" inputmode="numeric" placeholder="YYYY-MM-DD" aria-describedby="date-err">
-            <button class="btn quiet" popovertarget="cal-pop" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div>
+            <button class="btn" popovertarget="cal-pop" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div>
           <span class="error" id="date-err" hidden>Use the form YYYY-MM-DD, like 2026-10-20.</span></div></div>
       <div class="spec"><h3>Date and time</h3>
         <p class="rule">Type it as YYYY-MM-DD HH:MM, or pick it (the button, or Alt+Down or F4 in the field). In the popup the day and the time apply as soon as you change them. Esc or a click outside closes it.</p>
         <div class="field"><label for="dt-f">Appointment</label>
           <div class="input-group date-field"><input id="dt-f" class="input" inputmode="numeric" placeholder="YYYY-MM-DD HH:MM" aria-describedby="dt-err">
-            <button class="btn quiet" popovertarget="dt-pop" aria-label="Choose date and time" data-tip="Choose date and time"><span class="icon" data-icon="calendar"></span></button></div>
+            <button class="btn" popovertarget="dt-pop" aria-label="Choose date and time" data-tip="Choose date and time"><span class="icon" data-icon="calendar"></span></button></div>
           <span class="error" id="dt-err" hidden>Use the form YYYY-MM-DD HH:MM, like 2026-10-21 16:30.</span></div></div>
       <div class="spec"><h3>Calendar</h3>
         <p class="rule">Arrow keys move by day and week, Page Up and Page Down by month, Enter picks. Click the month title for a 12-month grid, again for a grid of years; picking one returns to the days. The Today button jumps to today and picks it. This one only allows the next 60 days: other days look disabled and cannot be picked.</p>
@@ -370,8 +374,8 @@
         <p class="rule">A disabled slider or date field is faded and ignores input. A read-only one keeps its value visible on a soft tint, without border, and the calendar button goes away.</p>
         <div class="field"><label for="st-s1">Volume, disabled</label><div class="slider-row"><input id="st-s1" type="range" value="40" disabled><output for="st-s1">40%</output></div></div>
         <div class="field"><label for="st-s2">Volume, read-only</label><div class="slider-row"><input id="st-s2" type="range" value="70" aria-readonly="true"><output for="st-s2">70%</output></div></div>
-        <div class="field"><label for="st-d1">Date, disabled</label><div class="input-group date-field"><input id="st-d1" class="input" value="2026-11-02" disabled><button class="btn quiet" aria-disabled="true" aria-label="Choose date" data-tip="Choose date: not available"><span class="icon" data-icon="calendar"></span></button></div></div>
-        <div class="field"><label for="st-d2">Date, read-only</label><div class="input-group date-field"><input id="st-d2" class="input" value="2026-09-14" readonly><button class="btn quiet" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div></div></div>
+        <div class="field"><label for="st-d1">Date, disabled</label><div class="input-group date-field"><input id="st-d1" class="input" value="2026-11-02" disabled><button class="btn" aria-disabled="true" aria-label="Choose date" data-tip="Choose date: not available"><span class="icon" data-icon="calendar"></span></button></div></div>
+        <div class="field"><label for="st-d2">Date, read-only</label><div class="input-group date-field"><input id="st-d2" class="input" value="2026-09-14" readonly><button class="btn" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div></div></div>
     </div>
   </div>
 
@@ -395,14 +399,14 @@
       <div class="spec"><h3>Toolbar</h3>
         <p class="rule">One Tab stop. Arrow keys move between tools.</p>
         <div role="toolbar" aria-label="Formatting" id="toolbar">
-          <button class="btn quiet icon-btn" aria-label="Undo" data-tip="Undo (Ctrl+Z)"><span class="icon" data-icon="undo"></span></button>
-          <button class="btn quiet icon-btn" aria-label="Redo" data-tip="Redo (Ctrl+Y)"><span class="icon" data-icon="redo"></span></button>
+          <button class="btn icon-btn" aria-label="Undo" data-tip="Undo (Ctrl+Z)"><span class="icon" data-icon="undo"></span></button>
+          <button class="btn icon-btn" aria-label="Redo" data-tip="Redo (Ctrl+Y)"><span class="icon" data-icon="redo"></span></button>
           <span class="sep" role="separator"></span>
-          <button class="btn quiet icon-btn" aria-label="Bold" data-tip="Bold" aria-pressed="false" data-toggle data-fmt="bold"><span class="icon" data-icon="bold"></span></button>
-          <button class="btn quiet icon-btn" aria-label="Italic" data-tip="Italic" aria-pressed="false" data-toggle data-fmt="italic"><span class="icon" data-icon="italic"></span></button>
-          <button class="btn quiet icon-btn" aria-label="Underline" data-tip="Underline" aria-pressed="false" data-toggle data-fmt="underline"><span class="icon" data-icon="underline"></span></button>
+          <button class="btn icon-btn" aria-label="Bold" data-tip="Bold" aria-pressed="false" data-toggle data-fmt="bold"><span class="icon" data-icon="bold"></span></button>
+          <button class="btn icon-btn" aria-label="Italic" data-tip="Italic" aria-pressed="false" data-toggle data-fmt="italic"><span class="icon" data-icon="italic"></span></button>
+          <button class="btn icon-btn" aria-label="Underline" data-tip="Underline" aria-pressed="false" data-toggle data-fmt="underline"><span class="icon" data-icon="underline"></span></button>
           <span class="sep" role="separator"></span>
-          <button class="btn quiet icon-btn" aria-label="More" data-tip="More" popovertarget="m-ctx"><span class="icon" data-icon="more"></span></button>
+          <button class="btn icon-btn" aria-label="More" data-tip="More" popovertarget="m-ctx"><span class="icon" data-icon="more"></span></button>
         </div>
         <div class="doc" id="doc">Select a style in the toolbar to change this text.</div></div>
       <div class="spec"><h3>States</h3>
@@ -566,16 +570,16 @@
 <div class="panel popup" popover id="dt-pop" role="dialog" aria-label="Choose date and time">
   <div class="cal" id="dt-cal"></div>
   <div class="time-row"><label for="dt-h">Time</label>
-    <div class="input-group"><button class="btn quiet" type="button" data-tstep="h,-1" aria-label="Hour earlier" data-tip="Hour earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-h" class="input" type="number" min="0" max="23" aria-label="Hours" inputmode="numeric"><button class="btn quiet" type="button" data-tstep="h,1" aria-label="Hour later" data-tip="Hour later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+    <div class="input-group"><button class="btn" type="button" data-tstep="h,-1" aria-label="Hour earlier" data-tip="Hour earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-h" class="input" type="number" min="0" max="23" aria-label="Hours" inputmode="numeric"><button class="btn" type="button" data-tstep="h,1" aria-label="Hour later" data-tip="Hour later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
     <span aria-hidden="true">:</span>
-    <div class="input-group"><button class="btn quiet" type="button" data-tstep="m,-5" aria-label="5 minutes earlier" data-tip="5 minutes earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-m" class="input" type="number" min="0" max="59" step="5" aria-label="Minutes" inputmode="numeric"><button class="btn quiet" type="button" data-tstep="m,5" aria-label="5 minutes later" data-tip="5 minutes later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+    <div class="input-group"><button class="btn" type="button" data-tstep="m,-5" aria-label="5 minutes earlier" data-tip="5 minutes earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-m" class="input" type="number" min="0" max="59" step="5" aria-label="Minutes" inputmode="numeric"><button class="btn" type="button" data-tstep="m,5" aria-label="5 minutes later" data-tip="5 minutes later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
   </div>
 </div>
 <!-- Popup with mixed controls; it scrolls when the content does not fit -->
 <div class="panel popup controls" popover id="pp-ctrl" role="dialog" aria-label="View options">
   <h4>View options</h4>
   <div class="field"><label for="pp-name">Filter by name</label>
-    <div class="input-group search-field"><input id="pp-name" class="input" type="search" placeholder="Type part of a name"><button class="btn quiet" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn quiet" type="button" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
+    <div class="input-group search-field"><input id="pp-name" class="input" type="search" placeholder="Type part of a name"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn" type="button" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
   <fieldset><legend>Sort by</legend>
     <label class="choice"><input type="radio" name="pp-sort" value="Name" checked>Name</label>
     <label class="choice"><input type="radio" name="pp-sort" value="Date modified">Date modified</label>
@@ -633,7 +637,7 @@
 <!-- ===== Dialogs (Panel + <dialog>) ===== -->
 <dialog class="panel big" id="dlg-big" aria-labelledby="db-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="db-t">Preferences</h2><button class="btn quiet" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="db-t">Preferences</h2><button class="btn" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <p>A big dialog: full screen below 1024 px wide, floating with its shadow from 1024 px. Every change applies at once.</p>
       <div class="field"><label for="db-name">Display name</label><input id="db-name" class="input" value="Frasquito"></div>
@@ -645,19 +649,19 @@
 </dialog>
 <dialog class="panel" id="dlg-msg" aria-labelledby="dm-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="dm-t">Upload complete</h2><button class="btn quiet" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="dm-t">Upload complete</h2><button class="btn" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body"><div class="msg info"><span class="icon" data-icon="info"></span><p>3 files were uploaded to Invoices.</p></div></div>
   </form>
 </dialog>
 <dialog class="panel" id="dlg-help" aria-labelledby="dh-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="dh-t">Help</h2><button class="btn quiet" value="close" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="dh-t">Help</h2><button class="btn" value="close" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body" id="dh-body"></div>
   </form>
 </dialog>
 <dialog class="panel" id="dlg-settings" aria-labelledby="ds-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="ds-t">Gallery settings</h2><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="ds-t">Gallery settings</h2><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <label class="switch">Compact spacing<input type="checkbox" role="switch" id="set-compact"></label>
       <label class="switch">Show status bar<input type="checkbox" role="switch" id="set-status" checked></label>
@@ -674,7 +678,7 @@
 </dialog>
 <dialog class="panel" id="dlg-form" aria-labelledby="df-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="df-t">Rename file</h2><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="df-t">Rename file</h2><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <div class="field"><label for="df-name">Name</label>
         <input id="df-name" class="input" value="notes.txt" autofocus aria-describedby="df-err">
@@ -689,7 +693,7 @@
       <div class="field"><label for="dfi-q">Find what</label><input id="dfi-q" class="input" value="invoice"></div>
       <label class="choice"><input type="checkbox">Match case</label>
     </div>
-    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><span class="icon" data-icon="list"></span></button></div><button class="btn quiet" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><span class="icon" data-icon="chev-right"></span></button></footer>
+    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><span class="icon" data-icon="list"></span></button></div><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><span class="icon" data-icon="chev-right"></span></button></footer>
   </form>
 </dialog>
 </body>

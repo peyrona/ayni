@@ -23,11 +23,11 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 
 ## What makes it different
 
-**Round, icon-only buttons.** Every button is a circle with an icon and a tooltip. Colour carries meaning (red for danger, green for success, amber for warning), and a danger button is never the default.
+**Round, icon-only buttons.** Every button is a circle with an icon and a tooltip; it stays quiet (no border, dim icon) until the pointer reaches it. Colour carries meaning (red for danger, green for success, amber for warning), and a danger button is never the default.
 
 **A second action, clearly marked.** A small dot on a button says it also takes a double-click, a long tap on touch screens, or Shift+Enter. The tooltip names both actions, and a ring fills in while you hold.
 
-**Five colours make a theme.** Each scheme, light and dark, is defined by five base colours: paper, ink, accent, alert and danger. Every other colour is worked out from them in the browser, so a new brand is five values away. Light and dark follow the system until the user picks one.
+**Colours with a job each.** Every colour has one named job: `--bg`, `--card`, `--text`, `--accent`, `--danger`, `--ok`, `--warn`, `--busy`... A few more are worked out from them in the browser. Light and dark follow the system until the user picks one, or follow the sun. Users can make their own schemes.
 
 **Touch-first, not touch-afterwards.** On a touch screen every target grows to at least 44 × 44 px. Tooltips give way to a Help button that lists everything on the screen and explains it. Drop-down lists become bottom sheets that stay above the on-screen keyboard.
 
@@ -35,7 +35,9 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 
 **Errors that don't push the layout around.** Nothing is added below a field. The border turns red, a small "!" appears inside the field, and the message pops up while you are in the field.
 
-**Nothing to build.** Three files, `ayni.css`, `ayni.js` and `ayni-icons.js`, work straight from disk or from any static web server. The target is evergreen browsers from 2024 on.
+**Every language, no network.** Every text comes from a language file (English, Spanish, Portuguese, French and German ship with Ayni). The system font is used, and nothing is loaded from other sites.
+
+**Nothing to build, take only what you use.** The base (`ayni-i18n.js`, `ayni-base.css`, `ayni-base.js`, `ayni-icons.js` and the `i18n/` folder) holds the colours, light and dark, icons and texts; the controls come on top, one file pair per family of controls (until they are all split, `ayni.css` and `ayni.js` hold the rest). It all works from any static web server. The target is evergreen browsers from 2024 on (Chrome 119, Firefox 128, Safari 18).
 
 ![The Ayni gallery in dark mode: sliders, a date field, the calendar and the date-and-time popup](docs/gallery-dark.png)
 
@@ -43,7 +45,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 
 | Family | Controls |
 | --- | --- |
-| **Buttons** | Push buttons, default and busy buttons, toggles, popup buttons, second-action buttons, radio buttons, check boxes with a mixed state, switches |
+| **Buttons** | Push buttons (normal, small, bordered), default and busy buttons, toggles, popup buttons, second-action buttons, buttons over pictures, text buttons for wide calls to action, radio buttons, check boxes with a mixed state, switches |
 | **Lists** | Single and multiple selection lists with type-ahead, drop-down list, combo box, all with one list picker on every device |
 | **Texts** | Text fields with buttons inside, search field with filter, password show/hide, text area with a counter, number field, progress, info labels |
 | **Pickers** | Slider, date field, date and time, a calendar with month and year views and date limits |
@@ -57,14 +59,19 @@ Everything works from the keyboard, with a mouse and by touch, and every state i
 
 ## Quick start
 
-Copy `ayni.css`, `ayni.js` and `ayni-icons.js` next to your page:
+Copy the `ayni-*` files, `tz-geo.json` and the `i18n/` folder next to your page:
 
 ```html
+<script src="ayni-i18n.js"></script>
+<link rel="stylesheet" href="ayni-base.css">
+<link rel="stylesheet" href="ayni-buttons.css">
 <link rel="stylesheet" href="ayni.css">
 <script src="ayni-icons.js" defer></script>
+<script src="ayni-base.js" defer></script>
+<script src="ayni-buttons.js" defer></script>
 <script src="ayni.js" defer></script>
 
-<button class="btn primary" aria-label="New" data-tip="New">
+<button class="btn primary" data-i18n-attr="aria-label:new, data-tip:new">
   <span class="icon" data-icon="plus"></span>
 </button>
 ```
@@ -81,7 +88,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
-- [ ] **The final icon set.** The built-in icons are examples. Any other set can already be plugged in (see [Icons](#icons)).
+- [ ] **Nayive's look.** Colours, type, corners, icons and languages taken from Nayive, the first app built on Ayni (rules written, code under way).
 - [ ] **Desktop mode.** From 1024 px wide, Ayni switches on its own to a desktop with windows and a taskbar; below that there is no desktop mode. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
@@ -98,9 +105,14 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <script src="ayni-i18n.js" data-dict="i18n/" data-langs="en es pt fr de"></script>
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+  <link rel="stylesheet" href="ayni-base.css">
+  <link rel="stylesheet" href="ayni-buttons.css">
   <link rel="stylesheet" href="ayni.css">
   <script src="ayni-icons.js" defer></script>
+  <script src="ayni-base.js" defer></script>
+  <script src="ayni-buttons.js" defer></script>
   <script src="ayni.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -108,23 +120,24 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
   <section class="panel">
     <header><h2>Invoices</h2></header>
     <div class="body">
-      <button class="btn primary" aria-label="New" data-tip="New"><span class="icon" data-icon="plus"></span></button>
+      <button class="btn primary" data-i18n-attr="aria-label:new, data-tip:new"><span class="icon" data-icon="plus"></span></button>
     </div>
   </section>
 </body>
 </html>
 ```
 
-Load the scripts with `defer`, in this order. When the page has loaded, `ayni.js` wires up every control it finds. For content added later, call `Ayni.init(element)`; a control is never wired twice, so calling it again is safe.
+`ayni-i18n.js` comes first and without `defer`: it starts loading the texts at once and keeps the page hidden until they are in (2.5 s at most). `data-dict` is the folder with the app's own language files, `data-langs` the languages it offers (the first one is its reference language); Ayni's own texts come from its `i18n/` folder. The one-line script applies the saved light or dark choice before the first paint. Load the other scripts with `defer`, in this order. Ayni starts once the page is parsed and the texts are in; `Ayni.ready` resolves then, and your own code that builds controls or calls Ayni waits for it (`await Ayni.ready` in a module). When the page has loaded, `ayni.js` wires up every control it finds. For content added later, call `Ayni.init(element)`; a control is never wired twice, so calling it again is safe.
 
 The markup of each control is the one in `gallery/index.html`: copy a specimen from there and change its text. The main building blocks are:
 
 | Control | Markup |
 | --- | --- |
 | Panel (the base surface of windows, dialogs, menus and popups) | `.panel` with `header`, `.body` and `footer` |
-| Button (round, icon only, always with a tooltip) | `button.btn` with `aria-label` and `data-tip`; `.primary` marks the default button; `.danger`, `.ok`, `.warn` colour the icon; `.quiet` has no border |
+| Button (round, icon only, always with a tooltip) | `button.btn` with `data-tip` (Ayni fills in `aria-label` from it); borderless with a dim icon at rest; `.sm` is small, `.bordered` adds a disc and a border, `.primary` marks the default button; `.danger`, `.ok`, `.warn` colour the icon; `.on-media` is a glass disc over a picture |
+| Text button (wide calls to action only) | `button.btn.text` with an optional icon and a short label; `.bordered`, `.dashed`, `.sm` |
 | Toggle button | `.btn` with `aria-pressed` and `data-toggle` |
-| Switch (on/off, like one check box) | `label.switch` with the text, then `input[type="checkbox"][role="switch"]` |
+| Switch (on/off, like one check box) | `label.switch` with the text, then `input[type="checkbox"][role="switch"]`; `label.switch.end` puts the switch at the row's end, in a list of settings |
 | Two-sided switch (two options, like two radio buttons) | `.switch-pair[role="radiogroup"]` with `label > input[type="radio"]`, `span.track`, `label > input[type="radio"]` |
 | Second action (double-click, long tap, Shift+Enter) | `data-alt="what it does"` on a `.btn`; listen for `ayni:press` |
 | Busy button | `Ayni.setBusy(button, 'Saving…')`, then `Ayni.setBusy(button, false)` |
@@ -184,7 +197,7 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:showhidden` | `[role="tree"]` | `{ on }` |
 | `ayni:load` | `[role="tree"]` | `{ item, id, path, done(items), fail(text) }`: a `data-lazy` folder opened for the first time |
 | `ayni:split` | `.split` | `{ action, pane, message }` |
-| `ayni:theme` | the toggle button | `{ theme }` |
+| `ayni:theme` | `document` | `{ theme }`: light or dark changed (by hand, by the system, by the sun, in another tab) |
 | `ayni:desktopmode` | `document` | `{ on }`: the width crossed 1024 px; desktop mode exists only from there |
 | `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to the top or the bottom |
 | `ayni:launch` | `.launcher` | `{ app, item }`: an app was picked |
@@ -194,13 +207,13 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | null)`, `icon(name)`, `setIcon(element, name)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `ready`, `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | 'sun' | null)` (`null` = follow the system), `theme.setPlace(lat, lon)` (for the sun), `theme.schemes` (the user's own schemes), `supported()` (false on a browser older than the target), `t(key)`, `tf(key, values)`, `i18n` (`ready`, `lang()`, `setLang(code)`, `apply(element)`), `icon(name)`, `setIcon(element, name)`, `icons.add(set)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
 
 ### Icons
 
 An icon is `<span class="icon" data-icon="name"></span>`, and `Ayni.icon(name)` returns the same markup for code. Ayni draws it from the icon set in use; `Ayni.setIcon(element, name)` changes it.
 
-`ayni-icons.js` holds only the 32 icons the controls need: `apps`, `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `maximise`, `minimise`, `minus`, `more`, `ok`, `paste`, `plus`, `restore`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons: SVG symbols with the id `i-<name>` anywhere in the page, as `gallery/demo-icons.js` does for the gallery.
+The drawings are Nayive's: 24 × 24 grid, rounded ends, 2 px stroke unless an icon reads better with another. Names are plain English words joined by hyphens. `ayni-icons.js` holds only the icons the controls need: `apps`, `arrow-down`, `arrow-up`, `calendar`, `check`, `chev-down`, `chev-right`, `close`, `copy`, `cut`, `edit`, `error`, `eye`, `eye-off`, `file`, `filter`, `folder`, `help`, `info`, `maximise`, `minimise`, `minus`, `more`, `ok`, `paste`, `plus`, `restore`, `search`, `today`, `trash`, `undo` and `warn` (also in `Ayni.icons.names`). Your app brings its own icons with `Ayni.icons.add({ name: '<svg …>' })`, as `gallery/demo-icons.js` does for the gallery. Never paste an SVG into the page: write `<span class="icon" data-icon="name"></span>`.
 
 To use another icon set, give Ayni a map from its names to the set's names:
 
@@ -219,25 +232,33 @@ Any name the map leaves out keeps Ayni's own icon (or your app's `i-<name>` symb
 
 A ready-made map for [Lucide](https://lucide.dev), which has the same style as Ayni's icons, is in `icons/lucide.js`. Load it after `ayni.js`, then call `Ayni.icons.use(Ayni.icons.lucide)`. It fetches Lucide's sprite from a CDN; pass `sprite` to use your own copy. The gallery's Icons tab switches the whole gallery between Ayni and Lucide.
 
-Older markup, `<svg class="icon"><use href="#i-name"/></svg>`, still works but always shows the built-in icon.
-
 ### Colours
 
-Each scheme, light and dark, is defined by five base colours at the top of `ayni.css`: `--c-paper` (backgrounds), `--c-ink` (text), `--c-accent` (selection, default button), `--c-alert` (focus ring, warnings) and `--c-danger` (errors, destructive actions). Every other colour is derived from them, so a new scheme is five new values. The page follows the system setting until the user picks light or dark; the choice is kept in `localStorage` under `ayni-theme`.
+Each scheme, light and dark, sets its colours at the top of `ayni.css`: `--bg` (page), `--card` (panels), `--card2` (fields, chips), `--line`, `--text`, `--text-dim`, `--text-faint`, `--accent`, `--on-accent`, `--on-solid`, `--danger`, `--ok`, `--warn`, `--busy`, `--link` and `--shadow`. A few more are derived from them (`--card-head`, `--field-line`, `--accent-soft`, `--readonly-bg`, `--track`). An app overrides any of them for its own look. The same file holds the corners (`--radius-s/m/l/pill`), spacing (`--space-1` to `--space-5`), shadows (`--elev-card`, `--elev-dialog`), motion (`--tr-fast`, `--tr-move`) and type (`--font-sans`, `--font-mono`, `--field-fs`).
+
+The page follows the system setting until the user picks light or dark (`ayni-theme`), or Sun mode, which follows the real sun at the place the page gives with `Ayni.theme.setPlace()`. The user's own schemes are kept as `ayni-schemes`. Every open tab follows a change at once, and `ayni:theme` fires on `document`.
 
 ## Files
 
 | File | What it is |
 | --- | --- |
-| `ayni.css` | The look of every control, both colour schemes and the touch sizes |
-| `ayni.js` | The behaviour of every control |
-| `ayni-icons.js` | The built-in icons, only those the controls use (24×24 grid, 2px stroke) |
+| `ayni-i18n.js` | The language layer: loads the texts first, `data-i18n` markup, `Ayni.t()` |
+| `i18n/*.json` | Ayni's own texts, one file per language |
+| `ayni-base.css` | The base: both colour schemes, corners, spacing, type, motion and the icon box |
+| `ayni-base.js` | The base: light and dark (with Sun mode and own schemes), icons, tooltips, touch (`Ayni.isTouch`), `Ayni.t`, `Ayni.supported`, start-up and `Ayni.ready` |
+| `ayni-buttons.css` | Buttons family: round and text buttons, toggles, second action, busy, buttons over pictures, switches, check boxes, radios |
+| `ayni-buttons.js` | Buttons family: `Ayni.setBusy`, the second action, the rule checks, switches |
+| `ayni.css` | The look of the controls not yet in a family file, and the touch sizes |
+| `ayni.js` | The behaviour of the controls not yet in a family file; a family file hands its start-up to `Ayni.core.family()` |
+| `ayni-icons.js` | The built-in icons, only those the controls use (Nayive's drawings) |
+| `tz-geo.json` | The main city of each time zone, for Sun mode on a device that gives no place |
 | `icons/lucide.js` | Map from Ayni's icon names to [Lucide](https://lucide.dev)'s, for `Ayni.icons.use()` |
 | `api/` | Proposed programming interface: one class per component, skeletons only (see `api/README.md`) |
 | `gallery/` | The gallery page, with its own layout and demo wiring (not needed by apps); `gallery/desktop.html` shows desktop mode |
 | `docs/guidelines.md` | The Ayni Design Guidelines: every rule, chapter by chapter |
 | `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
 | `docs/*.png` | Images for this page |
+| `tests/run.mjs` | The tests: `node tests/run.mjs` loads the gallery in a headless Chromium and checks it (Node 22+, no packages); it ends with ALL GREEN |
 | `CHANGELOG.md` | What changed in each version |
 
 ## Licence

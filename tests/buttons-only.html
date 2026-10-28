@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni buttons family only</title>
+<!-- A page that takes the base and the buttons family, and nothing else: how an app moves to Ayni one family at a time -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<style>body { background: var(--card); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 40px; } .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }</style>
+</head>
+<body>
+<div class="row">
+  <button class="btn" id="plain" data-tip="Search"><span class="icon" data-icon="search"></span></button>
+  <button class="btn bordered" id="bordered" data-tip="Copy"><span class="icon" data-icon="copy"></span></button>
+  <button class="btn sm" id="small" data-tip="Close"><span class="icon" data-icon="close"></span></button>
+  <button class="btn primary" id="primary" data-tip="Save"><span class="icon" data-icon="check"></span></button>
+  <button class="btn danger" id="danger" data-tip="Delete"><span class="icon" data-icon="trash"></span></button>
+  <button class="btn" id="toggle" aria-pressed="true" data-toggle data-tip="Bold"><span class="icon" data-icon="edit"></span></button>
+  <button class="btn" id="popup" aria-haspopup="menu" data-tip="Sort"><span class="icon" data-icon="filter"></span></button>
+  <button class="btn" id="more" aria-haspopup="menu" data-tip="More"><span class="icon" data-icon="more"></span></button>
+  <button class="btn" id="alt" data-tip="Print" data-alt="Print with the last settings"><span class="icon" data-icon="file"></span></button>
+  <button class="btn" id="off" aria-disabled="true" data-tip="Paste: nothing copied yet"><span class="icon" data-icon="paste"></span></button>
+  <button class="btn on-media" id="media" data-tip="Close"><span class="icon" data-icon="close"></span></button>
+</div>
+<div class="row"><button class="btn text" id="text"><span class="icon" data-icon="folder"></span>Extract here</button>
+  <button class="btn text dashed" id="dashed" style="width:auto"><span class="icon" data-icon="plus"></span>Add stage</button></div>
+<div style="width:320px"><label class="switch end" id="sw">Show the date<input type="checkbox" role="switch"></label></div>
+<div role="toolbar" class="tall" id="tb" style="display:flex"><button class="btn" data-tip="Undo"><span class="icon" data-icon="undo"></span></button></div>
+<section class="panel" style="width:300px"><footer id="foot"><button class="btn primary" data-tip="OK"><span class="icon" data-icon="check"></span></button></footer></section>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni base only</title>
+<!-- A page that takes only the base (colours, light and dark, icons, texts) and none of the controls -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+</head>
+<body>
+<button id="theme" data-theme-toggle><span class="icon" data-icon="moon"></span></button>
+<span class="icon" data-icon="search" id="ic"></span>
+<p id="msg" data-i18n="ayni.undo"></p>
+</body>
+</html>

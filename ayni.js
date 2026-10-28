@@ -1,91 +1,21 @@
-/* Ayni library 0.1.0: the behaviour of every Ayni control. Plain JavaScript, no build step, evergreen browsers 2024+.
-   Load it after ayni.css, together with the icons:
-     <script src="ayni-icons.js" defer></script>
+/* Ayni library 0.1.0: the behaviour of the Ayni controls not yet split into their own family file. Plain JavaScript,
+   no build step, evergreen browsers 2024+. Load it after ayni-base.js:
+     <script src="ayni-base.js" defer></script>
      <script src="ayni.js" defer></script>
    When the page has loaded it wires up every control it finds. Ayni.init(root) wires up controls added later
    (each control is wired once). Controls tell the app what happened with DOM events that bubble (ayni:change,
    ayni:action, ayni:press, ...), listed in README.md. Everything else the app uses lives on window.Ayni. */
 (() => {
 'use strict';
-const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const fire = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
-/* Each control is wired once, so Ayni.init() can run again on new content */
-const wired = new WeakMap();
-const once = (key, el) => { let s = wired.get(el); if (!s) wired.set(el, (s = new Set())); if (s.has(key)) return false; s.add(key); return true; };
-const each = (root, sel, key, fn) => [...(root.matches?.(sel) ? [root] : []), ...$$(sel, root)].forEach((el) => { if (once(key, el)) fn(el); });
-const isMac = /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform || navigator.platform);
-const isRO = (el) => el?.getAttribute?.('aria-readonly') === 'true';
+const { $, $$, isMac, icon, setIcon } = Ayni;
+const { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip } = Ayni.core;
 
 /* Status bar: Ayni.status(text) writes the last action into the element marked data-ayni-status */
 const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
 
 /* Shared layers, created when the page does not have them yet */
-let helpPop, errPop, tip, toasts;
-const layer = (id, html) => document.getElementById(id) || (document.body.insertAdjacentHTML('beforeend', html), document.getElementById(id));
+let helpPop, errPop, toasts;
 
-/* ---------- Icons ---------- */
-/* An icon is <span class="icon" data-icon="name"></span>; Ayni draws it from the icon set in use. The built-in set
-   (ayni-icons.js) has the icons the controls need, as symbols with id "i-<name>"; an app adds its own the same way.
-   Ayni.icons.use(set) plugs in another set and maps Ayni's names to the set's names:
-     { map: { close: 'x', ... },          Ayni name → the set's name; a name left out uses the symbol "i-<name>"
-       sprite: '<svg>…</svg>' or a URL,   symbols added to the page (a URL is fetched, so not from file://)
-       id: 'icon-{name}',                 symbol id in the sprite (default '{name}')
-       stroke: true,                      the set draws with lines, like Ayni's own (default: filled shapes)
-       render: (name) => html }           instead of a sprite: any markup, e.g. an icon font's <i class="…">
-   Ayni.icons.use(null) goes back to the built-in set. Old markup, <svg class="icon"><use href="#i-save"/></svg>,
-   still works but always shows the built-in icon. */
-const ICONS = Object.freeze(['arrow-down', 'arrow-up', 'calendar', 'check', 'chev-down', 'chev-right', 'close', 'copy', 'cut',
-  'apps', 'edit', 'error', 'eye', 'eye-off', 'file', 'filter', 'folder', 'help', 'info', 'maximise', 'minimise', 'minus', 'more', 'ok',
-  'paste', 'plus', 'restore', 'search', 'today', 'trash', 'undo', 'warn']);
-let iconSet = null;
-const noIcon = new Set();
-const iconSvg = (id, stroke) => `<svg${stroke ? ' class="st"' : ''}><use href="#${id}"/></svg>`;
-const iconInner = (name) => {
-  const ext = iconSet?.map[name];
-  if (ext) return iconSet.render ? iconSet.render(ext, name) : iconSvg(iconSet.id.replace('{name}', ext), iconSet.stroke);
-  if (document.getElementById('i-' + name)) return iconSvg('i-' + name, true);
-  if (!noIcon.has(name)) { noIcon.add(name); console.warn(`Ayni icons: no icon named "${name}"`); }
-  return '';
-};
-/* Ayni.icon(name) returns the markup of one icon; extra classes go after "icon" */
-const icon = (name, cls = '') => `<span class="icon${cls && ' ' + cls}" data-icon="${name}" aria-hidden="true">${iconInner(name)}</span>`;
-const drawIcon = (el) => { el.setAttribute('aria-hidden', 'true'); el.innerHTML = iconInner(el.dataset.icon); };
-/* Name of an icon element, also for the old <svg class="icon"><use href="#i-name"/></svg> */
-const iconName = (el) => el.dataset.icon || $('use', el)?.getAttribute('href').replace('#i-', '');
-/* Ayni.setIcon(el, name) changes the icon of el, or of the first icon inside el (a button, a menu item...) */
-const setIcon = (el, name) => {
-  let ic = el.matches('.icon') ? el : $('.icon:not(.tw)', el);
-  if (!ic) return;
-  if (ic.tagName.toLowerCase() === 'svg') { const s = document.createElement('span'); s.className = ic.getAttribute('class'); ic.replaceWith(s); ic = s; }
-  ic.dataset.icon = name; drawIcon(ic);
-};
-const drawIcons = (root, all) => [...(root.matches?.('.icon[data-icon]') ? [root] : []), ...$$('.icon[data-icon]', root)]
-  .forEach((el) => { if (all || !el.firstElementChild) drawIcon(el); });
-const useIcons = async (set) => {
-  document.getElementById('ayni-iconset')?.remove();
-  iconSet = null; noIcon.clear();
-  if (set) {
-    let sprite = set.sprite;
-    if (sprite && !sprite.trimStart().startsWith('<')) {
-      const r = await fetch(sprite); if (!r.ok) throw new Error(`Ayni icons: could not load ${sprite} (${r.status})`);
-      sprite = await r.text();
-    }
-    if (sprite) document.body.insertAdjacentHTML('afterbegin', `<div id="ayni-iconset" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">${sprite}</div>`);
-    iconSet = { map: {}, id: '{name}', ...set };
-    const missing = ICONS.filter((n) => !iconSet.map[n]);
-    if (missing.length) console.warn(`Ayni icons: the set has no icon for ${missing.join(', ')}; Ayni's own is used`);
-  }
-  drawIcons(document, true);
-};
-
-/* ---------- Touch ---------- */
-/* Browsers can't read the system double-click time, so a fixed 250 ms window is used */
-const HOLD_MS = 500, DBL_MS = 250, coarse = matchMedia('(pointer: coarse)');
-let touchPreview = false;
-const isTouch = () => coarse.matches || touchPreview;
-const applyTouch = () => { document.documentElement.classList.toggle('touch', isTouch()); $$('.btn[data-alt]').forEach((b) => b.setTip?.()); };
-/* Ayni.setTouchPreview(true) shows the touch layout with a mouse (the gallery's Touch preview switch) */
-const setTouchPreview = (on) => { touchPreview = !!on; applyTouch(); };
 
 /* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
 const initTabs = (list) => {
@@ -155,28 +85,6 @@ const onEnter = (e) => {
   const panel = t.closest('.panel'), b = panel && defaultButton(panel);
   if (!b || b.getAttribute('aria-disabled') === 'true') return;
   e.preventDefault(); b.click();
-};
-
-/* Busy buttons: setBusy(b, 'Saving…') swaps the icon for a spinner; setBusy(b, false) brings the icon and tooltip back */
-const setBusy = (b, label) => {
-  if (label) { b.dataset.idleTip ??= b.dataset.tip; b.dataset.tip = label; b.setAttribute('aria-busy', 'true'); if (!$('.btn-spin', b)) b.insertAdjacentHTML('beforeend', '<span class="btn-spin" aria-hidden="true"></span>'); }
-  else { b.removeAttribute('aria-busy'); $('.btn-spin', b)?.remove(); if (b.dataset.idleTip) b.dataset.tip = b.dataset.idleTip; delete b.dataset.idleTip; }
-};
-
-/* ---------- Light / dark mode: follows the system until the user picks one ---------- */
-/* Any button with data-theme-toggle switches it; the choice is kept in localStorage ('ayni-theme') */
-const darkMq = matchMedia('(prefers-color-scheme: dark)'), themeBtns = [];
-const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : darkMq.matches; };
-const showTheme = () => themeBtns.forEach((b) => { const d = isDark(); b.setAttribute('aria-pressed', d); b.dataset.tip = 'Dark mode: ' + (d ? 'on' : 'off'); });
-const setTheme = (t) => {
-  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  showTheme();
-  try { if (t) localStorage.setItem('ayni-theme', t); else localStorage.removeItem('ayni-theme'); } catch {}
-};
-const initThemeToggle = (b) => {
-  themeBtns.push(b);
-  b.addEventListener('click', () => { const next = isDark() ? 'light' : 'dark'; setTheme(next); fire(b, 'ayni:theme', { theme: next }); });
-  showTheme();
 };
 
 /* ---------- Dialogs ---------- */
@@ -286,8 +194,8 @@ const initSearch = (g) => {
 const initReveal = (b) => b.addEventListener('click', () => {
   const show = b.getAttribute('aria-pressed') !== 'true', pw = $('input', b.closest('.input-group'));
   pw.type = show ? 'text' : 'password'; b.setAttribute('aria-pressed', show);
-  const label = show ? 'Hide password' : 'Show password'; b.setAttribute('aria-label', label); b.dataset.tip = label;
-  setIcon(b, show ? 'eye-off' : 'eye'); if (tipEl === b) showTip(b);
+  const label = tx(show ? 'password.hide' : 'password.show'); b.setAttribute('aria-label', label); b.dataset.tip = label;
+  setIcon(b, show ? 'eye-off' : 'eye'); retip(b);
 });
 
 /* ---------- Labels: clicking a label focuses its control; a list is focused through its current item ---------- */
@@ -477,9 +385,14 @@ const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseIso = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim()); if (!m) return null; const d = new Date(+m[1], m[2] - 1, +m[3]); return iso(d) === s.trim() ? d : null; };
 const sameDay = (a, b) => a && b && iso(a) === iso(b);
-const fmtLong = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-const fmtMonShort = new Intl.DateTimeFormat('en-GB', { month: 'short' });
-const fmtMonLong = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
+const fmtLong = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const fmtMonShort = new Intl.DateTimeFormat(LOCALE, { month: 'short' });
+const fmtMonLong = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
+/* Two-letter day names, Monday first: "Mo", "Lu"... */
+const dayHeads = () => Array.from({ length: 7 }, (_, i) => {
+  const n = window.Ayni?.i18n?.weekday(i + 1, 'short') || ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'][i];
+  return n.slice(0, 2);
+});
 const day0 = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const fmtDT = (d) => `${iso(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const parseDT = (str) => {
@@ -510,36 +423,36 @@ const makeCalendar = (root, onPick) => {
         for (let d = 0; d < 7; d++) {
           const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d);
           const cls = [day.getMonth() !== m ? 'out' : '', sameDay(day, today) ? 'today' : ''].join(' ').trim();
-          rows += `<td><button type="button" data-d="${iso(day)}" class="${cls}" tabindex="${sameDay(day, cur) ? 0 : -1}" aria-selected="${sameDay(day, sel)}" aria-label="${fmtLong.format(day)}${dayOk(day) ? '' : ', not available'}"${off(dayOk(day))}>${day.getDate()}</button></td>`;
+          rows += `<td><button type="button" data-d="${iso(day)}" class="${cls}" tabindex="${sameDay(day, cur) ? 0 : -1}" aria-selected="${sameDay(day, sel)}" aria-label="${dayOk(day) ? fmtLong.format(day) : txf('cal.dayOff', { date: fmtLong.format(day) })}"${off(dayOk(day))}>${day.getDate()}</button></td>`;
         }
         rows += '</tr>';
       }
       title = fmtMonLong.format(cur); unit = 'month';
       prevOk = monthOk(y, m - 1); nextOk = monthOk(y, m + 1);
-      body = `<table role="grid" aria-label="${title}"><thead><tr>${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((x) => `<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+      body = `<table role="grid" aria-label="${title}"><thead><tr>${dayHeads().map((x) => `<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
     } else if (view === 'months') {
       title = String(y); unit = 'year';
       prevOk = yearOk(y - 1); nextOk = yearOk(y + 1);
-      body = `<div class="cal-grid" role="grid" aria-label="Months of ${y}">${Array.from({ length: 12 }, (_, i) => {
+      body = `<div class="cal-grid" role="grid" aria-label="${txf('cal.monthsOf', { year: y })}">${Array.from({ length: 12 }, (_, i) => {
         const cls = y === today.getFullYear() && i === today.getMonth() ? 'today' : '';
         return `<button type="button" data-mo="${i}" class="${cls}" tabindex="${i === m ? 0 : -1}" aria-selected="${y === sel.getFullYear() && i === sel.getMonth()}" aria-label="${fmtMonLong.format(new Date(y, i, 1))}"${off(monthOk(y, i))}>${fmtMonShort.format(new Date(y, i, 1))}</button>`;
       }).join('')}</div>`;
     } else {
-      title = `${base} to ${base + 11}`; unit = '12 years';
+      title = txf('cal.yearSpan', { from: base, to: base + 11 }); unit = 'years';
       prevOk = yearOk(base - 1); nextOk = yearOk(base + 12);
-      body = `<div class="cal-grid" role="grid" aria-label="Years ${title}">${Array.from({ length: 12 }, (_, i) => {
+      body = `<div class="cal-grid" role="grid" aria-label="${txf('cal.years', { span: title })}">${Array.from({ length: 12 }, (_, i) => {
         const yy = base + i;
         return `<button type="button" data-yr="${yy}" class="${yy === today.getFullYear() ? 'today' : ''}" tabindex="${yy === y ? 0 : -1}" aria-selected="${yy === sel.getFullYear()}"${off(yearOk(yy))}>${yy}</button>`;
       }).join('')}</div>`;
     }
     const titleEl = view === 'years' ? `<span class="cal-title" aria-live="polite">${title}</span>`
-      : `<button type="button" class="cal-title" data-view aria-live="polite" data-tip="${view === 'days' ? 'Choose the month' : 'Choose the year'}">${title}${icon('chev-down')}</button>`;
+      : `<button type="button" class="cal-title" data-view aria-live="polite" data-tip="${tx(view === 'days' ? 'cal.chooseMonth' : 'cal.chooseYear')}">${title}${icon('chev-down')}</button>`;
     root.innerHTML = `<div class="cal-head">
-      <button type="button" class="btn quiet icon-btn" data-nav="-1" aria-label="Previous ${unit}" data-tip="Previous ${unit}"${off(prevOk)}>${icon('chev-right', 'flip')}</button>
+      <button type="button" class="btn icon-btn" data-nav="-1" aria-label="${tx('cal.prev.' + unit)}" data-tip="${tx('cal.prev.' + unit)}"${off(prevOk)}>${icon('chev-right', 'flip')}</button>
       ${titleEl}
-      <button type="button" class="btn quiet icon-btn" data-nav="1" aria-label="Next ${unit}" data-tip="Next ${unit}"${off(nextOk)}>${icon('chev-right')}</button></div>
+      <button type="button" class="btn icon-btn" data-nav="1" aria-label="${tx('cal.next.' + unit)}" data-tip="${tx('cal.next.' + unit)}"${off(nextOk)}>${icon('chev-right')}</button></div>
       <div class="cal-body">${body}</div>
-      <div class="cal-foot"><button type="button" class="btn quiet" data-today aria-label="Today" data-tip="${dayOk(today) ? 'Today: ' + fmtLong.format(today) : 'Today: not available'}"${off(dayOk(today))}>${icon('today')}</button></div>`;
+      <div class="cal-foot"><button type="button" class="btn" data-today aria-label="${tx('cal.today')}" data-tip="${dayOk(today) ? txf('cal.todayIs', { date: fmtLong.format(today) }) : tx('cal.todayOff')}"${off(dayOk(today))}>${icon('today')}</button></div>`;
     if (focus === 'title') $('.cal-title', root).focus?.();
     else if (focus) $('.cal-body [tabindex="0"]', root).focus();
   };
@@ -719,7 +632,7 @@ const initTree = (tree) => {
   const pathOf = (it) => { const p = []; for (let n = it; n; n = parentOf(n)) p.unshift(nameOf(n)); return p; };
   const topMost = (its) => its.filter((x) => !its.some((y) => y !== x && y.contains(x)));
   const isOpen = (it) => it.getAttribute('aria-expanded') === 'true';
-  const label = () => tree.getAttribute('aria-label') || document.getElementById(tree.getAttribute('aria-labelledby'))?.textContent.trim() || 'Tree';
+  const label = () => tree.getAttribute('aria-label') || document.getElementById(tree.getAttribute('aria-labelledby'))?.textContent.trim() || tx('tree.name');
 
   /* ---- Focus and selection ---- */
   let current = null, anchor = null;
@@ -779,7 +692,7 @@ const initTree = (tree) => {
       it.removeAttribute('aria-busy'); it.removeAttribute('data-lazy');
       $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > .icon:not(.tw)', tree)))); tidy(it); ensureStop(); syncBars();
     };
-    const fail = (text = 'Could not load. Close and open it again to retry.') => {
+    const fail = (text = tx('tree.loadFailed')) => {
       if (settled) return; settled = true;
       it.removeAttribute('aria-busy'); const m = $(':scope > .state-msg', g); if (m) m.textContent = text;
     };
@@ -789,19 +702,19 @@ const initTree = (tree) => {
   /* ---- Why an action cannot run now ('' when it can); the toolbar shows it in the tooltip ---- */
   const NEED = { new: 'insert', rename: 'rename', hide: 'hide', showhidden: 'hide', delete: 'delete', cut: 'move', up: 'move', down: 'move', copy: 'insert' };
   const reason = (act, its) => {
-    if (isRO(tree)) return 'the tree is read-only';
+    if (isRO(tree)) return tx('tree.why.readOnly');
     if (act === 'paste') {
       const c = treeClip;
-      if (!c || c.tree !== tree || !c.items.some((x) => x.isConnected)) return 'nothing to paste';
-      return can(c.cut ? 'move' : 'insert') ? '' : 'not allowed here';
+      if (!c || c.tree !== tree || !c.items.some((x) => x.isConnected)) return tx('tree.why.noClip');
+      return can(c.cut ? 'move' : 'insert') ? '' : tx('tree.why.notHere');
     }
-    if (!can(NEED[act])) return 'not allowed here';
+    if (!can(NEED[act])) return tx('tree.why.notHere');
     if (act === 'new' || act === 'showhidden') return '';
-    if (!its.length) return 'pick an item first';
-    if ((act === 'rename' || act === 'up' || act === 'down') && its.length > 1) return 'pick only one item';
-    if (act !== 'rename' && its.some(isRoot)) return 'the top item stays in place';
-    const l = its.find(locked); if (l && act !== 'hide' && act !== 'copy') return `${nameOf(l)} is locked`;
-    if ((act === 'up' || act === 'down') && !stepRef(its[0], act)) return act === 'up' ? 'already at the top' : 'already at the bottom';
+    if (!its.length) return tx('tree.why.pickOne');
+    if ((act === 'rename' || act === 'up' || act === 'down') && its.length > 1) return tx('tree.why.onlyOne');
+    if (act !== 'rename' && its.some(isRoot)) return tx('tree.why.root');
+    const l = its.find(locked); if (l && act !== 'hide' && act !== 'copy') return txf('tree.why.locked', { name: nameOf(l) });
+    if ((act === 'up' || act === 'down') && !stepRef(its[0], act)) return tx(act === 'up' ? 'tree.why.atTop' : 'tree.why.atBottom');
     return '';
   };
   /* Where a dragged or pasted item may go: not inside itself, not into a leaf or a disabled item, not beside the root */
@@ -837,7 +750,7 @@ const initTree = (tree) => {
   const insertNew = (at) => {
     if (reason('new', [])) return;
     const { p, ref } = insertAt(at), icons = !!$('.ti > .icon:not(.tw)', tree);
-    const it = treeItem({ name: tree.dataset.newName || 'New item', icon: icons ? tree.dataset.newIcon || 'folder' : false });
+    const it = treeItem({ name: tree.dataset.newName || tx('tree.newItem'), icon: icons ? tree.dataset.newIcon || 'folder' : false });
     if (p) expand(p);
     putIn(p, it, ref); if (p) p.setAttribute('aria-expanded', 'true');
     reveal(it); setCurrent(it); rename(it, true);
@@ -849,13 +762,13 @@ const initTree = (tree) => {
     const inp = document.createElement('input'), err = document.createElement('span');
     Object.assign(inp, { className: 'input tree-edit', value: old, spellcheck: false, autocomplete: 'off' });
     err.className = 'error'; err.hidden = true; err.id = `ayni-tree-err-${++treeMenus}`;
-    inp.setAttribute('aria-label', 'Name'); inp.setAttribute('aria-describedby', err.id);
+    inp.setAttribute('aria-label', tx('tree.itemName')); inp.setAttribute('aria-describedby', err.id);
     tn.hidden = true; tn.after(inp, err);
     initError(inp); setCurrent(it, false); inp.focus(); inp.select();
     const check = () => {
       const v = inp.value.trim();
-      const msg = !v ? 'Type a name.'
-        : tree.hasAttribute('data-unique') && kids(parentOf(it)).some((x) => x !== it && fold(nameOf(x)) === fold(v)) ? `"${v}" is already used here.` : '';
+      const msg = !v ? tx('tree.typeName')
+        : tree.hasAttribute('data-unique') && kids(parentOf(it)).some((x) => x !== it && fold(nameOf(x)) === fold(v)) ? txf('tree.nameUsed', { name: v }) : '';
       err.textContent = msg; err.hidden = !msg; inp.setAttribute('aria-invalid', !!msg);
       return !msg;
     };
@@ -897,8 +810,8 @@ const initTree = (tree) => {
     its.forEach((it) => it.remove()); spots.forEach((s) => tidy(s.p));
     current = null; if (next) go(next); else { ensureStop(); tree.focus(); }
     if (multi()) report();
-    const what = its.length === 1 ? nameOf(its[0]) : `${its.length} items`;
-    toast('ok', `Deleted ${what}.`, { action: { label: 'Undo', icon: 'undo', run: () => restore(spots) } });
+    const what = its.length === 1 ? nameOf(its[0]) : txf('tree.nItems', { n: its.length });
+    toast('ok', txf('tree.deleted', { what }), { action: { label: tx('undo'), icon: 'undo', run: () => restore(spots) } });
   };
   const restore = (spots) => {
     const its = spots.map((s) => s.it);
@@ -1089,18 +1002,18 @@ const initTree = (tree) => {
       : `<button role="menuitem" data-tree-act="${act}" data-act="${text}">${icon(ic)}${text}${kbd ? `<kbd>${kbd}</kbd>` : ''}</button>`);
     const its = targetsFor(menuFor), shownNow = its.length && its.every((x) => x.hasAttribute('data-hidden'));
     const groups = [
-      [row('new', 'plus', 'New', 'Ins'), row('rename', 'edit', 'Rename', 'F2'), row('hide', shownNow ? 'eye' : 'eye-off', shownNow ? 'Show' : 'Hide')],
-      [row('cut', 'cut', 'Cut', key + 'X'), row('copy', 'copy', 'Copy', key + 'C'), row('paste', 'paste', 'Paste', key + 'V')],
-      [row('up', 'arrow-up', 'Move up', key + '⇧↑'), row('down', 'arrow-down', 'Move down', key + '⇧↓')],
-      [can('hide') ? `<button role="menuitemcheckbox" aria-checked="${tree.hasAttribute('data-show-hidden')}" data-tree-act="showhidden" data-act="Show hidden items">${tree.hasAttribute('data-show-hidden') ? icon('check') : ''}Show hidden items</button>` : ''],
-      [row('delete', 'trash', 'Delete', 'Del')],
+      [row('new', 'plus', tx('tree.new'), 'Ins'), row('rename', 'edit', tx('tree.rename'), 'F2'), row('hide', shownNow ? 'eye' : 'eye-off', tx(shownNow ? 'tree.show' : 'tree.hide'))],
+      [row('cut', 'cut', tx('cut'), key + 'X'), row('copy', 'copy', tx('copy'), key + 'C'), row('paste', 'paste', tx('paste'), key + 'V')],
+      [row('up', 'arrow-up', tx('tree.moveUp'), key + '⇧↑'), row('down', 'arrow-down', tx('tree.moveDown'), key + '⇧↓')],
+      [can('hide') ? `<button role="menuitemcheckbox" aria-checked="${tree.hasAttribute('data-show-hidden')}" data-tree-act="showhidden" data-act="${tx('tree.showHidden')}">${tree.hasAttribute('data-show-hidden') ? icon('check') : ''}${tx('tree.showHidden')}</button>` : ''],
+      [row('delete', 'trash', tx('delete'), 'Del')],
     ].map((g) => g.join('')).filter(Boolean);
     menu.innerHTML = groups.join('<div role="separator"></div>');
   };
   if (menu) {
     if (own) {
       Object.assign(menu, { className: 'panel menu', id: `ayni-tree-menu-${++treeMenus}` });
-      menu.setAttribute('popover', ''); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', label() + ' actions');
+      menu.setAttribute('popover', ''); menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', txf('tree.actions', { name: label() }));
       document.body.append(menu); if (once('menu', menu)) initMenu(menu);
     }
     const target = (e) => {
@@ -1146,11 +1059,11 @@ const initTree = (tree) => {
       let base = b.dataset.baseTip;
       if (act === 'hide') {
         const show = its.length > 0 && its.every((x) => x.hasAttribute('data-hidden'));
-        base = show ? 'Show' : 'Hide'; b.setAttribute('aria-label', base); setIcon(b, show ? 'eye' : 'eye-off');
+        base = tx(show ? 'tree.show' : 'tree.hide'); b.setAttribute('aria-label', base); setIcon(b, show ? 'eye' : 'eye-off');
       }
       if (r) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
       b.dataset.tip = r ? `${base}: ${r}` : base;
-      if (tipEl === b) showTip(b);
+      retip(b);
     }));
   }
   bars.forEach((bar) => {
@@ -1191,17 +1104,6 @@ const tree = (el, opts) => {
   return trees.get(el);
 };
 
-/* ---------- Tooltips: data-tip on any element ---------- */
-let tipTimer, tipEl = null;
-const showTip = (el) => {
-  tip.textContent = el.dataset.tip; tip.showPopover();
-  const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect();
-  let y = r.bottom + 6; if (y + t.height > innerHeight - 8) y = r.top - t.height - 6;
-  tip.style.left = Math.max(8, Math.min(r.left + r.width / 2 - t.width / 2, innerWidth - t.width - 8)) + 'px';
-  tip.style.top = y + 'px';
-};
-const hideTip = () => { clearTimeout(tipTimer); tipEl = null; if (tip.matches(':popover-open')) tip.hidePopover(); };
-
 /* ---------- Help on touch: every element of the view with its icon, tooltip and a short explanation ---------- */
 /* RULE: on touch there are no tooltips. A Help button in the title row opens a dialog that lists every element
    of the current view. Ayni.fillHelp(body, entries) fills it: entries are [group name, element] pairs, in order;
@@ -1209,18 +1111,18 @@ const hideTip = () => { clearTimeout(tipTimer); tipEl = null; if (tip.matches(':
 const explain = (el) => {
   const b = el.matches('button, [role="button"]') ? el : $('button', el) || el, out = [];
   if (el.dataset.help) return el.dataset.help;
-  if (el.matches('[role="tab"]')) return `Shows the ${el.textContent.trim()} page.`;
-  if (el.matches('[data-close]')) return 'Closes this tab. The tab next to it takes its place.';
-  if (b.getAttribute('aria-disabled') === 'true') out.push('Not available right now.');
-  if (b.classList.contains('primary')) out.push('The default button: Enter also runs it.');
-  if (b.classList.contains('danger')) out.push('Danger: it removes or changes something for good.');
-  if (b.classList.contains('ok')) out.push('Approves or confirms.');
-  if (b.classList.contains('warn')) out.push('Use it when something is wrong.');
-  if (b.hasAttribute('aria-pressed')) out.push('Tap to turn it on or off.');
-  if (b.dataset.openDialog) out.push('Opens a dialog.');
-  else if (b.hasAttribute('popovertarget')) out.push(b.getAttribute('aria-haspopup') === 'menu' ? 'Opens a menu.' : 'Opens a popup.');
-  if (b.dataset.alt) out.push(`Hold it to ${b.dataset.alt.charAt(0).toLowerCase() + b.dataset.alt.slice(1)}.`);
-  return out.join(' ') || 'Runs this action at once.';
+  if (el.matches('[role="tab"]')) return txf('help.tab', { name: el.textContent.trim() });
+  if (el.matches('[data-close]')) return tx('help.tabClose');
+  if (b.getAttribute('aria-disabled') === 'true') out.push(tx('help.off'));
+  if (b.classList.contains('primary')) out.push(tx('help.default'));
+  if (b.classList.contains('danger')) out.push(tx('help.danger'));
+  if (b.classList.contains('ok')) out.push(tx('help.ok'));
+  if (b.classList.contains('warn')) out.push(tx('help.warn'));
+  if (b.hasAttribute('aria-pressed')) out.push(tx('help.toggle'));
+  if (b.dataset.openDialog) out.push(tx('help.dialog'));
+  else if (b.hasAttribute('popovertarget')) out.push(tx(b.getAttribute('aria-haspopup') === 'menu' ? 'help.menu' : 'help.popup'));
+  if (b.dataset.alt) out.push(txf('help.hold', { what: b.dataset.alt.charAt(0).toLowerCase() + b.dataset.alt.slice(1) }));
+  return out.join(' ') || tx('help.plain');
 };
 const helpIcon = (el) => {
   const b = el.matches('button') ? el : $('button', el) || el, ico = document.createElement('span');
@@ -1259,55 +1161,22 @@ const toast = (kind, text, { action, persist = kind === 'err' } = {}) => {
   const t = document.createElement('div');
   t.className = 'toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
   t.innerHTML = `${icon({ info: 'info', ok: 'ok', warn: 'warn', err: 'error' }[kind])}<p></p>`
-    + (action ? `<button class="btn quiet act">${icon(action.icon)}</button>` : '')
-    + `<button class="btn quiet icon-btn" aria-label="Dismiss" data-tip="Dismiss">${icon('close')}</button>`;
+    + (action ? `<button class="btn act">${icon(action.icon)}</button>` : '')
+    + `<button class="btn icon-btn dismiss" aria-label="${tx('dismiss')}" data-tip="${tx('dismiss')}">${icon('close')}</button>`;
   $('p', t).textContent = text;
   /* RULE: an Undo toast keeps the 6 s timeout, says the keyboard shortcut also undoes, and has a close button.
      The shortcut keeps working after the toast is gone, until another undoable action replaces it. */
   if (action?.icon === 'undo') {
-    const hint = document.createElement('small'); hint.textContent = `${isMac ? '⌘Z' : 'Ctrl+Z'} also undoes`;
-    $('p', t).append(hint); lastUndo = action.run;
+    const hint = document.createElement('small'); hint.textContent = txf('undoKey', { key: isMac ? '⌘Z' : 'Ctrl+Z' });
+    $('p', t).append(hint); lastUndo = action.run; t.classList.add('undo');
   }
   const close = () => { clearTimeout(timer); t.remove(); if (!toasts.children.length && toasts.matches(':popover-open')) toasts.hidePopover(); };
   let timer; const arm = () => { if (!persist) timer = setTimeout(close, 6000); };
   if (action) { const b = $('.act', t); b.setAttribute('aria-label', action.label); b.dataset.tip = action.label; b.onclick = () => { if (lastUndo === action.run) lastUndo = null; action.run(); close(); }; }
-  $('[aria-label="Dismiss"]', t).onclick = close;
+  $('.dismiss', t).onclick = close;
   t.addEventListener('pointerenter', () => clearTimeout(timer)); t.addEventListener('pointerleave', arm);
   if (!toasts.matches(':popover-open')) toasts.showPopover();
   toasts.append(t); arm();
-};
-
-/* ---------- Second action: double-click, long tap (touch/pen), Shift+Enter ---------- */
-/* A button with data-alt="what the second action does" fires ayni:press with { second, label } instead of acting on
-   its own click: the first action has second false and label = data-tip, the second has second true. */
-const initAlt = (b) => {
-  const base = b.dataset.tip, alt = b.dataset.alt;
-  /* The tooltip names every way to reach the second action on this device */
-  b.setTip = () => { b.dataset.tip = `${base} · ${isTouch() ? 'Hold' : 'Double-click or Shift+Enter'}: ${alt}`; };
-  b.setTip();
-  b.setAttribute('aria-description', `Shift+Enter: ${alt}`);
-  b.style.setProperty('--hold-ms', HOLD_MS + 'ms');
-  const run = (second) => fire(b, 'ayni:press', { second, label: second ? alt : base });
-  let timer, held = false;
-  const cancel = () => { clearTimeout(timer); b.classList.remove('holding'); };
-  b.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && !isTouch()) return;
-    held = false; b.classList.add('holding');
-    timer = setTimeout(() => { held = true; b.classList.remove('holding'); navigator.vibrate?.(15); run(true); }, HOLD_MS);
-  });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => b.addEventListener(t, cancel));
-  b.addEventListener('contextmenu', (e) => e.preventDefault());
-  /* With a mouse, a single click waits DBL_MS to see whether a second click follows; a double-click runs only the
-     second action. Taps (touch) and Enter/Space (detail 0) act at once. */
-  let clickTimer;
-  b.addEventListener('click', (e) => {
-    if (held) { held = false; return; }
-    if (e.detail === 0 || isTouch()) { run(false); return; }
-    clearTimeout(clickTimer);
-    if (e.detail === 1) clickTimer = setTimeout(() => run(false), DBL_MS);
-  });
-  b.addEventListener('dblclick', () => { if (!isTouch()) { clearTimeout(clickTimer); run(true); } });
-  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); run(true); } });
 };
 
 /* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
@@ -1411,9 +1280,9 @@ const initSplit = (split) => {
   const [first, last] = rows ? ['top', 'bottom'] : ['left', 'right'];
   const tri = (dir) => `<span class="tri ${dir}"></span>`;
   const ctl = document.createElement('span'); ctl.className = 'split-ctl';
-  ctl.innerHTML = `<button type="button" tabindex="-1" data-to="0" aria-label="Collapse ${first} pane" data-tip="Collapse ${first} pane">${tri(rows ? 'up' : 'left')}</button>`
-    + `<button type="button" tabindex="-1" data-to="reset" aria-label="Reset sizes" data-tip="Reset sizes (double-click the bar)"><span class="dot"></span></button>`
-    + `<button type="button" tabindex="-1" data-to="100" aria-label="Collapse ${last} pane" data-tip="Collapse ${last} pane">${tri(rows ? 'down' : 'right')}</button>`;
+  ctl.innerHTML = `<button type="button" tabindex="-1" data-to="0" aria-label="${tx('split.collapse.' + first)}" data-tip="${tx('split.collapse.' + first)}">${tri(rows ? 'up' : 'left')}</button>`
+    + `<button type="button" tabindex="-1" data-to="reset" aria-label="${tx('split.reset')}" data-tip="${tx('split.resetTip')}"><span class="dot"></span></button>`
+    + `<button type="button" tabindex="-1" data-to="100" aria-label="${tx('split.collapse.' + last)}" data-tip="${tx('split.collapse.' + last)}">${tri(rows ? 'down' : 'right')}</button>`;
   bar.append(ctl);
   const [toStart, , toEnd] = $$('button', ctl);
   let before = def;
@@ -1426,7 +1295,7 @@ const initSplit = (split) => {
     toStart.setAttribute('aria-disabled', v === 0); toEnd.setAttribute('aria-disabled', v === 100);
   };
   const tell = (action, pane, message) => fire(split, 'ayni:split', { action, pane, message });
-  const reset = () => { before = def; setSplit(def); tell('reset', null, 'Panes reset'); };
+  const reset = () => { before = def; setSplit(def); tell('reset', null, tx('split.wasReset')); };
   /* Too short a bar for three targets: only the reset ring shows */
   new ResizeObserver(() => {
     const len = rows ? bar.clientWidth : bar.clientHeight, need = isTouch() ? 3 * 10 + 68 + 16 : 3 * 10 + 16;
@@ -1435,7 +1304,7 @@ const initSplit = (split) => {
   ctl.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.to === 'reset') reset();
-    else { const pane = b.dataset.to === '0' ? first : last; setSplit(+b.dataset.to, true); tell('collapse', pane, `${pane} pane collapsed`.replace(/^./, (c) => c.toUpperCase())); }
+    else { const pane = b.dataset.to === '0' ? first : last; setSplit(+b.dataset.to, true); tell('collapse', pane, tx('split.collapsed.' + pane)); }
   });
   ctl.addEventListener('dblclick', (e) => e.stopPropagation());
   bar.addEventListener('pointerdown', (e) => {
@@ -1448,7 +1317,7 @@ const initSplit = (split) => {
   bar.addEventListener('dblclick', reset);
   bar.addEventListener('keydown', (e) => {
     const v = +bar.getAttribute('aria-valuenow');
-    if (e.key === 'Enter') { e.preventDefault(); if (v === 0) setSplit(before); else setSplit(0, true); tell(v === 0 ? 'restore' : 'collapse', first, v === 0 ? 'Pane restored' : 'Pane collapsed'); return; }
+    if (e.key === 'Enter') { e.preventDefault(); if (v === 0) setSplit(before); else setSplit(0, true); tell(v === 0 ? 'restore' : 'collapse', first, tx(v === 0 ? 'split.restored' : 'split.collapsed')); return; }
     const n = (rows ? { ArrowUp: v - 5, ArrowDown: v + 5 } : { ArrowLeft: v - 5, ArrowRight: v + 5 })[e.key] ?? { Home: 15, End: 85 }[e.key];
     if (n !== undefined) { e.preventDefault(); setSplit(v === 0 && n < 15 ? 15 : v === 100 && n > 85 ? 85 : n); }
   });
@@ -1520,40 +1389,14 @@ const dismissPopups = (src) => {
 
 /* ---------- Page-wide behaviour, set up once ---------- */
 const setup = () => {
-  helpPop = layer('ayni-help', '<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="Help"></div>');
+  helpPop = layer('ayni-help', `<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="${tx('help')}"></div>`);
   errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
-  tip = layer('ayni-tip', '<div class="tooltip" popover="manual" role="tooltip" id="ayni-tip"></div>');
-  toasts = layer('ayni-toasts', '<div class="toasts" popover="manual" role="region" aria-label="Notifications" id="ayni-toasts"></div>');
-  coarse.addEventListener('change', applyTouch);
+  toasts = layer('ayni-toasts', `<div class="toasts" popover="manual" role="region" aria-label="${tx('notifications')}" id="ayni-toasts"></div>`);
 
-  /* Disabled buttons (aria-disabled) stay focusable but do nothing: clicks, Enter and Space are stopped here */
-  addEventListener('click', (e) => { if (e.target.closest('button[aria-disabled="true"], button[aria-busy="true"]')) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   document.addEventListener('keydown', onEnter);
-  /* Read-only check boxes, radios, switches and sliders show their value but cannot change */
-  addEventListener('click', (e) => { const l = e.target.closest('label'), i = e.target.matches('input') ? e.target : l?.control; if (isRO(i) && /checkbox|radio/.test(i.type)) e.preventDefault(); }, true);
+  /* Read-only radios and sliders show their value but cannot change (check boxes and switches: ayni-buttons.js) */
   addEventListener('keydown', (e) => { if (isRO(e.target) && /radio|range/.test(e.target.type) && /^(Arrow|Page|Home|End)/.test(e.key)) e.preventDefault(); }, true);
   addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
-
-  /* Two-sided switch (.switch-pair): two radios around one track. A click on the track or Space flips to the other side;
-     Left/Up pick the first side and Right/Down the second (no wrapping); clicking a label picks that side (native) */
-  const pickSide = (pair, i) => {
-    const r = $$(':scope > label > input', pair)[i ?? ($(':scope > label:first-of-type > input', pair).checked ? 1 : 0)];
-    if (!r || r.disabled || isRO(r)) return;
-    r.focus();
-    if (r.checked) return;
-    r.checked = true; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true }));
-  };
-  addEventListener('click', (e) => { const t = e.target.closest('.switch-pair > .track'); if (t) pickSide(t.parentElement); });
-  addEventListener('keydown', (e) => {
-    const pair = e.target.closest?.('.switch-pair'); if (!pair || !e.target.matches('input') || e.altKey || e.ctrlKey || e.metaKey) return;
-    const side = { ' ': null, ArrowLeft: 0, ArrowUp: 0, ArrowRight: 1, ArrowDown: 1 }[e.key];
-    if (side === undefined) return;
-    e.preventDefault(); pickSide(pair, side ?? undefined);
-  });
-
-  /* Theme: a saved choice wins over the system setting */
-  try { const saved = localStorage.getItem('ayni-theme'); if (saved) document.documentElement.dataset.theme = saved; } catch {}
-  darkMq.addEventListener('change', showTheme);
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-open-dialog]');
@@ -1576,27 +1419,12 @@ const setup = () => {
   });
   ['click', 'mousedown'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn.some((el) => el.contains(e.target))) { e.stopPropagation(); e.preventDefault(); } }, true));
 
-  /* Tooltips: after half a second of hover, at once on keyboard focus; Esc hides them; none on touch */
-  document.addEventListener('pointerover', (e) => {
-    const el = e.target.closest('[data-tip]'); if (el === tipEl) return;
-    hideTip(); if (e.pointerType === 'touch' || document.documentElement.classList.contains('touch')) return; // touch: the Help dialog replaces tooltips
-    if (el) { tipEl = el; tipTimer = setTimeout(() => showTip(el), 500); }
-  });
-  /* Shown a moment later: the focus may come back while a popup is still closing, when no other popup can open */
-  document.addEventListener('focusin', (e) => {
-    const el = e.target.closest('[data-tip]'); hideTip();
-    if (el && el.matches(':focus-visible')) { tipEl = el; setTimeout(() => { if (tipEl === el && document.activeElement === el) showTip(el); }); }
-  });
-  document.addEventListener('focusout', hideTip);
-  document.addEventListener('pointerdown', hideTip);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(); });
-
   /* Ctrl+Z (⌘Z) runs the last Undo offered by a notification, also after it has gone */
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey || !(isMac ? e.metaKey : e.ctrlKey) || !lastUndo) return;
     if (e.target.closest('input, textarea, [contenteditable]')) return; // text fields keep their own undo
     e.preventDefault(); const run = lastUndo; lastUndo = null; run();
-    $$('.toast', toasts).forEach((x) => { if ($('.act', x)?.dataset.tip === 'Undo') $('[aria-label="Dismiss"]', x).click(); });
+    $$('.toast.undo', toasts).forEach((x) => $('.dismiss', x).click());
   });
 
   /* Field errors */
@@ -1651,14 +1479,14 @@ const setEdge = (desk, edge, save = true) => {
 const initDesktop = (desk) => {
   const bar = $('.taskbar', desk);
   if (!edgeMenu) {
-    edgeMenu = layer('ayni-edge', `<div class="panel menu" popover id="ayni-edge" aria-label="Taskbar position">${EDGES.map((e) =>
-      `<button role="menuitemradio" aria-checked="false" data-edge="${e}">Taskbar at the ${e}</button>`).join('')}</div>`);
+    edgeMenu = layer('ayni-edge', `<div class="panel menu" popover id="ayni-edge" aria-label="${tx('desk.edge')}">${EDGES.map((e) =>
+      `<button role="menuitemradio" aria-checked="false" data-edge="${e}">${tx('desk.edge.' + e)}</button>`).join('')}</div>`);
     initMenu(edgeMenu); once('menu', edgeMenu);
     edgeMenu.addEventListener('ayni:choose', (e) => edgeDesk && setEdge(edgeDesk, e.detail.dataset.edge));
   }
   let saved = null; try { saved = localStorage.getItem('ayni-taskbar-edge'); } catch {}
   setEdge(desk, [saved, desk.dataset.edge].find((x) => EDGES.includes(x)) || 'bottom', false);
-  const t = () => { edgeDesk = desk; return { name: 'Taskbar', back: bar }; };
+  const t = () => { edgeDesk = desk; return { name: tx('desk.taskbar'), back: bar }; };
   contextMenu(bar, { menu: edgeMenu, target: (e) => (e.target.closest('button, .widget') ? null : t()), keyTarget: t });
 };
 
@@ -1688,8 +1516,8 @@ const minimiseWin = (w) => {
 };
 const maximiseWin = (w, on = !w.classList.contains('max')) => {
   w.classList.toggle('max', on);
-  const b = $('[data-win="max"]', chipOf.get(w)), label = on ? 'Restore' : 'Maximise';
-  if (b) { b.setAttribute('aria-label', label); b.dataset.tip = label; setIcon(b, on ? 'restore' : 'maximise'); if (tipEl === b) showTip(b); }
+  const b = $('[data-win="max"]', chipOf.get(w)), label = tx(on ? 'win.restore' : 'win.maximise');
+  if (b) { b.setAttribute('aria-label', label); b.dataset.tip = label; setIcon(b, on ? 'restore' : 'maximise'); retip(b); }
   winState(w, on ? 'maximise' : 'restore');
 };
 const closeWin = (w) => {
@@ -1733,12 +1561,12 @@ const adoptDialog = (d) => {
 const initWindow = (w) => {
   const desk = w.closest('.desktop'), area = w.parentElement, head = $(':scope > header', w);
   if (!desk || !head) return;
-  const name = $('h2', head)?.textContent.trim() || 'Window', appIcon = $('.app .icon', head);
+  const name = $('h2', head)?.textContent.trim() || tx('win.name'), appIcon = $('.app .icon', head);
   const chip = document.createElement('div');
   chip.className = 'chip'; chip.setAttribute('role', 'group'); chip.setAttribute('aria-label', name);
-  const ctl = (k, label, ic) => `<button class="btn quiet" data-win="${k}" aria-label="${label}" data-tip="${label}">${icon(ic)}</button>`;
+  const ctl = (k, label, ic) => `<button class="btn" data-win="${k}" aria-label="${label}" data-tip="${label}">${icon(ic)}</button>`;
   chip.innerHTML = `<button class="chip-main">${icon(appIcon ? iconName(appIcon) : 'file')}<span></span></button>`
-    + `<span class="chip-ctl">${ctl('min', 'Minimise', 'minimise')}${ctl('max', 'Maximise', 'maximise')}${ctl('close', 'Close', 'close')}</span>`;
+    + `<span class="chip-ctl">${ctl('min', tx('win.minimise'), 'minimise')}${ctl('max', tx('win.maximise'), 'maximise')}${ctl('close', tx('close'), 'close')}</span>`;
   const main = $('.chip-main', chip); $('span:not(.icon)', main).textContent = name; main.dataset.tip = name;
   $('.chips', desk)?.append(chip); chipOf.set(w, chip);
   main.addEventListener('click', () => {
@@ -1785,9 +1613,9 @@ const initWindow = (w) => {
 let fitN = 0;
 const fitTools = (bar) => {
   const id = 'ayni-more-' + ++fitN;
-  bar.insertAdjacentHTML('beforeend', `<button class="btn quiet more" popovertarget="${id}" aria-haspopup="menu" aria-label="More tools" data-tip="More tools" hidden>${icon('more')}</button>`);
+  bar.insertAdjacentHTML('beforeend', `<button class="btn more" popovertarget="${id}" aria-haspopup="menu" aria-label="${tx('win.more')}" data-tip="${tx('win.more')}" hidden>${icon('more')}</button>`);
   const more = $(':scope > .more', bar);
-  const menu = layer(id, `<div class="panel menu" popover id="${id}" role="menu" aria-label="More tools"></div>`);
+  const menu = layer(id, `<div class="panel menu" popover id="${id}" role="menu" aria-label="${tx('win.more')}"></div>`);
   initMenu(menu); once('menu', menu);
   const tools = () => $$(':scope > button:not(.more)', bar);
   /* The row fits when its last visible button ends inside the toolbar */
@@ -1855,21 +1683,8 @@ const initClock = (el) => {
 
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
-  drawIcons(root);
   each(root, '[role="tablist"]', 'tabs', initTabs);
   each(root, 'dialog.panel', 'dialog', initDialog);
-  /* Rule check: a danger button is never the default (no .primary, no autofocus) */
-  each(root, '.btn.danger.primary, .btn.danger[autofocus]', 'danger', (b) => {
-    console.warn('Ayni rule: a danger button cannot be the default button', b);
-    b.classList.remove('primary'); b.removeAttribute('autofocus');
-  });
-  each(root, '.btn[popovertarget]:not([aria-haspopup])', 'haspopup', (b) => b.setAttribute('aria-haspopup', 'true'));
-  /* Rule check: a button that opens a popup (menu, popover, dialog) has no second action */
-  each(root, '.btn[data-alt][popovertarget], .btn[data-alt][data-open-dialog], .btn[data-alt][aria-haspopup]', 'altrule', (b) => {
-    console.warn('Ayni rule: a button that opens a popup cannot have a second action', b);
-    b.removeAttribute('data-alt');
-  });
-  each(root, '[data-toggle]', 'toggle', (b) => b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true')));
   each(root, '.lb', 'listbox', initListbox);
   each(root, '.ta-wrap', 'count', initCount);
   each(root, 'textarea[data-autogrow]', 'grow', initGrow);
@@ -1882,12 +1697,9 @@ const init = (root = document) => {
   each(root, '.date-field', 'datekeys', initDateKeys);
   each(root, '.panel.popup.controls', 'controls', initControlsPopup);
   each(root, '[role="tree"]', 'tree', initTree);
-  each(root, '.btn[data-alt]', 'alt', initAlt);
-  applyTouch();
   each(root, '.picker', 'picker', initPicker);
   each(root, '.split', 'split', initSplit);
   each(root, '[aria-describedby]', 'error', initError);
-  each(root, '[data-theme-toggle]', 'theme', initThemeToggle);
   each(root, '.desktop', 'desktop', initDesktop);
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);
   each(root, '.panel.popup.launcher', 'launcher', initLauncher);
@@ -1895,16 +1707,13 @@ const init = (root = document) => {
   each(root, 'dialog.panel', 'owned', (d) => new MutationObserver(() => { if (d.open) adoptDialog(d); else d.hidden = false; }).observe(d, { attributes: true, attributeFilter: ['open'] }));
 };
 
-window.Ayni = {
-  version: '0.1.0', init, $, $$, status, toast, setBusy, place, icon, setIcon, contextMenu, fillHelp, focusFirstError,
-  isTouch, setTouchPreview, isDark, setTheme, isMac, fold, makeTypeAhead, tree,
+Object.assign(Ayni, {
+  status, toast, place, contextMenu, fillHelp, focusFirstError, fold, makeTypeAhead, tree,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },
   setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,
-  icons: { use: useIcons, names: ICONS, get set() { return iconSet; } },
   dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
-};
-const start = () => { setup(); init(document); };
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
+});
+Ayni.core.family({ setup, init });
 })();
