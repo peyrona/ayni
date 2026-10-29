@@ -8,12 +8,14 @@
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
 <script src="demo-icons.js" defer></script>
 <script src="../ayni-base.js" defer></script>
 <script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -427,12 +429,13 @@
           <button class="btn" aria-label="Share" data-tip="Share: sends a copy to everyone in the list"><span class="icon" data-icon="share"></span></button>
         </div></div>
       <div class="spec"><h3>Notifications</h3>
-        <p class="rule">Appear bottom-right and leave after 6 seconds (paused while the pointer is on them). Errors stay until dismissed. Every notification has a round close button. One with Undo also says that Ctrl+Z (⌘Z on Mac) undoes, and the shortcut still works after the notification has gone.</p>
+        <p class="rule">Appear bottom-right (bottom centre on phones) and leave after 6 seconds, paused while the pointer or the focus is on them. Errors stay until closed. Every notification has a round close button. At most 3 show; a fourth makes the oldest leave. Undo is the icon and the word; while it shows, Ctrl+Z (⌘Z on Mac) also undoes. A long job shows a progress notification with a Stop button.</p>
         <div class="row">
           <button class="btn" data-toast="info" aria-label="Show an info notification" data-tip="Show an info notification"><span class="icon" data-icon="info"></span></button>
           <button class="btn" data-toast="ok" aria-label="Show a success notification with Undo" data-tip="Show a success notification with Undo"><span class="icon" data-icon="ok"></span></button>
           <button class="btn" data-toast="warn" aria-label="Show a warning notification" data-tip="Show a warning notification"><span class="icon" data-icon="warn"></span></button>
           <button class="btn" data-toast="err" aria-label="Show an error notification" data-tip="Show an error notification"><span class="icon" data-icon="error"></span></button>
+          <button class="btn" data-toast="progress" aria-label="Show a progress notification" data-tip="Show a progress notification"><span class="icon" data-icon="upload"></span></button>
         </div></div>
       <div class="spec"><h3>Status bar</h3>
         <p class="rule">The strip along the bottom of this Panel. It shows the last action, the selection and where you are.</p>

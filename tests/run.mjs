@@ -325,6 +325,139 @@ try {
   await t.evaluate(`Ayni.setTouchPreview(false), true`);
   check('back to mouse: "Double-click or Shift+Enter"', /Double-click/.test(await t.evaluate(`document.getElementById('alt').dataset.tip`)));
 
+  section('Notifications family (base + buttons + notifications)');
+  t.logs.length = 0;
+  await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  await t.open(BASE + '/tests/toasts-only.html');
+  check('a page with the notifications family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+  const ev = (js) => t.evaluate(js);
+  const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+  const ctrlZ = async () => { for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: 'z', code: 'KeyZ', modifiers: 2, windowsVirtualKeyCode: 90 }); };
+  const shown = () => ev(`[...document.querySelectorAll('#ayni-toasts > .toast')].map((x) => x.querySelector('p').firstChild.textContent)`);
+  const reset = () => ev(`(() => { Ayni.settleUndo(); document.querySelectorAll('#ayni-toasts > .toast').forEach((x) => x.remove()); window.L = []; return true; })()`);
+  await reset();
+  /* Undo helpers: each logs what ran */
+  const undoToast = (name, extra = '') => ev(`(Ayni.toast('ok', '${name}', { undo: () => L.push('undo ${name}'), final: () => L.push('final ${name}')${extra} }), true)`);
+  const L = () => ev('L.join()');
+
+  check('the stack is made by Ayni (no element in the page)', await ev(`!!document.getElementById('ayni-toasts')`));
+  await ev(`(Ayni.toast('ok', 'Saved.'), true)`);
+  check('a notification shows in the open stack', await ev(`document.getElementById('ayni-toasts').matches(':popover-open') && !!document.querySelector('#ayni-toasts .toast.ok')`));
+  check('…with its kind\'s icon and a close button', await ev(`!!document.querySelector('.toast.ok > .icon[data-icon="ok"]') && !!document.querySelector('.toast.ok .dismiss')`));
+  check('…and role="status"; an error has role="alert"', await ev(`(Ayni.toast('err', 'Failed.'), document.querySelector('.toast.ok').getAttribute('role') === 'status' && document.querySelector('.toast.err').getAttribute('role') === 'alert')`));
+  check('every kind has its icon colour', await ev(`(() => { Ayni.toast('info', 'i'); Ayni.toast('warn', 'w'); const c = (k) => getComputedStyle(document.querySelector('.toast.' + k + ' > .icon')).color, v = (n) => { const p = document.createElement('i'); p.style.color = 'var(' + n + ')'; document.body.append(p); const r = getComputedStyle(p).color; p.remove(); return r; }; return c('warn') === v('--warn') && c('err') === v('--danger') && c('info') === v('--accent'); })()`));
+  check('no untranslated keys in the notifications', (await t.evaluate(RAW_KEYS)).length === 0, await t.evaluate(RAW_KEYS));
+  await ev(`document.querySelectorAll('#ayni-toasts .dismiss').forEach((b) => b.click()), true`);
+  check('closing the last one hides the stack', await ev(`!document.getElementById('ayni-toasts').matches(':popover-open') && !document.querySelector('#ayni-toasts .toast')`));
+  check('Ayni.toast returns close()', await ev(`(() => { const h = Ayni.toast('info', 'x'); h.close(); return !document.querySelector('#ayni-toasts .toast'); })()`));
+
+  /* Undo */
+  await reset(); await undoToast('A');
+  check('Undo: the icon and the word "Undo", in Accent', await ev(`(() => { const b = document.querySelector('.toast.undo .act'), p = document.createElement('i'); p.style.color = 'var(--accent)'; document.body.append(p); const acc = getComputedStyle(p).color; p.remove(); return b.matches('.btn.text') && !!b.querySelector('.icon[data-icon="undo"] svg') && b.textContent.trim() === 'Undo' && getComputedStyle(b).color === acc; })()`));
+  check('Undo: the hint "Ctrl+Z also undoes" shows with a mouse', await ev(`getComputedStyle(document.querySelector('.toast.undo .undo-key')).display !== 'none' && document.querySelector('.undo-key').textContent === 'Ctrl+Z also undoes'`));
+  await ev(`Ayni.setTouchPreview(true), true`);
+  check('…and hides on touch', await ev(`getComputedStyle(document.querySelector('.toast.undo .undo-key')).display === 'none'`));
+  await ev(`Ayni.setTouchPreview(false), true`);
+  await ev(`document.querySelector('.toast.undo .act').click(), true`);
+  check('pressing Undo runs it, and `final` never runs', (await L()) === 'undo A' && !(await ev(`!!document.querySelector('.toast.undo')`)), await L());
+
+  await reset(); await undoToast('B');
+  await ev(`document.querySelector('.toast.undo .dismiss').click(), true`);
+  check('closing an Undo makes it final: `final` runs once', (await L()) === 'final B', await L());
+
+  await reset(); await undoToast('C'); await undoToast('D');
+  check('one Undo at a time: a newer Undo makes the older one final', (await L()) === 'final C' && (await shown()).join() === 'D', [await L(), await shown()]);
+  await ev(`(Ayni.toast('info', 'News'), true)`);
+  check('news never makes an Undo final', (await L()) === 'final C' && (await shown()).join() === 'D,News', [await L(), await shown()]);
+  await ev(`Ayni.settleUndo(), true`);
+  check('settleUndo(): the Undo is final now and leaves', (await L()) === 'final C,final D' && (await shown()).join() === 'News', [await L(), await shown()]);
+  await ev(`Ayni.settleUndo(), true`);
+  check('…and a second settleUndo() does nothing', (await L()) === 'final C,final D');
+
+  /* Ctrl+Z */
+  await reset(); await undoToast('E'); await ev('document.activeElement.blur(), true');
+  await ctrlZ();
+  check('Ctrl+Z runs the Undo on show', (await L()) === 'undo E' && !(await ev(`!!document.querySelector('.toast.undo')`)), await L());
+  await ctrlZ();
+  check('…and does nothing once it has gone', (await L()) === 'undo E', await L());
+  await reset(); await undoToast('F'); await ev(`document.getElementById('field').focus(), true`);
+  await ctrlZ();
+  check('Ctrl+Z in a text field is the field\'s own', (await L()) === '', await L());
+  await ev(`(document.activeElement.blur(), window.addEventListener('keydown', window.own = (e) => e.preventDefault(), true), true)`);
+  await ctrlZ();
+  check('Ctrl+Z the page handled itself does not undo', (await L()) === '', await L());
+  await ev(`(window.removeEventListener('keydown', window.own, true), true)`);
+
+  /* A closing page */
+  await reset(); await ev(`(() => { window.sent = []; window.realFetch = window.fetch; window.fetch = (u, o) => { sent.push(!!o?.keepalive); return Promise.resolve(new Response('')); }; return true; })()`);
+  await ev(`(Ayni.toast('ok', 'G', { undo: () => {}, final: () => { L.push('final G'); fetch('/x', { method: 'POST', body: 'y' }); } }), true)`);
+  await ev(`(dispatchEvent(new Event('pagehide')), true)`);
+  check('a closing page makes the Undo final, its fetch with keepalive', (await L()) === 'final G' && (await ev('sent.join()')) === 'true', [await L(), await ev('sent.join()')]);
+  await reset(); await undoToast('H', ', keepOnLeave: true');
+  await ev(`(dispatchEvent(new Event('pagehide')), true)`);
+  check('keepOnLeave: a closing page does not run `final`', (await L()) === '', await L());
+  await ev(`(window.fetch = window.realFetch, true)`);
+
+  /* At most 3 */
+  await reset();
+  await undoToast('U'); await ev(`(Ayni.toast('err', 'E1'), Ayni.toast('info', 'I1'), Ayni.toast('info', 'I2'), Ayni.toast('info', 'I3'), true)`);
+  check('at most 3 show; the oldest leaves, errors and the Undo last', (await shown()).join() === 'U,E1,I3', await shown());
+  check('…and the Undo kept its way back', (await L()) === '', await L());
+  await ev(`(Ayni.toast('err', 'E2'), Ayni.toast('err', 'E3'), true)`);
+  check('with only errors and the Undo, the oldest error goes', (await shown()).join() === 'U,E2,E3', await shown());
+
+  /* Time on screen */
+  await reset();
+  await undoToast('T'); await ev(`(Ayni.toast('info', 'Plain'), Ayni.toast('err', 'Error'), true)`);
+  await wait(6300);
+  check('after 6 s: a plain one has gone, an error stays', (await shown()).join() === 'Error', await shown());
+  check('…and the Undo has gone, final', (await L()) === 'final T', await L());
+  await reset();
+  await ev(`(Ayni.toast('info', 'Focused'), document.querySelector('#ayni-toasts .dismiss').focus(), true)`);
+  await ev(`(Ayni.toast('info', 'Hovered'), true)`);
+  const hb = await ev(`(() => { const b = [...document.querySelectorAll('#ayni-toasts .toast')].at(-1).getBoundingClientRect(); return [b.left + 20, b.top + b.height / 2]; })()`);
+  await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: hb[0], y: hb[1] });
+  await wait(6300);
+  check('the time stops while the focus is inside or the pointer is on it', (await shown()).join() === 'Focused,Hovered', await shown());
+  await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 });
+
+  /* Where */
+  await reset(); await ev(`(Ayni.toast('info', 'Where'), true)`);
+  const box = () => ev(`(() => { const r = document.getElementById('ayni-toasts').getBoundingClientRect(); return [Math.round(r.left), Math.round(innerWidth - r.right), Math.round(innerHeight - r.bottom), Math.round(r.width)]; })()`);
+  let b = await box();
+  check('wide screen: bottom right, 16 px in, 360 px wide', b[1] === 16 && b[2] === 16 && b[3] === 360, b);
+  await t.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 800, deviceScaleFactor: 2, mobile: true });
+  b = await box();
+  check('phone: bottom centre, full width less 16 px each side', b[0] === 16 && b[1] === 16 && b[2] === 16, b);
+  await ev(`(document.documentElement.style.setProperty('--toasts-lift', '64px'), true)`);
+  b = await box();
+  check('phone: --toasts-lift raises it above a bottom bar', b[2] === 80, b);
+  await ev(`(document.documentElement.style.removeProperty('--toasts-lift'), true)`);
+  await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+
+  /* Progress */
+  await reset();
+  await ev(`(window.stops = 0, window.job = Ayni.progress('Uploading 0%', { pct: 0, onStop: () => stops++ }), true)`);
+  await wait(300);
+  check('progress: nothing shows in the first 600 ms', !(await ev(`!!document.querySelector('.toast.progress')`)));
+  await wait(450);
+  check('progress: then it shows, as a progress bar', await ev(`document.querySelector('.toast.progress')?.getAttribute('role') === 'progressbar'`));
+  await ev(`(job.set('Uploading 50%', 50), true)`);
+  check('set(text, 50): the text, aria-valuenow and a half-full bar', await ev(`(() => { const p = document.querySelector('.toast.progress'); const f = p.querySelector('.toast-fill'), tr = p.querySelector('.toast-track'); return p.querySelector('p').textContent === 'Uploading 50%' && p.getAttribute('aria-valuenow') === '50' && Math.abs(f.getBoundingClientRect().width - tr.getBoundingClientRect().width / 2) < 2 || f.style.width === '50%'; })()`));
+  await ev(`(job.set('Working…', null), true)`);
+  check('set(text, null): the fill slides, no value', await ev(`document.querySelector('.toast.progress').classList.contains('sliding') && !document.querySelector('.toast.progress').hasAttribute('aria-valuenow')`));
+  await ev(`(Ayni.toast('info', '1'), Ayni.toast('info', '2'), Ayni.toast('info', '3'), true)`);
+  check('progress does not count towards the 3', (await shown()).join() === 'Working…,1,2,3', await shown());
+  await ev(`(document.querySelector('.toast.progress .stop').click(), document.querySelector('.toast.progress .stop').click(), true)`);
+  check('Stop calls onStop once', (await ev('stops')) === 1, await ev('stops'));
+  await ev(`(job.end(), true)`);
+  check('end() takes it away', !(await ev(`!!document.querySelector('.toast.progress')`)));
+  await ev(`(window.j2 = Ayni.progress('Quick'), j2.end(), true)`);
+  await wait(700);
+  check('a job that ends within 600 ms never shows', !(await ev(`!!document.querySelector('.toast.progress')`)));
+  check('no errors or warnings in the notifications family', t.logs.length === 0, t.logs.slice());
+  await reset();
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

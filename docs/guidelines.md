@@ -186,7 +186,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 - Alt+Down or F4 opens a list picker or calendar.
 - Shift+F10 or the Menu key opens a pop-up menu. F10 focuses the menu bar.
 - Ctrl+Page Down / Ctrl+Page Up switch tabs from anywhere inside the Panel.
-- Ctrl+Z (⌘Z on Mac) undoes the last undoable action, outside text fields.
+- Ctrl+Z (⌘Z on Mac) runs the Undo on screen, outside text fields (11.2).
 - On Mac, Ctrl in shortcuts reads ⌘.
 
 ### 2.6 Touch
@@ -521,7 +521,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 
 1. **Esc always closes a dialog.** Closing is not cancelling: changes are kept.
 2. **Avoid Accept and Cancel wherever possible.** Apply each change as it is made, or when the dialog closes. Invalid input is not applied, and the status bar says why.
-3. **No Cancel means none is needed.** No Undo notification follows a dialog. If the user needs a way back, the dialog gets a Cancel button.
+3. **No Cancel means none is needed.** No Undo notification follows the closing of a dialog. If the user needs a way back, the dialog gets a Cancel button. The one exception is a delete pressed inside the dialog: it acts at once, with no second "Are you sure?", and its Undo shows after the dialog closes (11.2).
 4. **Close as the only button** sits in the title row, at the right.
 5. **Otherwise all buttons go in a bottom row**, Close included: the usual ones (Close, Accept, Cancel, the main action) aligned right, any extra actions in the same row aligned left.
 6. **Enter runs the default button** (3.5). In a confirmation the safe choice is the default; a danger button never is.
@@ -569,18 +569,39 @@ Feedback never hides the only copy of important information and never disappears
 
 | Rule | Value |
 | --- | --- |
-| Position | Bottom right |
+| Position | Bottom right. On phones (below 600 px) bottom centre, full width less the 16 px gutters, lifted above a bar along the bottom of the screen (a player, a message box) |
 | Kinds | Information, success, warning, error, each with its status icon |
-| Time on screen | 6 s, paused while the pointer is on the notification |
-| Errors | Stay until the user dismisses them |
+| Time on screen | 6 s, paused while the pointer is on the notification or the focus is inside it |
+| Errors | Stay until the user closes them |
 | Close | Every notification has a round close button |
-| Undo | A notification with Undo also shows the hint "Ctrl+Z also undoes" (⌘Z on Mac). The shortcut still undoes after the notification has gone, outside text fields |
+| Several at once | They stack, the newest nearest the corner, at most 3. A fourth one makes the oldest leave; errors and the Undo are the last to go |
+| Text | Left-aligned beside the icon; one short sentence, an error also says what to do |
 
-No Undo notification follows the closing of a dialog (10.1).
+**Which kind:**
+
+| Kind | For | Example |
+| --- | --- | --- |
+| Success | An action the user asked for is done | "Moved to the bin." |
+| Information | News the user did not cause | "The list was merged with the copy on the server." |
+| Warning | Done, with a catch | "Saved on this device only. It goes up when you are back online." |
+| Error | It failed | "Could not save notes.txt. Check your connection and try again." |
+
+**Undo.** An action that can be taken back runs at once and shows a notification with an Undo button (the undo icon and the word "Undo"); there is no confirmation dialog.
+
+- **One Undo at a time.** A new Undo makes the older one final: its notification leaves.
+- **Final** means the Undo is gone for good: its 6 s are up, the user closed it, a new Undo replaced it, the page asked for it (an editor or a game on its next key or move, so the Undo cannot throw the new work away), or the page is closing. Then the action's last step runs, once (for example, a delete that only hid the item now really deletes it). A closing page still sends that step; the page can say it must not (a sent mail whose draft keeps it).
+- **News never makes an Undo final.** Other notifications stack beside it.
+- **Ctrl+Z** (⌘Z on Mac) runs the Undo while its notification is on screen, outside text fields and in pages that do not handle Ctrl+Z themselves. Once the notification is gone, Ctrl+Z does nothing here: the action is final. With a keyboard the notification shows the hint "Ctrl+Z also undoes"; on touch it does not.
+
+A notification may have one other action instead of Undo ("Switch", "Retry"): a text button with its icon and word, like Undo.
+
+A delete pressed inside a dialog acts at once and shows its Undo after the dialog closes. Closing a dialog in any other way (×, Esc, applied on close) brings no Undo (10.1).
 
 ### 11.3 Progress
 
 A bar with a percentage when the amount is known ("Uploading photo.jpg 35%"); a spinner with a short text when it is not ("Loading…"). A button whose action is running shows the busy state (3.7).
+
+A long job that is not tied to one button (uploads, downloads, work on many items) shows a **progress notification** in the same stack: its text, a bar below it and, when the job can be stopped, a Stop button (the close icon, tooltip "Stop"). With no end known the fill slides along the bar; when the system asks for less motion it stands still, striped. It appears only after the job has run 600 ms, so a quick one never flashes, has no time limit, and leaves when the job ends. It does not count towards the 3. A failure ends it with the usual error notification.
 
 ### 11.4 Status bar
 
@@ -589,6 +610,21 @@ A strip along the bottom of a Panel. It shows the last action ("Saved ana-morale
 ### 11.5 Shared messages
 
 Every control uses the same three messages: a spinner row while loading, a short centred line when there is nothing to show ("No messages"), and an error line in the Danger colour that says what to do ("Could not load the messages. Check the connection.").
+
+### 11.6 For developers
+
+| Need | Code |
+| --- | --- |
+| A notification | `Ayni.toast('ok', 'Moved to the bin.')`; kinds `info`, `ok`, `warn`, `err` (an `err` stays; `persist: true` keeps any kind) |
+| With Undo | `Ayni.toast('ok', 'Deleted.', { undo: () => putBack(), final: () => reallyDelete() })`: `final` runs once when the Undo is final (11.2) |
+| A closing page must not run `final` | add `keepOnLeave: true` |
+| Make the Undo on screen final now | `Ayni.settleUndo()` (an editor or a game on its next key) |
+| Another action | `{ action: { label: 'Switch', icon: 'apps', run } }` |
+| Close it from code | `Ayni.toast()` returns `{ close() }` |
+| Progress | `const job = Ayni.progress('Uploading photo.jpg', { pct: 0, onStop })`; `job.set(text, pct)` (`pct` null: no end known); `job.end()` |
+| Lift above a bottom bar on phones | set `--toasts-lift` (for example `64px`) on the page |
+
+The page needs no element for notifications: Ayni makes its own layer, above dialogs.
 
 ## 12. Tabs and group boxes
 
@@ -693,7 +729,7 @@ A tree shows items inside items, such as folders and files or the sections of a 
 ### 16.6 Insert, delete and rename
 
 - **Insert:** New in the pop-up menu, the Insert key, or the toolbar. The new item goes inside the focused folder, at its end, and the folder opens; on a leaf it goes right after it. It starts in rename mode with its default name selected ("New folder"); Esc removes it again.
-- **Delete:** the Delete key, the menu or the toolbar. It removes the item with all its children. There is no confirmation dialog: a notification with Undo stays 6 s ("Ctrl+Z also undoes"), as for every undoable action (11.2). The focus goes to the next item, or the previous one, or the parent.
+- **Delete:** the Delete key, the menu or the toolbar. It removes the item with all its children. There is no confirmation dialog: a notification with Undo stays 6 s (Ctrl+Z also undoes while it shows), as for every undoable action (11.2). The focus goes to the next item, or the previous one, or the parent.
 - **Rename:** F2, the menu or the toolbar. The name becomes a text field in place, with the text selected. Enter or leaving the field saves; Esc cancels. An empty name, or a name a sibling already has when the tree asks for unique names (`data-unique`), shows the usual red "!" with its popup (4.6), and the field stays open. There is no "slow second click" to rename, so nothing is renamed by accident.
 
 ### 16.7 Pop-up menu and toolbar
@@ -779,7 +815,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | --- | --- |
 | Alt+letter hot keys (underlined mnemonics) | Dropped for good |
 | Submenus (cascading menus) | Rejected for good |
-| Undo notification after a dialog closes | Rejected: a dialog that needs a way back gets a Cancel button |
+| Undo notification after a dialog closes | Rejected: a dialog that needs a way back gets a Cancel button (a delete inside it is the one exception, 10.1) |
+| Ctrl+Z after the Undo notification has gone | Dropped: by then the action is final (11.2) |
+| One notification at a time, the newest replacing the last | Dropped: they stack, at most 3, so news never ends an Undo |
+| Notifications at the bottom centre on wide screens | Not taken: bottom right; bottom centre only on phones |
+| Undo as an icon only, or as a word only | Not taken: the icon and the word |
+| Errors that leave on their own | Dropped: an error stays until closed |
 | Overflow ▾ button listing all tabs | Removed: not needed; the row scrolls and the wheel scrolls it |
 | Tooltips the pointer can move onto | Dropped |
 | Filter name as a chip in the search field | Dropped: the filter icon turns Accent instead |

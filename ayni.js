@@ -14,7 +14,7 @@ const { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, isRO, lay
 const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
 
 /* Shared layers, created when the page does not have them yet */
-let helpPop, errPop, toasts;
+let helpPop, errPop;
 
 
 /* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
@@ -811,7 +811,7 @@ const initTree = (tree) => {
     current = null; if (next) go(next); else { ensureStop(); tree.focus(); }
     if (multi()) report();
     const what = its.length === 1 ? nameOf(its[0]) : txf('tree.nItems', { n: its.length });
-    toast('ok', txf('tree.deleted', { what }), { action: { label: tx('undo'), icon: 'undo', run: () => restore(spots) } });
+    Ayni.toast('ok', txf('tree.deleted', { what }), { undo: () => restore(spots) });
   };
   const restore = (spots) => {
     const its = spots.map((s) => s.it);
@@ -1154,31 +1154,6 @@ const fillHelp = (body, entries) => {
   });
 };
 
-/* ---------- Notifications ---------- */
-let lastUndo = null;
-/* Ayni.toast(kind, text, { action: { label, icon, run }, persist }): kind is info, ok, warn or err */
-const toast = (kind, text, { action, persist = kind === 'err' } = {}) => {
-  const t = document.createElement('div');
-  t.className = 'toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
-  t.innerHTML = `${icon({ info: 'info', ok: 'ok', warn: 'warn', err: 'error' }[kind])}<p></p>`
-    + (action ? `<button class="btn act">${icon(action.icon)}</button>` : '')
-    + `<button class="btn icon-btn dismiss" aria-label="${tx('dismiss')}" data-tip="${tx('dismiss')}">${icon('close')}</button>`;
-  $('p', t).textContent = text;
-  /* RULE: an Undo toast keeps the 6 s timeout, says the keyboard shortcut also undoes, and has a close button.
-     The shortcut keeps working after the toast is gone, until another undoable action replaces it. */
-  if (action?.icon === 'undo') {
-    const hint = document.createElement('small'); hint.textContent = txf('undoKey', { key: isMac ? '⌘Z' : 'Ctrl+Z' });
-    $('p', t).append(hint); lastUndo = action.run; t.classList.add('undo');
-  }
-  const close = () => { clearTimeout(timer); t.remove(); if (!toasts.children.length && toasts.matches(':popover-open')) toasts.hidePopover(); };
-  let timer; const arm = () => { if (!persist) timer = setTimeout(close, 6000); };
-  if (action) { const b = $('.act', t); b.setAttribute('aria-label', action.label); b.dataset.tip = action.label; b.onclick = () => { if (lastUndo === action.run) lastUndo = null; action.run(); close(); }; }
-  $('.dismiss', t).onclick = close;
-  t.addEventListener('pointerenter', () => clearTimeout(timer)); t.addEventListener('pointerleave', arm);
-  if (!toasts.matches(':popover-open')) toasts.showPopover();
-  toasts.append(t); arm();
-};
-
 /* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
 /* RULE: one list picker serves every drop-down list and combo box, on every device. Fires ayni:change on the .picker
    with { value, name, field, input } when the user picks or types a value. */
@@ -1391,7 +1366,6 @@ const dismissPopups = (src) => {
 const setup = () => {
   helpPop = layer('ayni-help', `<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="${tx('help')}"></div>`);
   errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
-  toasts = layer('ayni-toasts', `<div class="toasts" popover="manual" role="region" aria-label="${tx('notifications')}" id="ayni-toasts"></div>`);
 
   document.addEventListener('keydown', onEnter);
   /* Read-only radios and sliders show their value but cannot change (check boxes and switches: ayni-buttons.js) */
@@ -1418,14 +1392,6 @@ const setup = () => {
     e.preventDefault(); $('button', bar).focus();
   });
   ['click', 'mousedown'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn.some((el) => el.contains(e.target))) { e.stopPropagation(); e.preventDefault(); } }, true));
-
-  /* Ctrl+Z (⌘Z) runs the last Undo offered by a notification, also after it has gone */
-  document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey || !(isMac ? e.metaKey : e.ctrlKey) || !lastUndo) return;
-    if (e.target.closest('input, textarea, [contenteditable]')) return; // text fields keep their own undo
-    e.preventDefault(); const run = lastUndo; lastUndo = null; run();
-    $$('.toast.undo', toasts).forEach((x) => $('.dismiss', x).click());
-  });
 
   /* Field errors */
   document.addEventListener('focusin', (e) => {
@@ -1708,7 +1674,7 @@ const init = (root = document) => {
 };
 
 Object.assign(Ayni, {
-  status, toast, place, contextMenu, fillHelp, focusFirstError, fold, makeTypeAhead, tree,
+  status, place, contextMenu, fillHelp, focusFirstError, fold, makeTypeAhead, tree,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },

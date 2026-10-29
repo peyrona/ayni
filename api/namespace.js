@@ -28,17 +28,35 @@ const Ayni = {
   get(element) {},
 
   /**
-   * Shows a notification. It closes after 6 s (pausing while the pointer is over it) unless it persists; errors
-   * persist by default. It always has a close button. With an Undo action it also says "Ctrl+Z also undoes", and
-   * Ctrl+Z keeps working after it is gone, until another undoable action replaces it.
+   * Shows a notification (ayni-toasts.js). It closes after 6 s (pausing while the pointer is over it) unless it
+   * persists; errors persist by default. It always has a close button. Notifications stack.
+   * With `undo` it has an Undo button and says "Ctrl+Z also undoes"; Ctrl+Z works while it shows. One Undo at a time:
+   * it becomes final when its time is up, it is closed, a newer Undo comes, settleUndo() is called or the page
+   * closes; then `final` runs, once.
    * @param {'info'|'ok'|'warn'|'err'} kind
    * @param {string} text
    * @param {object} [options]
-   * @param {{label: string, icon: string, run: () => void}} [options.action]  One action button, e.g. Undo.
+   * @param {() => void} [options.undo]  Puts the action back.
+   * @param {() => void} [options.final]  Runs once when the Undo is final (e.g. the real delete).
+   * @param {boolean} [options.keepOnLeave]  A closing page does not run `final`.
+   * @param {{label: string, icon: string, run: () => void}} [options.action]  One other action button ("Retry").
    * @param {boolean} [options.persist]  Stays until closed. True by default for 'err'.
-   * @returns {{close: () => void}}
+   * @returns {{close: () => void}}  close() on an Undo makes it final.
    */
   toast(kind, text, options) {},
+
+  /** The Undo on show (if any) is final now: its `final` runs (an editor or a game on its next key). */
+  settleUndo() {},
+
+  /**
+   * Shows a progress notification (ayni-toasts.js) once the job has run 600 ms; it stays until end().
+   * @param {string} text
+   * @param {object} [options]
+   * @param {number|null} [options.pct]  0-100, or null when no end is known (the fill slides).
+   * @param {() => void} [options.onStop]  Adds a Stop button.
+   * @returns {{set: (text: string, pct: number|null) => void, end: () => void}}
+   */
+  progress(text, options) {},
 
   /**
    * Markup of one icon, `<span class="icon" data-icon="name">`, drawn from the icon set in use.

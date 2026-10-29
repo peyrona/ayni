@@ -181,9 +181,18 @@ $('#pp-ctrl').addEventListener('input', (e) => {
 /* ---------- Feedback ---------- */
 const toastDemo = {
   info: () => Ayni.toast('info', 'A new version of the price list is available.'),
-  ok: () => Ayni.toast('ok', 'contract.pdf moved to the bin.', { action: { label: 'Undo', icon: 'undo', run: () => status('Restored contract.pdf') } }),
+  ok: () => Ayni.toast('ok', 'contract.pdf moved to the bin.', { undo: () => status('Restored contract.pdf') }),
   warn: () => Ayni.toast('warn', 'Storage is 90% full. Delete old files to free space.'),
   err: () => Ayni.toast('err', 'Could not save notes.txt. Check your connection and try again.', { action: { label: 'Retry', icon: 'refresh', run: () => Ayni.toast('ok', 'notes.txt saved.') } }),
+};
+/* Progress: an upload that counts up, with Stop */
+toastDemo.progress = () => {
+  let pct = 0, timer;
+  const job = Ayni.progress('Uploading photo.jpg 0%', { pct: 0, onStop: () => { clearInterval(timer); job.end(); Ayni.toast('info', 'Upload stopped.'); } });
+  timer = setInterval(() => {
+    pct += 10; job.set(`Uploading photo.jpg ${pct}%`, pct);
+    if (pct >= 100) { clearInterval(timer); job.end(); Ayni.toast('ok', 'photo.jpg uploaded.'); }
+  }, 400);
 };
 $$('[data-toast]').forEach((b) => b.addEventListener('click', () => { toastDemo[b.dataset.toast](); status(b.getAttribute('aria-label')); }));
 $('#sb-busy').onclick = () => { status('Saving ana-morales.json…'); setTimeout(() => status('Saved ana-morales.json'), 1500); };

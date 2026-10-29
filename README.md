@@ -50,7 +50,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 | **Texts** | Text fields with buttons inside, search field with filter, password show/hide, text area with a counter, number field, progress, info labels |
 | **Pickers** | Slider, date field, date and time, a calendar with month and year views and date limits |
 | **Menus** | Menu bar, pull-down menus, pop-up menus (right-click, long tap, Shift+F10), toolbar, popups that hold any control |
-| **Feedback** | Tooltips, notifications with Undo (and Ctrl+Z that keeps working afterwards), status bar, loading and empty states |
+| **Feedback** | Tooltips, notifications (four kinds, stacked, Undo with Ctrl+Z while it shows), progress notifications, status bar, loading and empty states |
 | **Layout** | Panels, tabs (closable, scrollable, keyboard-friendly), group boxes, a splitter with collapse and reset, scrolling everywhere |
 | **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar and their own modeless dialogs |
 | **Dialogs** | Message, live settings, apply on close, confirmation, modeless |
@@ -65,10 +65,12 @@ Copy the `ayni-*` files, `tz-geo.json` and the `i18n/` folder next to your page:
 <script src="ayni-i18n.js"></script>
 <link rel="stylesheet" href="ayni-base.css">
 <link rel="stylesheet" href="ayni-buttons.css">
+<link rel="stylesheet" href="ayni-toasts.css">
 <link rel="stylesheet" href="ayni.css">
 <script src="ayni-icons.js" defer></script>
 <script src="ayni-base.js" defer></script>
 <script src="ayni-buttons.js" defer></script>
+<script src="ayni-toasts.js" defer></script>
 <script src="ayni.js" defer></script>
 
 <button class="btn primary" data-i18n-attr="aria-label:new, data-tip:new">
@@ -109,10 +111,12 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
   <link rel="stylesheet" href="ayni-base.css">
   <link rel="stylesheet" href="ayni-buttons.css">
+  <link rel="stylesheet" href="ayni-toasts.css">
   <link rel="stylesheet" href="ayni.css">
   <script src="ayni-icons.js" defer></script>
   <script src="ayni-base.js" defer></script>
   <script src="ayni-buttons.js" defer></script>
+  <script src="ayni-toasts.js" defer></script>
   <script src="ayni.js" defer></script>
   <script src="app.js" defer></script>
 </head>
@@ -208,7 +212,7 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 
 ### JavaScript API
 
-Everything lives on `window.Ayni`: `ready`, `init`, `status(text)`, `toast(kind, text, { action, persist })`, `setBusy`, `setTip(element, text)`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | 'sun' | null)` (`null` = follow the system), `theme.setPlace(lat, lon)` (for the sun), `theme.schemes` (the user's own schemes), `supported()` (false on a browser older than the target), `t(key)`, `tf(key, values)`, `i18n` (`ready`, `lang()`, `setLang(code)`, `apply(element)`), `icon(name)`, `setIcon(element, name)`, `icons.add(set)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
+Everything lives on `window.Ayni`: `ready`, `init`, `status(text)`, `toast(kind, text, { undo, final, keepOnLeave, action, persist })` (returns `{ close() }`), `settleUndo()`, `progress(text, { pct, onStop })` (returns `{ set(text, pct), end() }`), `setBusy`, `setTip(element, text)`, `place(popup)`, `contextMenu`, `toolbar`, `tree(element, { root, items })` (returns the tree's controller: `data()`, `add`, `remove`, `rename`, `move`, `hide`, `showHidden`, `select`, `selected`, `path`), `calendar`, `dateField`, `dateTimeField`, `fillHelp(body, entries)` (the touch Help dialog), `focusFirstError(root)`, `isTouch()`, `setTouchPreview(on)`, `isDark()`, `setTheme('light' | 'dark' | 'sun' | null)` (`null` = follow the system), `theme.setPlace(lat, lon)` (for the sun), `theme.schemes` (the user's own schemes), `supported()` (false on a browser older than the target), `t(key)`, `tf(key, values)`, `i18n` (`ready`, `lang()`, `setLang(code)`, `apply(element)`), `icon(name)`, `setIcon(element, name)`, `icons.add(set)`, `icons.use(set)` (see [Icons](#icons)), `windows.select(w)`, `windows.minimise(w)`, `windows.maximise(w)`, `windows.restore(w)`, `windows.close(w)`, `setTaskbarEdge(desktop, edge)`, `isDesktop()`, the date helpers in `Ayni.dates`, and `version`.
 
 ### Icons
 
@@ -249,6 +253,8 @@ The page follows the system setting until the user picks light or dark (`ayni-th
 | `ayni-base.js` | The base: light and dark (with Sun mode and own schemes), icons, tooltips, touch (`Ayni.isTouch`), `Ayni.t`, `Ayni.supported`, start-up and `Ayni.ready` |
 | `ayni-buttons.css` | Buttons family: round and text buttons, toggles, second action, busy, buttons over pictures, switches, check boxes, radios |
 | `ayni-buttons.js` | Buttons family: `Ayni.setBusy`, the second action, the rule checks, switches |
+| `ayni-toasts.css` | Notifications family: notifications and progress notifications (needs `ayni-buttons.css`) |
+| `ayni-toasts.js` | Notifications family: `Ayni.toast` with Undo, `Ayni.settleUndo`, `Ayni.progress` |
 | `ayni.css` | The look of the controls not yet in a family file, and the touch sizes |
 | `ayni.js` | The behaviour of the controls not yet in a family file; a family file hands its start-up to `Ayni.core.family()` |
 | `ayni-icons.js` | The built-in icons, only those the controls use (Nayive's drawings) |

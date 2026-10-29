@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni notifications family only</title>
+<!-- A page that takes the base, the buttons family and the notifications family, and nothing else.
+     #demo shows one of each kind and a progress notification (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  if (location.hash === '#demo') {
+    Ayni.toast('err', 'Could not save notes.txt. Check your connection and try again.', { action: { label: 'Retry', icon: 'undo', run: () => {} } });
+    Ayni.toast('warn', 'Saved on this device only.', { persist: true });
+    Ayni.toast('ok', 'contract.pdf moved to the bin.', { undo: () => {}, persist: true });
+    Ayni.progress('Uploading photo.jpg 40%', { pct: 40, onStop: () => {} });
+  }
+</script>
+<style>body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 40px; margin: 0; }</style>
+</head>
+<body>
+<p><input class="input" id="field"> <button class="btn" id="other" data-tip="Search"><span class="icon" data-icon="search"></span></button></p>
+</body>
+</html>
