@@ -516,6 +516,10 @@ try {
     await ev(`(document.getElementById('msg-x').addEventListener('click', (e) => e.preventDefault(), { once: true }), true)`);
     await clickEl('#msg-x'); await wait(30);
     check('…unless its handler calls preventDefault()', await isOpen('d-msg'));
+    await closeAll(); await open('d-msg');
+    await ev(`(document.getElementById('msg-x').addEventListener('click', () => { const d = document.getElementById('d-msg'); d.close(); d.showModal(); }, { once: true }), true)`);
+    await clickEl('#msg-x'); await wait(60);
+    check('…and a page that closed it and opened it again keeps it open', await isOpen('d-msg'));
     await closeAll(); await open('d-bare');
     await key('Escape');
     check('Esc closes a dialog that has no Close button', !(await isOpen('d-bare')));

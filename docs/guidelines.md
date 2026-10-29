@@ -573,7 +573,7 @@ A floating dialog shows its title row and bottom row plain on the dialog's colou
 | Question | `await Ayni.ask({ title, label, placeholder, value, hint, max, check })`: the trimmed text, or `null` when cancelled; `check(text)` returns the answer, or `false` to keep the dialog open |
 | A field saved as it changes | `Ayni.autoSave(field, save, { wait, msg, done })`: `save(value)` returns a promise; typing waits `wait` ms (700); a failed save puts the old value back and shows `msg` |
 | Focus somewhere else on open | focus it yourself when opening; Ayni then leaves the focus alone |
-| A lock screen | `dialog.panel.lock`: stays above every other dialog |
+| A lock screen | `dialog.lock` (a Panel or a full-screen dialog of its own): stays above every other dialog and notification; Esc never closes a dialog under it |
 
 Ayni sizes, focuses and moves every `dialog.panel`, whether it was opened by markup or by code; there is nothing to add per dialog.
 

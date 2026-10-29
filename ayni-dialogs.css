@@ -17,12 +17,13 @@ dialog.panel:focus-visible { outline: none; }
 
 /* RULE: a floating dialog shows its title row and bottom row plain, on the dialog's own colour */
 dialog.panel > header, dialog.panel > form > header, dialog.panel > footer, dialog.panel > form > footer { background: none; border: 0; }
-dialog.panel > header, dialog.panel > form > header { padding-top: 10px; }
+dialog.panel > header, dialog.panel > form > header { padding-top: 10px; justify-content: flex-end; }   /* no title: Close still at the right */
 /* A long title wraps; it never runs under the buttons */
 dialog.panel > header h2, dialog.panel > form > header h2 { min-width: 0; overflow-wrap: anywhere; }
-dialog.panel > .body, dialog.panel > form > .body { padding-top: 4px; }
-/* A dialog without a title row starts its body at the top edge */
-dialog.panel > .body:first-child, dialog.panel > form > .body:first-child { padding-top: var(--panel-pad); }
+dialog.panel > .body, dialog.panel > form > .body { padding-top: 4px; flex: 1 1 auto; min-height: 0; }   /* the body takes the free height: a full-screen dialog's bottom row sits at the bottom */
+/* An empty title row or bottom row does not show; a dialog without a title row starts its body at the top edge */
+dialog.panel > header:empty, dialog.panel > footer:empty, dialog.panel > form > header:empty, dialog.panel > form > footer:empty { display: none; }
+dialog.panel > .body:first-child, dialog.panel > form > .body:first-child, dialog.panel > header:empty + .body { padding-top: var(--panel-pad); }
 /* A phone (narrow, or short when turned sideways): a line marks the bottom row, which stays at the bottom edge while
    the body scrolls */
 @media (max-width: 640px), (max-height: 520px) {

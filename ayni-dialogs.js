@@ -26,6 +26,7 @@ const closeButton = (d) => $$('[data-close]', d).find((b) => b.closest('dialog')
 const onEsc = (e) => {
   if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
   if ($$('[popover]:popover-open').some((p) => p.popover === 'auto')) return;
+  if ($('dialog.lock:modal')) return;                 // a lock screen owns the keys: nothing under it closes
   const d = e.target.closest?.('dialog.panel[open]') || opened.filter((x) => x.open).at(-1);
   if (!d) return;
   e.preventDefault();
@@ -34,11 +35,15 @@ const onEsc = (e) => {
 };
 
 /* A click on a dialog's Close button (data-close) closes the dialog, after the page's own handler for it has run.
-   A handler that calls preventDefault() keeps the dialog open (to ask about unsaved changes first). */
+   A handler that calls preventDefault() keeps the dialog open (to ask about unsaved changes first). A page that
+   closed it itself is left alone: it may already have opened it again. */
 const onCloseClick = (e) => {
   const b = e.target.closest?.('button[data-close]'), d = b?.closest('dialog.panel');
   if (!d || b.closest('[role="tab"]') || b.closest('dialog') !== d) return;
-  setTimeout(() => { if (!e.defaultPrevented && d.open) d.close(); });
+  let closed = false;
+  const mark = () => { closed = true; };
+  d.addEventListener('close', mark, { once: true });
+  setTimeout(() => { d.removeEventListener('close', mark); if (!closed && !e.defaultPrevented && d.open) d.close(); });
 };
 
 /* ---------- The first field ---------- */
@@ -116,14 +121,14 @@ const watch = () => new MutationObserver((recs) => {
 /* The top layer stacks in the order things open, so a dialog opened later covers what was already there.
    RULE: notifications show above dialogs: the stack is shown again over a new modal dialog. While a modal dialog is
    open the browser keeps everything outside it from being clicked, the notifications too; they still show.
-   RULE: a lock screen (dialog.panel.lock) stays above all: a dialog or a notification that opens while it shows goes
+   RULE: a lock screen (dialog.lock, a Panel or not) stays above all: a dialog or a notification that opens while it shows goes
    under it. The lock is closed and shown again at once; the page's own `close` handlers never hear about it. */
 const liftToasts = () => {
   const t = document.getElementById('ayni-toasts');
   if (t?.matches(':popover-open')) { t.hidePopover(); t.showPopover(); }
 };
 const liftLock = () => {
-  const lock = $('dialog.panel.lock:modal');
+  const lock = $('dialog.lock:modal');
   if (!lock) return;
   lock.ayniLifting = (lock.ayniLifting || 0) + 1;     // one queued `close` event per lift
   lock.close(); lock.showModal();
@@ -203,7 +208,8 @@ const dialogButton = (role, tip, ic) => {
 
 /* Ayni.dialog({ title, big, cls, id }) -> { dialog, body, footer, show(), close() }. show() adds it to the page and
    opens it as modal; close() closes and removes it, and answers true only the first time. A dialog closed some other
-   way is removed too. place(buttons) puts a lone Close in the title row, any other set in the bottom row. */
+   way is removed too. place(buttons) puts a lone Close in the title row, any other set in the bottom row. An empty
+   title row or bottom row does not show (it may be filled after the dialog opens). */
 const dialog = ({ title, big = false, cls = '', id } = {}) => {
   const d = document.createElement('dialog');
   d.className = 'panel' + (big ? ' big' : '') + (cls ? ' ' + cls : '');
@@ -219,7 +225,7 @@ const dialog = ({ title, big = false, cls = '', id } = {}) => {
     if (buttons.length === 1 && buttons[0].hasAttribute('data-close')) { header.append(buttons[0]); footer.remove(); }
     else footer.append(...buttons);
   };
-  const show = () => { if (!footer.children.length) footer.remove(); document.body.append(d); Ayni.init(d); d.showModal(); };
+  const show = () => { document.body.append(d); Ayni.init(d); d.showModal(); };
   return { dialog: d, header, body, footer, place, show, close };
 };
 
