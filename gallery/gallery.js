@@ -66,6 +66,17 @@ $('#dlg-form').addEventListener('close', () => {
 });
 $('#open-modeless').onclick = () => { const d = $('#dlg-find'); d.open ? d.close() : d.show(); $('#dfi-q').focus(); };
 $('#find-all').onclick = () => status(`Listed all matches for "${$('#dfi-q').value}"`);
+/* Built in code */
+$('#code-confirm').onclick = async () => {
+  const yes = await Ayni.confirm({ title: 'Delete report.pdf?', body: 'The file goes to the bin.\nYou can restore it for 30 days.', confirm: 'Delete', danger: true });
+  const m = yes ? 'Deleted report.pdf' : 'Kept report.pdf'; say('dlg-out', m); status(m);
+};
+$('#code-ask').onclick = async () => {
+  const name = await Ayni.ask({ title: 'New folder', label: 'Name', value: 'New folder', okTip: 'Create',
+    check: (v) => (/[\\/]/.test(v) ? (status('A name cannot contain / or \\'), false) : v) });
+  const m = name ? `Created folder ${name}` : 'No folder created'; say('dlg-out', m); status(m);
+};
+$('#code-alert').onclick = () => Ayni.alert({ title: 'Upload complete', body: '3 files were uploaded to Invoices.' });
 $('#find-next').onclick = () => { const m = `Find next: "${$('#dfi-q').value}"`; say('dlg-out', m); status(m); };
 
 /* ---------- Buttons ---------- */

@@ -74,27 +74,6 @@ const initTabs = (list) => {
   select(start || tabs[0], false);
 };
 
-/* RULE: Enter inside a Panel clicks that Panel's default button (the .primary one in its own header or footer).
-   Not in a text area (new line), not on another button or item (Enter presses or picks that), and not while a list or
-   menu is open (the control handles Enter first and marks it handled). */
-const defaultButton = (panel) => $$(':scope > footer .btn.primary, :scope > form > footer .btn.primary, :scope > header .btn.primary, :scope > form > header .btn.primary', panel)[0];
-const onEnter = (e) => {
-  if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
-  const t = e.target;
-  if (t.closest('textarea, [contenteditable], button, a[href], summary, [role="button"], [role="tab"], [role^="menuitem"], [role="option"], [role="treeitem"], [role="listbox"], [role="tree"], [role="combobox"][aria-expanded="true"]')) return;
-  const panel = t.closest('.panel'), b = panel && defaultButton(panel);
-  if (!b || b.getAttribute('aria-disabled') === 'true') return;
-  e.preventDefault(); b.click();
-};
-
-/* ---------- Dialogs ---------- */
-/* Any element with data-open-dialog="id" opens that dialog as modal. A click on the backdrop closes it ('cancel').
-   RULE: Esc always closes a dialog; the browser does it for modal ones, this does it for modeless ones ('close'). */
-const initDialog = (d) => {
-  d.addEventListener('click', (e) => { if (e.target === d && d.matches(':modal')) d.close('cancel'); });
-  d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !d.matches(':modal')) d.close('close'); });
-};
-
 /* ---------- Lists: shared type-ahead and multi-selection ---------- */
 /* Shared type-ahead (lists, the drop-down list and the tree): letters typed within 500 ms build one search ("me" reaches México),
    ignoring accents and case; after a pause a new search starts; repeating one letter cycles through its items */
@@ -1367,15 +1346,9 @@ const setup = () => {
   helpPop = layer('ayni-help', `<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="${tx('help')}"></div>`);
   errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
 
-  document.addEventListener('keydown', onEnter);
   /* Read-only radios and sliders show their value but cannot change (check boxes and switches: ayni-buttons.js) */
   addEventListener('keydown', (e) => { if (isRO(e.target) && /radio|range/.test(e.target.type) && /^(Arrow|Page|Home|End)/.test(e.key)) e.preventDefault(); }, true);
   addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
-
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-open-dialog]');
-    if (b) $('#' + b.dataset.openDialog).showModal();
-  });
 
   /* Info labels: one shared help popup, filled from the clicked "i" (data-help) */
   helpPop.addEventListener('toggle', (e) => {
@@ -1650,7 +1623,6 @@ const initClock = (el) => {
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   each(root, '[role="tablist"]', 'tabs', initTabs);
-  each(root, 'dialog.panel', 'dialog', initDialog);
   each(root, '.lb', 'listbox', initListbox);
   each(root, '.ta-wrap', 'count', initCount);
   each(root, 'textarea[data-autogrow]', 'grow', initGrow);

@@ -59,6 +59,60 @@ const Ayni = {
   progress(text, options) {},
 
   /**
+   * Builds a dialog in code (ayni-dialogs.js): a `dialog.panel` with a title row, a body and a bottom row.
+   * @param {object} [options]
+   * @param {string} [options.title]
+   * @param {boolean} [options.big]  A big dialog (lists, editors).
+   * @param {string} [options.cls]  More classes.  @param {string} [options.id]
+   * @returns {{dialog: HTMLDialogElement, header: HTMLElement, body: HTMLElement, footer: HTMLElement,
+   *   place: (buttons: HTMLButtonElement[]) => void, show: () => void, close: () => boolean}}
+   *   place() puts a lone Close in the title row, other buttons in the bottom row; show() opens it as modal;
+   *   close() closes and removes it, true only the first time.
+   */
+  dialog(options) {},
+
+  /**
+   * A dialog button made in code (ayni-dialogs.js).
+   * @param {'close'|'primary'|'danger'|''} role  'close' is marked data-close: Esc presses it.
+   * @param {string} tip  Tooltip and name.
+   * @param {string} [icon]  Instead of the role's icon (close, check, trash).
+   * @returns {HTMLButtonElement}
+   */
+  dialogButton(role, tip, icon) {},
+
+  /**
+   * Asks for a confirmation (ayni-dialogs.js). A danger action is never the default; Esc means Cancel.
+   * @param {object|string} options  { title, body, confirm, danger, other, otherIcon, cancel }, or the body text.
+   * @returns {Promise<true|false|'other'>}
+   */
+  confirm(options) {},
+
+  /**
+   * Shows a message with Close in its title row (ayni-dialogs.js).
+   * @param {object|string} options  { title, body, confirm }, or the body text.
+   * @returns {Promise<void>}
+   */
+  alert(options) {},
+
+  /**
+   * Asks for one text, a name (ayni-dialogs.js). An empty field is never an answer.
+   * @param {object} options  { title, label, placeholder, value, hint, max, okTip, ids: { input, ok, cancel } }
+   * @param {(text: string) => (string|false)} [options.check]  The answer for the text, or false to keep asking.
+   * @returns {Promise<string|null>}  null when cancelled.
+   */
+  ask(options) {},
+
+  /**
+   * Saves a dialog field as it changes (ayni-dialogs.js): on change, and after `wait` ms of typing.
+   * A failed save puts the last good value back and shows "Could not save." in `msg`.
+   * @param {HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement} field
+   * @param {(value: string|boolean) => Promise<void>} save
+   * @param {object} [options]  { wait = 700, msg, fail, done(value) }
+   * @returns {{saved: (value: string|boolean) => void}}  Tell it a value the app stored itself.
+   */
+  autoSave(field, save, options) {},
+
+  /**
    * Markup of one icon, `<span class="icon" data-icon="name">`, drawn from the icon set in use.
    * @param {string} name  An Ayni icon name, or the app's own (a symbol with id "i-<name>", or a name in the set's map).
    * @returns {string}

@@ -460,6 +460,212 @@ try {
   check('no errors or warnings in the notifications family', t.logs.length === 0, t.logs.slice());
   await reset();
 
+  section('Dialogs family (base + buttons + notifications + dialogs)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await t.open(BASE + '/tests/dialogs-only.html');
+    check('a page with the dialogs family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const key = async (k, mods = 0) => {
+      const code = { Escape: 27, Enter: 13 }[k] || 0;
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: code, modifiers: mods, ...(k === 'Enter' ? { text: '\r' } : {}) });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: code, modifiers: mods });
+      await wait(60);
+    };
+    const mouse = async (type, x, y) => t.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+    const click = async (x, y) => { await mouse('mousePressed', x, y); await mouse('mouseReleased', x, y); await wait(60); };
+    const clickEl = async (sel) => { const [x, y] = await ev(`(() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`); await click(x, y); };
+    const open = (id) => ev(`(document.getElementById('${id}').showModal(), new Promise((r) => setTimeout(() => r(true), 30)))`);
+    const isOpen = (id) => ev(`document.getElementById('${id}').open`);
+    const focused = () => ev(`document.activeElement.id || document.activeElement.tagName`);
+    const closeAll = () => ev(`(document.querySelectorAll('dialog[open]').forEach((d) => d.close()), document.querySelectorAll('body > dialog.panel:not([id])').forEach((d) => d.remove()), L.length = 0, true)`);
+    const built = (sel = '') => `document.querySelector('body > dialog.panel:not([id])[open] ${sel}')`;
+    const SMALL = { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false };
+    const size = (w, h = 900) => t.send('Emulation.setDeviceMetricsOverride', { ...SMALL, width: w, height: h });
+
+    /* Opening and the first field */
+    await clickEl('#opener'); await wait(60);
+    check('data-open-dialog opens the dialog as modal', await ev(`document.getElementById('d-form').matches(':modal')`));
+    check('the caret starts in the first field (the title row switch is skipped)', (await focused()) === 'form-name', await focused());
+    check('…after the text it holds', await ev(`(() => { const i = document.getElementById('form-name'); return i.selectionStart === i.value.length && i.selectionEnd === i.value.length; })()`));
+    await closeAll();
+    await open('d-msg');
+    check('a dialog with no field takes the focus itself, not a button', (await focused()) === 'd-msg', await focused());
+    await closeAll();
+    await open('d-auto');
+    check('an element marked autofocus keeps the focus', (await focused()) === 'auto-2', await focused());
+    await closeAll();
+    await ev(`(document.getElementById('d-form').showModal(), document.getElementById('form-note').focus(), true)`); await wait(30);
+    check('a focus the page set right after opening is kept', (await focused()) === 'form-note', await focused());
+    await closeAll();
+    await open('d-late');
+    await ev(`(setTimeout(() => { document.getElementById('late-body').innerHTML = '<input class="input" id="late-in" aria-label="Late">'; }, 200), true)`); await wait(320);
+    check('a field that comes after loading takes the focus when it shows up', (await focused()) === 'late-in', await focused());
+    await closeAll();
+
+    /* Closing */
+    await open('d-form');
+    await key('Escape');
+    check('Esc presses the dialog\'s Close button (the page\'s handler runs) and closes it', (await ev('L.join()')) === 'form x' && !(await isOpen('d-form')), await ev('L.join()'));
+    await closeAll(); await open('d-msg');
+    await clickEl('#msg-x'); await wait(30);
+    check('a click on Close closes the dialog', !(await isOpen('d-msg')));
+    await open('d-msg');
+    await ev(`(document.getElementById('msg-x').addEventListener('click', (e) => e.preventDefault(), { once: true }), true)`);
+    await clickEl('#msg-x'); await wait(30);
+    check('…unless its handler calls preventDefault()', await isOpen('d-msg'));
+    await closeAll(); await open('d-bare');
+    await key('Escape');
+    check('Esc closes a dialog that has no Close button', !(await isOpen('d-bare')));
+    await open('d-form'); await ev(`(document.getElementById('handled').focus(), true)`);
+    await key('Escape');
+    check('an Esc the page handled does not close the dialog', await isOpen('d-form'));
+    await ev(`(document.getElementById('form-name').focus(), document.getElementById('form-pop').showPopover(), true)`); await wait(30);
+    await key('Escape');
+    check('an open popup takes the Esc first; the dialog stays', (await isOpen('d-form')) && !(await ev(`document.getElementById('form-pop').matches(':popover-open')`)));
+    await open('d-msg');
+    await key('Escape');
+    check('nested: Esc closes only the innermost dialog', !(await isOpen('d-msg')) && (await isOpen('d-form')));
+    await click(10, 10);
+    check('a click on the dimmed page does not close the dialog', await isOpen('d-form'));
+    await closeAll();
+
+    /* Enter */
+    await open('d-form');
+    await key('Enter');
+    check('Enter in a field runs the default button', (await ev('L.join()')) === 'form ok', await ev('L.join()'));
+    await ev(`(L.length = 0, document.getElementById('form-note').focus(), true)`);
+    await key('Enter');
+    check('Enter in a text area does not', (await ev('L.join()')) === '');
+    await closeAll();
+
+    /* Built in code */
+    await ev(`(window.R = 'pending', Ayni.confirm({ title: 'Go on?', body: 'a\\nb' }).then((v) => R = v), true)`); await wait(60);
+    check('confirm: the text keeps its line break', await ev(`getComputedStyle(${built('.body > p.text')}).whiteSpace === 'pre-wrap'`));
+    check('confirm: Cancel (data-close) then the default ✓ in the bottom row', await ev(`[...${built('footer')}.children].map((b) => (b.hasAttribute('data-close') ? 'x' : b.className)).join() === 'x,btn primary'`));
+    await key('Enter');
+    check('confirm: Enter answers true and the dialog leaves the page', (await ev('R')) === true && !(await ev(`!!document.querySelector('body > dialog.panel:not([id])')`)), await ev('R'));
+    await ev(`(R = 'pending', Ayni.confirm({ title: 'Delete?', danger: true }).then((v) => R = v), true)`); await wait(60);
+    check('confirm, danger: the focus starts on Cancel; Delete is no default', await ev(`document.activeElement.hasAttribute('data-close') && !${built('.btn.primary')}`));
+    await key('Escape');
+    check('confirm: Esc answers false', (await ev('R')) === false, await ev('R'));
+    await ev(`(R = 'pending', Ayni.confirm({ title: 'Save?', other: 'Don\\'t save', otherIcon: 'trash' }).then((v) => R = v), true)`); await wait(60);
+    await ev(`(${built('footer')}.children[1].click(), true)`); await wait(30);
+    check('confirm: the third choice answers \'other\'', (await ev('R')) === 'other', await ev('R'));
+    await ev(`(R = 'pending', Ayni.alert({ title: 'Done', body: 'Saved.' }).then(() => R = 'closed'), true)`); await wait(60);
+    check('alert: a lone Close in the title row, no bottom row', await ev(`!!${built('> header > [data-close]')} && !${built('> footer')}`));
+    await key('Escape');
+    check('alert: Esc closes it', (await ev('R')) === 'closed');
+    await ev(`(R = 'pending', Ayni.ask({ title: 'Rename', label: 'Name', value: 'old', check: (v) => (v === 'bad' ? false : v.toUpperCase()) }).then((v) => R = v), true)`); await wait(60);
+    check('ask: the field starts focused with its text selected', await ev(`(() => { const i = document.activeElement; return i.tagName === 'INPUT' && i.selectionStart === 0 && i.selectionEnd === 3; })()`));
+    check('ask: the label names the field', await ev(`document.activeElement.labels[0].textContent === 'Name'`));
+    await ev(`(document.activeElement.value = '', document.activeElement.dispatchEvent(new Event('input')), true)`);
+    check('ask: Accept is faded while the field is empty, and says why', await ev(`${built('.btn.primary')}.getAttribute('aria-disabled') === 'true' && ${built('.btn.primary')}.dataset.tip === 'OK: type something first'`), await ev(`${built('.btn.primary')}.dataset.tip`));
+    await key('Enter');
+    check('ask: Enter on an empty field does nothing', (await ev('R')) === 'pending');
+    await t.send('Input.insertText', { text: 'bad' });
+    await key('Enter');
+    check('ask: check() false keeps it open, with the text selected', (await ev('R')) === 'pending' && await ev(`document.activeElement.selectionEnd - document.activeElement.selectionStart === 3`));
+    await t.send('Input.insertText', { text: 'good' });
+    check('ask: Accept is on once there is text', await ev(`${built('.btn.primary')}.getAttribute('aria-disabled') === 'false' && ${built('.btn.primary')}.dataset.tip === 'OK'`));
+    await key('Enter');
+    check('ask: Enter answers what check() returns', (await ev('R')) === 'GOOD', await ev('R'));
+    await ev(`(R = 'pending', Ayni.ask({ title: 'x' }).then((v) => R = v), true)`); await wait(60);
+    await key('Escape');
+    check('ask: Esc answers null', (await ev('R')) === null);
+    check('dialogButton: roles, icons and names', await ev(`(() => {
+      const x = Ayni.dialogButton('close', 'Cancel'), p = Ayni.dialogButton('primary', 'Save'), d = Ayni.dialogButton('danger', 'Delete'), o = Ayni.dialogButton('', 'Copy', 'copy');
+      return x.hasAttribute('data-close') && x.className === 'btn' && p.className === 'btn primary' && d.className === 'btn danger' && o.className === 'btn'
+        && x.querySelector('[data-icon="close"]') && p.querySelector('[data-icon="check"]') && d.querySelector('[data-icon="trash"]') && o.querySelector('[data-icon="copy"]')
+        && p.getAttribute('aria-label') === 'Save' && p.dataset.tip === 'Save' && x.type === 'button'; })()`));
+
+    /* autoSave */
+    await ev(`(() => { window.S = []; window.fail = false;
+      const b = document.createElement('div'); b.id = 'as'; b.innerHTML = '<input type="checkbox" id="as-box"><input id="as-text"><p id="as-msg" hidden></p>'; document.body.append(b);
+      window.box = Ayni.autoSave(document.getElementById('as-box'), (v) => (S.push('box ' + v), fail ? Promise.reject() : Promise.resolve()), { msg: document.getElementById('as-msg') });
+      Ayni.autoSave(document.getElementById('as-text'), (v) => (S.push('text ' + v), Promise.resolve()), { wait: 200 });
+      return true; })()`);
+    await ev(`(document.getElementById('as-box').click(), true)`); await wait(30);
+    check('autoSave: a switch saves on change', (await ev('S.join()')) === 'box true', await ev('S.join()'));
+    await ev(`(fail = true, document.getElementById('as-box').click(), true)`); await wait(30);
+    check('autoSave: a failed save puts the value back and says so', await ev(`document.getElementById('as-box').checked === true && !document.getElementById('as-msg').hidden && document.getElementById('as-msg').textContent === 'Could not save.'`));
+    await ev(`(() => { const i = document.getElementById('as-text'); i.value = 'a'; i.dispatchEvent(new Event('input')); i.value = 'ab'; i.dispatchEvent(new Event('input')); return true; })()`);
+    await wait(80);
+    check('autoSave: typing waits', !(await ev(`S.some((x) => x.startsWith('text'))`)));
+    await wait(250);
+    check('autoSave: …then saves once, the last text', (await ev(`S.filter((x) => x.startsWith('text')).join()`)) === 'text ab', await ev('S.join()'));
+    await ev(`(document.getElementById('as').remove(), true)`);
+
+    /* Size and look */
+    const box = (id) => ev(`(() => { const d = document.getElementById('${id}'); d.showModal(); const r = d.getBoundingClientRect(); const h = getComputedStyle(d.querySelector('header')).backgroundColor; d.close(); return { w: Math.round(r.width), h: Math.round(r.height), head: h }; })()`);
+    let b = await box('d-msg');
+    check('a small dialog is as wide as its content, 300 to 460 px', b.w >= 300 && b.w < 460, b);
+    check('a floating dialog\'s title row is plain', b.head === 'rgba(0, 0, 0, 0)', b);
+    b = await box('d-long');
+    check('a long text stops a small dialog at 460 px', b.w === 460, b);
+    b = await box('d-big');
+    check('a big dialog is 880 x 640 from 1024 px', b.w === 880 && b.h === 640, b);
+    await size(800);
+    b = await box('d-big');
+    check('a big dialog fills the screen below 1024 px, its title row a strip', b.w >= 780 && b.h === 900 && b.head !== 'rgba(0, 0, 0, 0)', b);
+    b = await box('d-msg');
+    check('a small dialog still floats below 1024 px', b.w < 460, b);
+    await size(390, 700);
+    b = await box('d-msg');
+    check('on a phone a small dialog floats, the width less the margins at most', b.w <= 358 && b.h < 700, b);
+    check('on a phone a line marks the bottom row', await ev(`(() => { const d = document.getElementById('d-form'); d.showModal(); const w = getComputedStyle(d.querySelector('footer')).borderTopWidth; d.close(); return w === '1px'; })()`));
+    await size(1280);
+
+    /* Moving */
+    const head = async (id) => ev(`(() => { const r = document.querySelector('#${id} h2').getBoundingClientRect(); return [r.left + 4, r.top + r.height / 2]; })()`);
+    const left = (id) => ev(`Math.round(document.getElementById('${id}').getBoundingClientRect().left)`);
+    const dragFrom = async ([x, y], dx, dy) => { await mouse('mousePressed', x, y); for (let i = 1; i <= 5; i++) await mouse('mouseMoved', x + dx * i / 5, y + dy * i / 5); await mouse('mouseReleased', x + dx, y + dy); await wait(30); };
+    await open('d-msg');
+    let l0 = await left('d-msg');
+    await dragFrom(await head('d-msg'), 100, 40);
+    check('a floating dialog moves by its title row', (await left('d-msg')) - l0 === 100, (await left('d-msg')) - l0);
+    l0 = await left('d-msg');
+    await dragFrom(await ev(`(() => { const r = document.getElementById('msg-p').getBoundingClientRect(); return [r.left + 4, r.top + 4]; })()`), 80, 0);
+    check('…not by its body', (await left('d-msg')) === l0);
+    await dragFrom(await head('d-msg'), -3000, 0);
+    check('…and stays inside the window', (await left('d-msg')) === 8, await left('d-msg'));
+    await closeAll(); await open('d-msg');
+    check('it opens centred again', Math.abs((await ev(`(() => { const r = document.getElementById('d-msg').getBoundingClientRect(); return r.left + r.width / 2 - document.documentElement.clientWidth / 2; })()`))) < 2);
+    await closeAll();
+    await size(600, 800); await open('d-msg');
+    l0 = await left('d-msg');
+    await dragFrom(await head('d-msg'), 60, 0);
+    check('on a phone a dialog does not move', (await left('d-msg')) === l0);
+    await closeAll(); await size(1280);
+
+    /* What stays above a dialog */
+    await ev(`(window.lifts = 0, Ayni.toast('info', 'News', { persist: true }), document.getElementById('ayni-toasts').addEventListener('toggle', (e) => { if (e.newState === 'open') lifts++; }), true)`); await wait(60);
+    await open('d-msg'); await wait(60);
+    check('the notifications are shown again over a dialog opened after them', (await ev('lifts')) >= 1 && await ev(`document.getElementById('ayni-toasts').matches(':popover-open')`), await ev('lifts'));
+    await closeAll();
+    await ev(`(() => { const l = document.createElement('dialog'); l.className = 'panel lock'; l.id = 'lock'; l.style.cssText = 'width: 100vw; max-width: none; height: 100vh; max-height: none';
+      l.innerHTML = '<div class="body"><input class="input" id="lock-pw" aria-label="Password"></div>'; document.body.append(l); window.lockCloses = 0; l.addEventListener('close', () => lockCloses++); l.showModal(); return true; })()`); await wait(60);
+    await open('d-msg'); await wait(60);
+    const hit = (x, y) => ev(`!!document.elementFromPoint(${x}, ${y})?.closest('#lock')`);
+    check('a lock screen stays above a dialog opened later', await hit(640, 450));
+    await ev(`(Ayni.toast('info', 'While locked', { persist: true }), true)`); await wait(80);
+    const tb = await ev(`(() => { const r = [...document.querySelectorAll('#ayni-toasts .toast')].at(-1).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+    check('…and above a notification shown while locked', await hit(tb[0], tb[1]));
+    await wait(60);
+    check('…and the page never hears those re-shows as a close', (await ev('lockCloses')) === 0, await ev('lockCloses'));
+    await ev(`(document.getElementById('lock').close(), document.getElementById('lock').remove(), Ayni.settleUndo(), document.querySelectorAll('#ayni-toasts > .toast').forEach((x) => x.remove()), true)`);
+    await closeAll();
+
+    /* Modeless */
+    await ev(`(document.getElementById('d-modeless').show(), true)`); await wait(30);
+    check('a modeless dialog opens with the caret in its field', (await focused()) === 'modeless-q');
+    await key('Escape');
+    check('Esc closes a modeless dialog too', !(await isOpen('d-modeless')));
+    check('no errors or warnings in the dialogs family', t.logs.length === 0, t.logs.slice());
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

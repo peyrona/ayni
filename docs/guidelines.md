@@ -519,14 +519,18 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 
 ### 10.1 Rules
 
-1. **Esc always closes a dialog.** Closing is not cancelling: changes are kept.
-2. **Avoid Accept and Cancel wherever possible.** Apply each change as it is made, or when the dialog closes. Invalid input is not applied, and the status bar says why.
-3. **No Cancel means none is needed.** No Undo notification follows the closing of a dialog. If the user needs a way back, the dialog gets a Cancel button. The one exception is a delete pressed inside the dialog: it acts at once, with no second "Are you sure?", and its Undo shows after the dialog closes (11.2).
-4. **Close as the only button** sits in the title row, at the right.
-5. **Otherwise all buttons go in a bottom row**, Close included: the usual ones (Close, Accept, Cancel, the main action) aligned right, any extra actions in the same row aligned left.
-6. **Enter runs the default button** (3.5). In a confirmation the safe choice is the default; a danger button never is.
-7. **The default button can be disabled until the input is valid:** it stays filled but faded, can be focused, and its tooltip says why ("Save: type a name first").
-8. Dialogs can open from other Panels and nest.
+1. **Esc always closes a dialog**, as if its Close button were pressed. Closing is not cancelling: changes are kept.
+2. **Only the dialog's own buttons and Esc close it.** A click on the dimmed page around it does nothing: one stray tap must not lose what was typed.
+3. **Avoid Accept and Cancel wherever possible.** Apply each change as it is made, or when the dialog closes. Invalid input is not applied, and a line inside the dialog, under the field, says why. A change that could not be saved goes back to what it was, with the same line.
+4. **No Cancel means none is needed.** No Undo notification follows the closing of a dialog. If the user needs a way back, the dialog gets a Cancel button. The one exception is a delete pressed inside the dialog: it acts at once, with no second "Are you sure?", and its Undo shows after the dialog closes (11.2).
+5. **The title row** holds the title, then any small tools (a switch, a step counter, icon buttons), then Close at the right when Close is the only button. A long title wraps; it never runs under the buttons.
+6. **Otherwise all buttons go in a bottom row**, Close included: the usual ones (Close, Accept, Cancel, the main action) aligned right, any extra actions in the same row aligned left.
+7. **Enter runs the default button** (3.5). In a confirmation the safe choice is the default; a danger button never is.
+8. **The default button can be disabled until the input is valid:** it stays filled but faded, can be focused, and its tooltip says why ("Save: type a name first"). An empty name is never an answer.
+9. **The caret starts in the first field.** When a dialog opens, its first field takes the focus, so the user can type at once; a text field opens with the caret after its text. A field in the title row is skipped unless it is the only one. A field that appears later (after loading) takes the focus when it appears. The focus never starts on a button: a stray Enter on Close would close the dialog. A dialog with no field takes the focus itself. A dialog that puts the focus somewhere else on purpose keeps it.
+10. **Moving:** on a computer or tablet a floating dialog can be dragged by its title row (not by its buttons), and always stays inside the window. It opens centred every time. Full-screen dialogs and dialogs on phones (640 px wide or less) do not move.
+11. Dialogs can open from other Panels and nest; Esc closes the innermost one only. Anything that pops up from a dialog (a menu, a list, a calendar, a tooltip) shows above it.
+12. **A lock screen stays on top.** A dialog that opens while the screen is locked goes under the lock.
 
 ### 10.2 Kinds of dialog
 
@@ -535,22 +539,43 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 | Message | "Upload complete" | Close in the title row |
 | Settings, applied at once | Gallery settings | Close in the title row; every change applies at once |
 | Applied on close | Rename file | Close in the title row; the new name applies when the dialog closes (Close or Esc); an invalid name is not applied |
-| Confirmation | "Delete contract.pdf?" | Bottom row: Keep (default, also Esc) and Delete (danger, never default). Used only when a change cannot be applied live |
+| Question | "Name of the new album" | One field. Bottom row: Cancel (Close icon, also Esc) and Accept (default, faded while the field is empty) |
+| Confirmation | "Delete contract.pdf?" | Bottom row: Cancel (Close icon, also Esc) and the action (Accept, or Delete as danger). A danger action is never the default: the focus starts on Cancel. A third choice ("Don't save") may sit between them. Used only when a change cannot be applied live |
 | Modeless | Find | Stays open while the user keeps working, no backdrop. Bottom row: Close and Find next at the right, List all matches at the left |
 
 Modal dialogs dim the page behind them with the backdrop colour. In desktop mode a modeless dialog belongs to the window that opened it (17.3).
 
 ### 10.3 Dialog size and screen width
 
-Dialogs are **small** (a message, a confirmation, a few fields) or **big** (a long form, a list, an editor):
+Dialogs are **small** (a message, a confirmation, a few fields) or **big** (a long form, a list, an editor). A small dialog is as wide as its content needs, between 300 and 460 px. A big one is 880 × 640 px. Neither is ever wider or taller than the screen: a dialog taller than the screen scrolls inside.
 
 | Screen width | Small dialog | Big dialog |
 | --- | --- | --- |
-| Below 480 px | Full screen (when modal) | Full screen |
-| 480 to 1023 px | Floating, with shadow | Full screen |
+| Below 1024 px | Floating, with shadow | Full screen |
 | 1024 px and wider | Floating, with shadow | Floating, with shadow |
 
-A full-screen dialog keeps its title row and its buttons; it has no border, corners or shadow. Markup: `dialog.panel` is small, `dialog.panel.big` is big.
+A small dialog stays a centred card on every screen; on a phone it takes the full width less a margin. On a phone (640 px wide or less, or 520 px high or less) its bottom row sticks to the bottom edge while the dialog scrolls, so its buttons are always in reach.
+
+A floating dialog shows its title row and bottom row plain on the dialog's colour. A full-screen dialog keeps both, as tinted strips with a line, and has no border, corners or shadow.
+
+### 10.4 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| A dialog | `dialog.panel` (small) or `dialog.panel.big`, with `header` (`h2`, tools, Close), `.body` and `footer` (`.extra` holds the left-hand buttons) |
+| Open it | any element with `data-open-dialog="id"`, or `dialog.showModal()` |
+| Its Close button | `.btn[data-close]` with the close icon, written in the header (the only button) or the footer; a click on it closes the dialog after the page's own handler, unless that handler calls `preventDefault()`; Esc presses it |
+| Close it from code | `dialog.close()`; the dialog fires `close` however it closed |
+| Built in code | `Ayni.dialog({ title, big })` returns `{ dialog, body, footer, show(), close() }` |
+| A button made in code | `Ayni.dialogButton(role, tip, icon)`; role `close`, `primary`, `danger` or `''` |
+| Confirmation | `await Ayni.confirm({ title, body, confirm, danger, other, cancel })`: `true`, `false`, or `'other'` for the third choice |
+| Message | `await Ayni.alert({ title, body })`; `body` keeps its line breaks |
+| Question | `await Ayni.ask({ title, label, placeholder, value, hint, max, check })`: the trimmed text, or `null` when cancelled; `check(text)` returns the answer, or `false` to keep the dialog open |
+| A field saved as it changes | `Ayni.autoSave(field, save, { wait, msg, done })`: `save(value)` returns a promise; typing waits `wait` ms (700); a failed save puts the old value back and shows `msg` |
+| Focus somewhere else on open | focus it yourself when opening; Ayni then leaves the focus alone |
+| A lock screen | `dialog.panel.lock`: stays above every other dialog |
+
+Ayni sizes, focuses and moves every `dialog.panel`, whether it was opened by markup or by code; there is nothing to add per dialog.
 
 ## 11. Feedback: tooltips, notifications, progress and status bar
 
@@ -605,7 +630,7 @@ A long job that is not tied to one button (uploads, downloads, work on many item
 
 ### 11.4 Status bar
 
-A strip along the bottom of a Panel. It shows the last action ("Saved ana-morales.json"), the selection, and where the user is ("Ln 12, Col 4", "UTF-8"). It is also where an "applied on close" dialog explains why an input was not applied.
+A strip along the bottom of a Panel. It shows the last action ("Saved ana-morales.json"), the selection, and where the user is ("Ln 12, Col 4", "UTF-8").
 
 ### 11.5 Shared messages
 
@@ -815,6 +840,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | --- | --- |
 | Alt+letter hot keys (underlined mnemonics) | Dropped for good |
 | Submenus (cascading menus) | Rejected for good |
+| Closing a dialog by a click on the dimmed page around it | Dropped: one stray tap would lose what was typed; only the dialog's buttons and Esc close it |
+| Small dialogs full screen on phones | Not taken: a small dialog stays a centred card; only big dialogs fill the screen, below 1024 px |
+| Dragging a dialog from any free spot | Not taken: by its title row only |
+| Tinted title and button strips on floating dialogs | Not taken: plain on the dialog; strips only on full-screen dialogs |
+| Moving a lone Close button into the title row when the page loads | Dropped: it is written there in the page |
+| The status bar saying why a dialog's input was not applied | Replaced: a line inside the dialog, under the field (a dialog has no status bar) |
 | Undo notification after a dialog closes | Rejected: a dialog that needs a way back gets a Cancel button (a delete inside it is the one exception, 10.1) |
 | Ctrl+Z after the Undo notification has gone | Dropped: by then the action is final (11.2) |
 | One notification at a time, the newest replacing the last | Dropped: they stack, at most 3, so news never ends an Undo |

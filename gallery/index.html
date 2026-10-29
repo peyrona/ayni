@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
 <link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -16,6 +17,7 @@
 <script src="../ayni-base.js" defer></script>
 <script src="../ayni-buttons.js" defer></script>
 <script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -54,19 +56,22 @@
         <p class="rule">No Accept or Cancel. Each change takes effect as soon as it is made, here on this gallery.</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-settings" aria-label="Gallery settings…" data-tip="Gallery settings…"><span class="icon" data-icon="settings"></span></button></div></div>
       <div class="spec"><h3>Applied on close</h3>
-        <p class="rule">The new name is applied when the dialog closes, by the Close button or Esc. An invalid name is not applied, and the status bar says why.</p>
+        <p class="rule">The new name is applied when the dialog closes, by the Close button or Esc. An invalid name is not applied, and a line under the field says why.</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-form" aria-label="Rename…" data-tip="Rename…"><span class="icon" data-icon="edit"></span></button></div></div>
       <div class="spec"><h3>Confirmation</h3>
-        <p class="rule">Used only when a change can't be applied live, like a deletion. It needs more than Close, so its buttons go in a bottom row. Keep (also Esc) is the default, and Delete is never the default.</p>
+        <p class="rule">Used only when a change can't be applied live, like a deletion. It needs more than Close, so its buttons go in a bottom row. Cancel (the close icon, also Esc) starts focused; Delete is danger and never the default.</p>
         <div class="row"><button class="btn danger" data-open-dialog="dlg-confirm" aria-label="Delete file…" data-tip="Delete file…"><span class="icon" data-icon="trash"></span></button></div></div>
       <div class="spec"><h3>Big dialog</h3>
-        <p class="rule">A big dialog (a long form, a list, an editor) fills the screen below 1024 px wide; from 1024 px it floats with its shadow. A small dialog fills the screen only below 480 px, when modal.</p>
+        <p class="rule">A big dialog (a long form, a list, an editor) fills the screen below 1024 px wide, with its title and bottom rows as tinted strips; from 1024 px it floats with its shadow. A small dialog always floats, as wide as its content needs (300 to 460 px).</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-big" aria-label="Preferences…" data-tip="Preferences…"><span class="icon" data-icon="settings"></span></button></div></div>
       <div class="spec"><h3>Modeless dialog</h3>
         <p class="rule">Stays open while you keep working, with no backdrop. It has more than Close, so its buttons go in the bottom row: Close and Find next at the right, the extra action (List all matches) at the left.</p>
         <div class="row"><button class="btn" id="open-modeless" aria-label="Find…" data-tip="Find…"><span class="icon" data-icon="search"></span></button></div></div>
+      <div class="spec"><h3>Built in code</h3>
+        <p class="rule">A confirmation, a question and a message are one call each: <code>Ayni.confirm</code>, <code>Ayni.ask</code> and <code>Ayni.alert</code>. The question's Accept stays faded until there is text.</p>
+        <div class="row"><button class="btn danger" id="code-confirm" aria-label="Delete with Ayni.confirm…" data-tip="Delete with Ayni.confirm…"><span class="icon" data-icon="trash"></span></button><button class="btn" id="code-ask" aria-label="New folder with Ayni.ask…" data-tip="New folder with Ayni.ask…"><span class="icon" data-icon="plus"></span></button><button class="btn" id="code-alert" aria-label="Message with Ayni.alert…" data-tip="Message with Ayni.alert…"><span class="icon" data-icon="info"></span></button></div></div>
       <div class="spec"><h3>Dialog rules</h3>
-        <p class="rule">Esc always closes a dialog. Avoid Accept and Cancel wherever possible: apply changes as they happen, or when the dialog closes. With Close as the only button, it goes at the right of the title row. Otherwise all buttons, Close included, go in a bottom row: the usual ones (Close, Accept, Cancel) at the right, any extra actions at the left. Enter anywhere in a Panel runs its default (filled) button, except in a text area, on another button, or while a list or menu is open.</p></div>
+        <p class="rule">Esc always closes a dialog, as if its Close button were pressed; a click on the dimmed page around it does nothing. It opens with the caret in its first field, never on a button. On a computer or tablet it moves by its title row. Avoid Accept and Cancel wherever possible: apply changes as they happen, or when the dialog closes. With Close as the only button, it goes at the right of the title row. Otherwise all buttons, Close included, go in a bottom row: the usual ones (Close, Accept, Cancel) at the right, any extra actions at the left. Enter anywhere in a Panel runs its default (filled) button, except in a text area, on another button, or while a list or menu is open.</p></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">Every control shares one look per state. In a dialog the default button can be disabled until the input is valid: it stays filled but faded, can still be focused, and its tooltip says why.</p>
         <div class="row"><button class="btn primary" aria-disabled="true" aria-label="Save" data-tip="Save: type a name first"><span class="icon" data-icon="save"></span></button><button class="btn" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></div></div>
@@ -640,7 +645,7 @@
 <!-- ===== Dialogs (Panel + <dialog>) ===== -->
 <dialog class="panel big" id="dlg-big" aria-labelledby="db-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="db-t">Preferences</h2><button class="btn" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="db-t">Preferences</h2><button class="btn" value="close" data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <p>A big dialog: full screen below 1024 px wide, floating with its shadow from 1024 px. Every change applies at once.</p>
       <div class="field"><label for="db-name">Display name</label><input id="db-name" class="input" value="Frasquito"></div>
@@ -652,19 +657,19 @@
 </dialog>
 <dialog class="panel" id="dlg-msg" aria-labelledby="dm-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="dm-t">Upload complete</h2><button class="btn" value="close" autofocus aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="dm-t">Upload complete</h2><button class="btn" value="close" data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body"><div class="msg info"><span class="icon" data-icon="info"></span><p>3 files were uploaded to Invoices.</p></div></div>
   </form>
 </dialog>
 <dialog class="panel" id="dlg-help" aria-labelledby="dh-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="dh-t">Help</h2><button class="btn" value="close" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="dh-t">Help</h2><button class="btn" value="close" data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body" id="dh-body"></div>
   </form>
 </dialog>
 <dialog class="panel" id="dlg-settings" aria-labelledby="ds-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="ds-t">Gallery settings</h2><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="ds-t">Gallery settings</h2><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <label class="switch">Compact spacing<input type="checkbox" role="switch" id="set-compact"></label>
       <label class="switch">Show status bar<input type="checkbox" role="switch" id="set-status" checked></label>
@@ -676,12 +681,12 @@
   <form method="dialog" style="display:contents">
     <header><h2 id="dc-t">Delete contract.pdf?</h2></header>
     <div class="body"><div class="msg warn"><span class="icon" data-icon="warn"></span><p id="dc-d">The file goes to the bin. You can restore it for 30 days.</p></div></div>
-    <footer><button class="btn primary" value="keep" autofocus aria-label="Keep the file" data-tip="Keep the file (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn danger" value="delete" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button></footer>
+    <footer><button class="btn" value="keep" data-close autofocus aria-label="Cancel: keep the file" data-tip="Cancel: keep the file (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn danger" value="delete" aria-label="Delete" data-tip="Delete"><span class="icon" data-icon="trash"></span></button></footer>
   </form>
 </dialog>
 <dialog class="panel" id="dlg-form" aria-labelledby="df-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="df-t">Rename file</h2><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
+    <header><h2 id="df-t">Rename file</h2><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
       <div class="field"><label for="df-name">Name</label>
         <input id="df-name" class="input" value="notes.txt" autofocus aria-describedby="df-err">
@@ -696,7 +701,7 @@
       <div class="field"><label for="dfi-q">Find what</label><input id="dfi-q" class="input" value="invoice"></div>
       <label class="choice"><input type="checkbox">Match case</label>
     </div>
-    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><span class="icon" data-icon="list"></span></button></div><button class="btn" value="close" formnovalidate aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><span class="icon" data-icon="chev-right"></span></button></footer>
+    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><span class="icon" data-icon="list"></span></button></div><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><span class="icon" data-icon="chev-right"></span></button></footer>
   </form>
 </dialog>
 </body>

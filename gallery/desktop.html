@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
 <link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
 <link rel="stylesheet" href="../ayni.css">
 <style>
 /* Demo page only: the note on the desktop background and the sample window contents */
@@ -28,6 +29,7 @@
 <script src="../ayni-base.js" defer></script>
 <script src="../ayni-buttons.js" defer></script>
 <script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
 <script src="../ayni.js" defer></script>
 </head>
 <body>
@@ -99,7 +101,7 @@
 </div>
 
 <dialog class="panel" id="dlg-find" aria-labelledby="find-t">
-  <header><h2 id="find-t">Find in Files</h2><button class="btn" aria-label="Close" data-tip="Close (Esc)" id="find-close"><span class="icon" data-icon="close"></span></button></header>
+  <header><h2 id="find-t">Find in Files</h2><button class="btn" aria-label="Close" data-tip="Close (Esc)" id="find-close" data-close><span class="icon" data-icon="close"></span></button></header>
   <div class="body"><div class="input-group search-field"><input id="find-q" class="input" type="search" placeholder="Part of a file name" aria-label="Find"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn" type="button" tabindex="-1" aria-label="Find" data-tip="Find"><span class="icon" data-icon="search"></span></button></div>
     <p class="sample">A modeless dialog: it belongs to the Files window, floats above it, moves by its title row, hides when Files is minimised and closes with it.</p></div>
 </dialog>
