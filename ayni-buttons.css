@@ -24,9 +24,11 @@
 .btn.primary.ok, .btn.primary.warn { color: var(--on-accent); } /* a default button keeps a legible icon */
 /* Rule: a danger button is never the default. If markup breaks it, show it as a plain danger button */
 .btn.primary.danger { background: transparent; border-color: transparent; color: var(--danger); }
-/* A toggle that is on: a soft Accent tint behind an Accent icon, never a fill (a fill means the default button) */
-.btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-.btn[aria-pressed="true"]:hover:not([aria-disabled="true"]) { background: color-mix(in oklab, var(--accent) 24%, var(--card)); color: var(--accent); }
+/* A toggle that is on: a soft Accent tint behind an Accent icon, never a fill (a fill means the default button). A round
+   button that is a tab (role="tab") shows its chosen state the same way. */
+.btn[aria-pressed="true"], .btn[role="tab"][aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+.btn[aria-pressed="true"]:hover:not([aria-disabled="true"]), .btn[role="tab"][aria-selected="true"]:hover:not([aria-disabled="true"]) {
+  background: color-mix(in oklab, var(--accent) 24%, var(--card)); color: var(--accent); }
 /* RULE: a disabled button uses aria-disabled="true" (not the disabled attribute): faded, ignores clicks and Enter,
    but stays focusable and shows its tooltip, which can say why it is unavailable */
 .btn[aria-disabled="true"] { opacity: .45; cursor: default; }
@@ -116,5 +118,5 @@ html.touch .btn { position: relative; }
 html.touch .btn::before { content: ""; position: absolute; inset: min(0px, calc((100% - var(--touch)) / 2)); }
 html.touch .panel > footer .btn, html.touch .panel > form > footer .btn { --btn: var(--touch); }
 html.touch .choice, html.touch .switch, html.touch .switch-pair, html.touch .switch-pair > label { min-height: var(--touch); }
-html.touch .switch-pair > label { display: flex; align-items: center; }
+html.touch .switch-pair > label { display: flex; align-items: center; justify-content: center; min-width: var(--touch); }   /* an icon side too */
 html.touch .switch-pair > .track::before { content: ""; position: absolute; inset: -12px -4px; }

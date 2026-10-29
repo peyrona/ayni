@@ -6,12 +6,20 @@
 (() => {
 'use strict';
 const { $, $$ } = Ayni;
-const { fire, each, tx, txf, isRO, isTouch, HOLD_MS, DBL_MS } = Ayni.core;
+const { fire, each, tx, txf, isRO, isTouch, HOLD_MS, DBL_MS, retip } = Ayni.core;
 
-/* Busy buttons: setBusy(b, 'Saving…') swaps the icon for a spinner; setBusy(b, false) brings the icon and tooltip back */
+/* Busy buttons: setBusy(b, 'Saving…') swaps the icon for a spinner; setBusy(b, false) brings the icon and tooltip back
+   (a button that had no tooltip has none again) */
 const setBusy = (b, label) => {
-  if (label) { b.dataset.idleTip ??= b.dataset.tip; b.dataset.tip = label; b.setAttribute('aria-busy', 'true'); if (!$('.btn-spin', b)) b.insertAdjacentHTML('beforeend', '<span class="btn-spin" aria-hidden="true"></span>'); }
-  else { b.removeAttribute('aria-busy'); $('.btn-spin', b)?.remove(); if (b.dataset.idleTip) b.dataset.tip = b.dataset.idleTip; delete b.dataset.idleTip; }
+  if (label) {
+    if (!('idleTip' in b.dataset)) b.dataset.idleTip = b.dataset.tip ?? '';
+    b.dataset.tip = label; b.setAttribute('aria-busy', 'true');
+    if (!$('.btn-spin', b)) b.insertAdjacentHTML('beforeend', '<span class="btn-spin" aria-hidden="true"></span>');
+  } else {
+    b.removeAttribute('aria-busy'); $('.btn-spin', b)?.remove();
+    if ('idleTip' in b.dataset) { if (b.dataset.idleTip) b.dataset.tip = b.dataset.idleTip; else delete b.dataset.tip; delete b.dataset.idleTip; }
+  }
+  retip(b);
 };
 
 /* ---------- Second action: double-click, long tap (touch/pen), Shift+Enter ---------- */

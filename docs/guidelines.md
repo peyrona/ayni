@@ -290,6 +290,7 @@ A text button carries a short label, with an optional icon before it. It is only
 | Second action | `data-alt="Print with the last settings"` |
 | Disabled | `aria-disabled="true"`, not the `disabled` attribute |
 | Busy | `Ayni.setBusy(button, "Saving…")`, then `Ayni.setBusy(button, false)` |
+| New tooltip | `Ayni.setTip(button, "Pause")`: the tooltip and the button's name change together |
 | Over a picture | `.btn.on-media` |
 | Text button | `button.btn.text` with an optional icon and the label |
 | A dialog's buttons | written in the page with their class and icon (`.btn.primary` + check, `.btn` + close, `.btn.danger` + bin); nothing rewrites them when the page loads |

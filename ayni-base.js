@@ -314,6 +314,12 @@ const hideTip = () => { clearTimeout(tipTimer); tipEl = null; if (tip.matches(':
 
 /* After the element's tooltip text changed: show the new one if its tooltip is open */
 const retip = (el) => { if (tipEl === el) showTip(el); };
+/* Ayni.setTip(el, 'Pause'): a new tooltip for el, at once if it is showing; a round button's name follows it */
+const setTip = (el, text) => {
+  el.dataset.tip = text;
+  if (el.matches('.btn:not(.text)')) el.setAttribute('aria-label', text);
+  retip(el);
+};
 
 const setupTips = () => {
   tip = layer('ayni-tip', '<div class="tooltip" popover="manual" role="tooltip" id="ayni-tip"></div>');
@@ -347,7 +353,7 @@ const init = (root = document) => {
 const family = (f) => { families.push(f); if (started) { f.setup?.(); f.init?.(document); } };
 
 Object.assign(window.Ayni ??= {}, {
-  version: '0.1.0', init, $, $$, icon, setIcon, isDark, setTheme, theme, supported, isMac, isTouch, setTouchPreview,
+  version: '0.1.0', init, $, $$, icon, setIcon, isDark, setTheme, theme, supported, isMac, isTouch, setTouchPreview, setTip,
   icons: { use: useIcons, add: addIcons, names: ICONS, get set() { return iconSet; } },
   /* For Ayni's own family files */
   core: { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, family, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip },
