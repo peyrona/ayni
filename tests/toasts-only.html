@@ -15,6 +15,10 @@
 <script src="../ayni-base.js" defer></script>
 <script src="../ayni-buttons.js" defer></script>
 <script src="../ayni-toasts.js" defer></script>
+<script>
+  /* #early: a notification before Ayni has started (the page's own deferred code runs before Ayni.ready) */
+  document.addEventListener('DOMContentLoaded', () => { if (location.hash === '#early') Ayni.toast('info', 'Early'); });
+</script>
 <script type="module">
   await Ayni.ready;
   if (location.hash === '#demo') {

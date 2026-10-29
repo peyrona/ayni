@@ -328,18 +328,20 @@ try {
   section('Notifications family (base + buttons + notifications)');
   t.logs.length = 0;
   await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
-  await t.open(BASE + '/tests/toasts-only.html');
+  await t.open(BASE + '/tests/toasts-only.html#early');
   check('a page with the notifications family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
   const ev = (js) => t.evaluate(js);
   const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
   const ctrlZ = async () => { for (const type of ['keyDown', 'keyUp']) await t.send('Input.dispatchKeyEvent', { type, key: 'z', code: 'KeyZ', modifiers: 2, windowsVirtualKeyCode: 90 }); };
   const shown = () => ev(`[...document.querySelectorAll('#ayni-toasts > .toast')].map((x) => x.querySelector('p').firstChild.textContent)`);
   const reset = () => ev(`(() => { Ayni.settleUndo(); document.querySelectorAll('#ayni-toasts > .toast').forEach((x) => x.remove()); window.L = []; return true; })()`);
-  await reset();
   /* Undo helpers: each logs what ran */
   const undoToast = (name, extra = '') => ev(`(Ayni.toast('ok', '${name}', { undo: () => L.push('undo ${name}'), final: () => L.push('final ${name}')${extra} }), true)`);
   const L = () => ev('L.join()');
 
+  check('a notification shown before Ayni has started works', (await ev(`[...document.querySelectorAll('#ayni-toasts .toast p')].map((p) => p.textContent).join()`)) === 'Early', t.logs.slice());
+  check('…and its stack gets its translated name once Ayni starts', (await ev(`document.getElementById('ayni-toasts').getAttribute('aria-label')`)) === 'Notifications');
+  await reset();
   check('the stack is made by Ayni (no element in the page)', await ev(`!!document.getElementById('ayni-toasts')`));
   await ev(`(Ayni.toast('ok', 'Saved.'), true)`);
   check('a notification shows in the open stack', await ev(`document.getElementById('ayni-toasts').matches(':popover-open') && !!document.querySelector('#ayni-toasts .toast.ok')`));

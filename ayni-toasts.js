@@ -11,14 +11,17 @@ const { tx, txf, layer } = Ayni.core;
 let toasts;
 const TIME_MS = 6000, PROGRESS_WAIT_MS = 600, MAX_SHOWN = 3;
 
+/* The stack, made the first time it is needed: a page may show a notification before Ayni has started */
+const stack = () => toasts || (toasts = layer('ayni-toasts', `<div class="toasts" popover="manual" role="region" aria-label="${tx('notifications')}" id="ayni-toasts"></div>`));
+
 /* The stack is shown while it holds anything */
-const show = () => { if (!toasts.matches(':popover-open')) toasts.showPopover(); };
-const hideIfEmpty = () => { if (!toasts.children.length && toasts.matches(':popover-open')) toasts.hidePopover(); };
+const show = () => { if (!stack().matches(':popover-open')) toasts.showPopover(); };
+const hideIfEmpty = () => { if (!stack().children.length && toasts.matches(':popover-open')) toasts.hidePopover(); };
 
 /* RULE: at most 3 notifications show (progress notifications do not count). A fourth makes the oldest leave; errors
    and the Undo are the last to go. */
 const trim = () => {
-  const shown = $$(':scope > .toast:not(.progress)', toasts);
+  const shown = $$(':scope > .toast:not(.progress)', stack());
   while (shown.length > MAX_SHOWN) {
     const out = shown.find((x) => !x.matches('.err, .undo')) || shown.find((x) => !x.matches('.undo')) || shown[0];
     shown.splice(shown.indexOf(out), 1); out.leave();
@@ -131,7 +134,7 @@ const progress = (text, { pct = null, onStop } = {}) => {
 
 /* ---------- Wire up ---------- */
 const setup = () => {
-  toasts = layer('ayni-toasts', `<div class="toasts" popover="manual" role="region" aria-label="${tx('notifications')}" id="ayni-toasts"></div>`);
+  stack().setAttribute('aria-label', tx('notifications'));   // the texts are in now
 
   /* Ctrl+Z (⌘Z) runs the Undo on show, outside text fields; a page that handles the key itself calls preventDefault */
   document.addEventListener('keydown', (e) => {
