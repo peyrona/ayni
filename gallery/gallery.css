@@ -31,3 +31,8 @@ body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; border: var(--panel-border); border-radius: var(--ctl-radius); font: 11px var(--font-mono); color: var(--text-dim); }
 .icon-cell .icon { --icon: var(--size, 24px); color: var(--text); }
 .icon-cell b { font-weight: 500; color: var(--text); } .icon-cell small { font: 11px/1.3 var(--font-sans); text-align: center; }
+
+/* A title row that fits: a box the reader can narrow by its corner */
+.fit-demo { resize: horizontal; overflow: hidden; width: 100%; min-width: 180px; max-width: 100%; border: var(--panel-border); border-radius: var(--radius-m); background: var(--card); }
+.fit-demo > header { display: flex; align-items: center; gap: 8px; padding: 4px 8px; }
+.fit-demo > header > h2 { flex: 1 0 auto; margin: 0; font-size: 1rem; white-space: nowrap; }

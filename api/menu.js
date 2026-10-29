@@ -3,7 +3,7 @@
 /**
  * A popup menu (`<div popover class="panel menu">`). It opens from a button (which shows the small triangle) or as the
  * pop-up menu of an area: right click, long tap, Shift+F10 or the Menu key. Items can be plain, check or radio items,
- * with separators between groups; a disabled item stays visible. Menus have no submenus. A menu that doesn't fit
+ * with separators between groups; a disabled item stays visible. An item may open one submenu (one level). A menu that doesn't fit
  * scrolls, and it closes when the page scrolls or the window resizes.
  * @extends Component
  * @fires ayni:action  detail `{ item, menu, act }` when an item is chosen (`menu` is the menu's name, or the name of

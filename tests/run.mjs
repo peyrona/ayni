@@ -670,6 +670,242 @@ try {
     check('no errors or warnings in the dialogs family', t.logs.length === 0, t.logs.slice());
   }
 
+  section('Menus family (base + buttons + notifications + dialogs + menus)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await t.open(BASE + '/tests/menus-only.html');
+    check('a page with the menus family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const KEYS = { Escape: 27, Enter: 13, Tab: 9, ArrowDown: 40, ArrowUp: 38, ArrowRight: 39, ArrowLeft: 37, Home: 36, End: 35, F10: 121 };
+    const key = async (k, mods = 0) => {
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: KEYS[k] || 0, modifiers: mods, ...(k === 'Enter' ? { text: '\r' } : {}) });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: KEYS[k] || 0, modifiers: mods });
+      await wait(60);
+    };
+    const mouse = (type, x, y, button = 'left') => t.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : button,
+      buttons: type === 'mousePressed' ? (button === 'right' ? 2 : 1) : 0, clickCount: 1 });
+    const mid = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+    const click = async (sel, button = 'left') => { const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y, button); await mouse('mouseReleased', x, y, button); await wait(80); };
+    const hover = async (sel) => { const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await wait(120); };
+    const isOpen = (id) => ev(`document.getElementById('${id}').matches(':popover-open')`);
+    const focused = () => ev(`document.activeElement.id || document.activeElement.dataset.act || document.activeElement.tagName`);
+    const log = () => ev(`L.join()`);
+    const reset = () => ev(`(document.querySelectorAll(':popover-open').forEach((p) => p.id !== 'ayni-toasts' && p.hidePopover()), document.querySelectorAll('dialog[open]').forEach((d) => d.close()), L.length = 0, document.getElementById('fld').focus(), true)`);
+    const color = (v) => ev(`(() => { const p = document.createElement('i'); p.style.color = 'var(${v})'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`);
+    await reset();
+
+    /* A menu in the page: opening with the mouse leaves the focus alone */
+    check('a submenu moves inside its menu', (await ev(`document.getElementById('ms').parentElement.id`)) === 'mm');
+    check('its item says it opens a menu', (await ev(`document.querySelector('#mm [data-act="more"]').getAttribute('aria-haspopup')`)) === 'menu');
+    await click('#mb');
+    check('a click on the button opens the menu', await isOpen('mm'));
+    check('…and the focus stays in the field', (await focused()) === 'fld', await focused());
+    check('every row gets the tick column (the menu has check items)', await ev(`[...document.querySelectorAll('#mm > [role^="menuitem"]')].every((b) => b.firstElementChild.classList.contains('tick'))`));
+    check('a row without an icon keeps an empty slot after its tick', await ev(`!!document.querySelector('#mm [data-act="chk"] > .tick + .icon.none')`));
+    check('the tick shows only on checked rows', (await ev(`[...document.querySelectorAll('#mm .tick')].filter((x) => getComputedStyle(x).visibility === 'visible').length`)) === 1);
+    check('the submenu row shows its arrow', (await ev(`getComputedStyle(document.querySelector('#mm [data-act="more"]'), '::after').content`)) === '"›"');
+    check('a disabled row still takes the pointer, so its tooltip says why', (await ev(`getComputedStyle(document.querySelector('#mm [data-act="nope"]')).pointerEvents`)) !== 'none');
+    check('rows are compact with a mouse', (await ev(`document.querySelector('#mm [data-act="a"]').getBoundingClientRect().height`)) < 40);
+    await hover('#mm [data-act="a"]');
+    const bg = await ev(`getComputedStyle(document.querySelector('#mm [data-act="a"]')).backgroundColor`), acc = await color('--accent');
+    check('hover is a grey tint, never Accent', bg !== 'rgba(0, 0, 0, 0)' && !bg.includes(acc.slice(4, -1)), bg);
+    await click('#mm [data-act="nope"]');
+    check('a click on a disabled row does nothing', (await isOpen('mm')) && (await log()) === '');
+    await click('#mm [data-act="chk"]');
+    check('a check item flips and reports', (await ev(`document.querySelector('#mm [data-act="chk"]').getAttribute('aria-checked')`)) === 'true' && (await log()) === 'action chk @Main menu', await log());
+    check('…and the menu closes; the focus is still in the field', !(await isOpen('mm')) && (await focused()) === 'fld');
+    await ev('(L.length = 0, true)');
+    await click('#mb'); await click('#mm [data-act="r2"]');
+    check('a radio item moves the choice and fires ayni:choose', (await ev(`[...document.querySelectorAll('#mm [role="menuitemradio"]')].map((b) => b.getAttribute('aria-checked')).join()`)) === 'false,true' && (await log()).startsWith('choose r2'), await log());
+    await reset();
+
+    /* Submenus */
+    await click('#mb'); await hover('#mm [data-act="more"]');
+    check('resting on a submenu item opens it; its menu stays open', (await isOpen('ms')) && (await isOpen('mm')));
+    check('the submenu sits at the right of its row', await ev(`document.getElementById('ms').getBoundingClientRect().left >= document.querySelector('#mm [data-act="more"]').getBoundingClientRect().right - 4`));
+    check('its row says it is expanded', (await ev(`document.querySelector('#mm [data-act="more"]').getAttribute('aria-expanded')`)) === 'true');
+    await hover('#mm [data-act="a"]');
+    check('resting on another item closes it', !(await isOpen('ms')) && (await isOpen('mm')));
+    await click('#mm [data-act="more"]');
+    check('a click on the item opens it too', await isOpen('ms'));
+    await click('#ms [data-act="s2"]');
+    check('a pick in the submenu reports once, with the submenu\'s name', (await log()) === 'action s2 @Sub menu', await log());
+    check('…and both close', !(await isOpen('mm')) && !(await isOpen('ms')));
+    await reset();
+
+    /* The keyboard */
+    await ev(`document.getElementById('mb').focus(), true`); await key('Enter'); await wait(60);
+    check('opened from the keyboard, the first item takes the focus', (await focused()) === 'a', await focused());
+    await key('ArrowDown'); await key('ArrowDown'); await key('ArrowDown'); await key('ArrowDown');
+    check('the arrows skip a disabled item', (await focused()) === 'more', await focused());
+    await key('ArrowRight'); await wait(60);
+    check('Right opens the submenu, its first item focused', (await isOpen('ms')) && (await focused()) === 's1');
+    await key('ArrowLeft'); await wait(60);
+    check('Left closes it, the focus back on its item', !(await isOpen('ms')) && (await focused()) === 'more');
+    await key('ArrowRight'); await key('Escape'); await wait(60);
+    check('Esc closes only the submenu', !(await isOpen('ms')) && (await isOpen('mm')));
+    await key('Home');
+    check('Home goes to the first item', (await focused()) === 'a');
+    await key('ArrowUp');
+    check('Up from the first wraps to the last', (await focused()) === 'more');
+    await key('Tab'); await wait(60);
+    check('Tab closes the menu; the focus goes back to its button', !(await isOpen('mm')) && (await focused()) === 'mb', await focused());
+    await reset();
+    await click('#mb'); await key('ArrowDown');
+    check('Down moves into a menu the mouse opened', (await focused()) === 'a', await focused());
+    await reset();
+
+    /* The menu bar */
+    await key('F10');
+    check('F10 focuses the menu bar', (await ev(`document.activeElement.textContent`)) === 'File');
+    await key('ArrowRight');
+    check('Right moves along the bar', (await ev(`document.activeElement.textContent`)) === 'View');
+    await key('ArrowDown'); await wait(60);
+    check('Down opens its menu, first item focused', (await isOpen('m-view')) && (await focused()) === 'zoom');
+    await key('ArrowLeft'); await wait(60);
+    check('Left switches to the menu before it', (await isOpen('m-file')) && !(await isOpen('m-view')));
+    await reset();
+    await click('#bar [popovertarget="m-file"]');
+    check('a click on the bar opens a menu; the focus stays in the field', (await isOpen('m-file')) && (await focused()) === 'fld');
+    await hover('#bar [popovertarget="m-view"]');
+    check('moving along the bar switches the open menu', (await isOpen('m-view')) && !(await isOpen('m-file')));
+    await reset();
+
+    /* Menus built in code */
+    await ev(`(window.closes = 0, Ayni.menuAt(items(), { anchor: document.getElementById('anc'), onClose: () => closes++ }), true)`); await wait(60);
+    const rows = await ev(`[...document.querySelectorAll('#ayni-menu > *')].map((e) => e.getAttribute('role') || e.className).join()`);
+    check('Ayni.menuAt builds rows, separators and captions, and drops a separator at the end', rows === 'menuitem,separator,caption,menuitemcheckbox,menuitem,menuitem,menuitem,menu', rows);
+    check('…the shortcut, in words', (await ev(`document.querySelector('#ayni-menu kbd').textContent`)) === 'Ctrl+X');
+    check('…a disabled row with its why as tooltip', (await ev(`(() => { const b = document.querySelector('#ayni-menu [data-act="off"]'); return b.getAttribute('aria-disabled') + '|' + b.dataset.tip; })()`)) === 'true|Off: not now');
+    check('…a danger row in the Danger colour', (await ev(`getComputedStyle(document.querySelector('#ayni-menu [data-act="del"]')).color`)) === (await color('--danger')));
+    check('…the button says its menu is open', (await ev(`document.getElementById('anc').getAttribute('aria-expanded')`)) === 'true');
+    check('…and the focus stays in the field', (await focused()) === 'fld');
+    await click('#ayni-menu [data-act="font"]');
+    check('a submenu from a function, filled when it opens', (await ev(`[...document.querySelectorAll('#ayni-menu-sub [role^="menuitem"]')].map((b) => b.textContent).join()`)) === 'Serif,Sans');
+    await click('#ayni-menu-sub [data-act="sans"]'); await wait(60);
+    check('an item runs after the menu has closed', (await log()).endsWith('sans') && !(await isOpen('ayni-menu')), await log());
+    check('…onClose ran and the button says closed', (await ev(`closes + '|' + document.getElementById('anc').getAttribute('aria-expanded')`)) === '1|false');
+    await reset();
+    await ev(`(Ayni.menuAt(items(), { x: 300, y: 200 }), true)`); await wait(60);
+    check('Ayni.menuAt at a point', (await ev(`(() => { const r = document.getElementById('ayni-menu').getBoundingClientRect(); return Math.round(r.left) + ',' + Math.round(r.top); })()`)) === '300,200');
+    await ev(`(dispatchEvent(new Event('blur')), true)`); await wait(60);
+    check('the window losing the focus closes it', !(await isOpen('ayni-menu')));
+    await ev(`(Ayni.menuAt(items(), { x: 300, y: 200 }), true)`); await wait(400);
+    await ev(`scrollBy(0, 40)`); await wait(100);
+    check('a page scroll closes it', !(await isOpen('ayni-menu')));
+    await ev(`scrollTo(0, 0)`); await reset();
+    await ev(`(() => { const b = document.getElementById('anc'); b.style.cssText = 'position: fixed; right: 20px; top: 20px'; return true; })()`);
+    await ev(`(Ayni.menuAt(items(), { anchor: document.getElementById('anc') }), true)`); await wait(60);
+    check('under a button in the right half, the menu ends where the button ends', await ev(`Math.abs(document.getElementById('ayni-menu').getBoundingClientRect().right - document.getElementById('anc').getBoundingClientRect().right) < 1.5`));
+    await ev(`(document.getElementById('anc').style.cssText = '', true)`); await reset();
+    check('Ayni.keyLabel', (await ev(`[Ayni.keyLabel('Ctrl+C'), Ayni.keyLabel(['Shift+Del', 'x']), Ayni.keyLabel('F2'), Ayni.keyLabel('Esc')].join('|')`)) === (await ev('Ayni.isMac')) ? '⌘C|⇧Del|F2|Esc' : 'Ctrl+C|Shift+Del|F2|Esc');
+    await ev(`Ayni.i18n.setLang('de')`); await wait(150);
+    check('…in the page\'s language', (await ev(`Ayni.keyLabel('Ctrl+Del')`)) === (await ev('Ayni.isMac') ? '⌘Entf' : 'Strg+Entf'), await ev(`Ayni.keyLabel('Ctrl+Del')`));
+    await ev(`Ayni.i18n.setLang('en')`); await wait(150);
+
+    /* Pop-up menu and long tap */
+    await click('#ctx', 'right'); await wait(60);
+    check('a right-click opens the pop-up menu at the pointer', (await isOpen('mctx')) && await ev(`(() => { const m = document.getElementById('mctx').getBoundingClientRect(), a = document.getElementById('ctx').getBoundingClientRect(); return Math.abs(m.left - (a.left + a.width / 2)) < 2; })()`));
+    await click('#mctx [data-act="copy"]');
+    check('…and names the thing it was opened on', (await log()) === 'action copy @Area', await log());
+    await reset();
+    await ev(`document.getElementById('ctx').focus(), true`); await key('F10', 8); await wait(60);
+    check('Shift+F10 opens it from the keyboard, first item focused', (await isOpen('mctx')) && (await focused()) === 'copy');
+    await reset();
+    await ev(`(Ayni.setTouchPreview(true), true)`);
+    const [lx, ly] = await mid('#lt .row');
+    await t.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: lx, y: ly }] }); await wait(250);
+    check('long tap: nothing before the hold time; the ring fills', (await log()) === '' && await ev(`!!document.querySelector('.hold-ring')`));
+    await wait(400);
+    check('long tap: it acts while the finger is still down', (await log()) === 'hold One', await log());
+    await t.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(100);
+    check('long tap: the click its release leaves is swallowed', (await log()) === 'hold One', await log());
+    await ev('(L.length = 0, true)');
+    await t.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: lx, y: ly }] }); await wait(150);
+    await t.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: lx, y: ly + 30 }] }); await wait(500);
+    await t.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(80);
+    check('long tap: moving the finger cancels it', !(await log()).includes('hold'), await log());
+    await ev(`(Ayni.menuAt(items(), { x: 100, y: 100 }), true)`); await wait(60);
+    check('touch: menu rows are 44 px high and hide their shortcuts', await ev(`document.querySelector('#ayni-menu [data-act="cut"]').getBoundingClientRect().height >= 44 && getComputedStyle(document.querySelector('#ayni-menu kbd')).display === 'none'`));
+    await reset();
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 800, deviceScaleFactor: 1, mobile: false });
+    await ev(`(Ayni.menuAt(items(), { anchor: document.getElementById('anc') }), true)`); await wait(60);
+    await click('#ayni-menu [data-act="font"]');
+    check('on a phone a submenu opens below its item, which stays in sight', await ev(`(() => { const s = document.getElementById('ayni-menu-sub').getBoundingClientRect(), r = document.querySelector('#ayni-menu [data-act="font"]').getBoundingClientRect(); return s.top >= r.bottom - 1 && s.right <= innerWidth; })()`));
+    await reset(); await ev(`(Ayni.setTouchPreview(false), true)`);
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+
+    /* Tool group and popup with controls */
+    check('a tool group button is off while its toggle is off', (await ev(`document.getElementById('gb').getAttribute('aria-pressed')`)) === 'false');
+    await ev(`(document.getElementById('w1').setAttribute('aria-pressed', 'true'), true)`); await wait(30);
+    check('…and lights up when the toggle inside is on (data-lit-by)', (await ev(`document.getElementById('gb').getAttribute('aria-pressed')`)) === 'true');
+    await click('#gb');
+    check('the tool group opens; the focus stays in the field', (await isOpen('gp')) && (await focused()) === 'fld');
+    check('…its button says it is expanded', (await ev(`document.getElementById('gb').getAttribute('aria-expanded')`)) === 'true');
+    await click('#w2');
+    check('a tool press closes the group; the focus is still in the field', !(await isOpen('gp')) && (await focused()) === 'fld');
+    await click('#cb');
+    check('a popup with controls puts the focus in its first control', (await isOpen('cp')) && (await focused()) === 'cp-in');
+    await key('Escape');
+    check('Esc closes it, the focus back on its button', !(await isOpen('cp')) && (await focused()) === 'cb');
+    await reset();
+
+    /* Toolbars */
+    check('every toolbar is one Tab stop (a field inside keeps its own)', (await ev(`[...document.querySelectorAll('#rt button')].map((b) => b.tabIndex).join()`)) === '0,-1,-1,0');
+    await ev(`(document.querySelector('#rt .tb-group').insertAdjacentHTML('beforeend', '<button class="btn" id="r0">0</button>'), true)`); await wait(30);
+    check('a tool added later is not a Tab stop', (await ev(`document.getElementById('r0').tabIndex`)) === -1);
+    await ev(`(document.getElementById('r1').hidden = true, true)`); await wait(30);
+    check('the Tab stop moves off a hidden tool', (await ev(`document.getElementById('r2').tabIndex`)) === 0);
+    await ev(`(document.getElementById('r2').focus(), true)`); await key('ArrowRight');
+    check('Right moves to the next tool, which becomes the Tab stop', (await focused()) === 'r0' && (await ev(`document.getElementById('r2').tabIndex`)) === -1);
+    await key('End');
+    check('End goes to the last tool, past the field', (await focused()) === 'r3');
+    await ev(`(document.getElementById('r1').hidden = false, document.getElementById('r0').remove(), true)`);
+    check('a line is drawn between two groups', (await ev(`getComputedStyle(document.querySelector('#rt .tb-group:last-child'), '::before').width`)) === '1px');
+    check('a toolbar on its own is a strip; in a title row it sits plain', (await ev(`getComputedStyle(document.getElementById('rt')).borderTopStyle`)) !== 'none'
+      && (await ev(`getComputedStyle(document.querySelector('#hd [role="toolbar"]')).borderTopStyle`)) === 'none');
+
+    /* A title row that fits */
+    check('a wide title row: every tool shows; More only for the app\'s own items', (await ev(`document.querySelectorAll('#hd .fit-out').length + '|' + !fb.button.hidden`)) === '0|true');
+    check('More is made at the start of the system group', await ev(`fb.button.parentElement.matches('.tb-group.tb-sys') && fb.button === fb.button.parentElement.firstElementChild`));
+    /* Narrow the row until Alpha (rank 22) has left */
+    await ev(`new Promise((r) => { const h = document.getElementById('hd'); let w = 700; const step = () => { if (document.getElementById('h-a').classList.contains('fit-out') || w < 200) return r(w); h.style.width = (w -= 10) + 'px'; requestAnimationFrame(() => requestAnimationFrame(step)); }; step(); })`); await wait(100);
+    const outs = await ev(`[...document.querySelectorAll('#hd .fit-out')].map((e) => e.id).join()`);
+    check('a narrow row: the highest ranks leave first; search stays', outs === 'h-a,h-b,h-c', outs);
+    const its = await ev(`fb.items().map((i) => i.sep ? '-' : i.label + (i.checked ? '*' : '')).join()`);
+    check('More lists them in toolbar order (a toggle as a check item), then the app\'s own', its === 'Alpha,Beta,Gamma*,-,Own item', its);
+    await click('#hd .fit-more');
+    check('More opens its menu', await isOpen('ayni-menu'));
+    await click('#hd .fit-more'); await wait(60);
+    check('a second press on More closes it (it does not open again)', !(await isOpen('ayni-menu')));
+    await click('#hd .fit-more'); await click('#ayni-menu [data-act="h-a"]'); await wait(60);
+    check('a tool run from More comes back to the row while in use', !(await ev(`document.getElementById('h-a').classList.contains('fit-out')`)));
+    await click('#fld'); await wait(80);
+    check('…and leaves again on the next press elsewhere', await ev(`document.getElementById('h-a').classList.contains('fit-out')`));
+    await ev(`(document.getElementById('hd').style.width = '230px', document.getElementById('hd').classList.add('has-selection'), true)`); await wait(150);
+    check('while picking, search may leave too', await ev(`document.getElementById('h-search').classList.contains('fit-out')`));
+    await ev(`(document.getElementById('hd').style.width = '700px', document.getElementById('hd').classList.remove('has-selection'), true)`); await wait(150);
+    check('a wide row again: all come back', (await ev(`document.querySelectorAll('#hd .fit-out').length`)) === 0);
+    await reset();
+
+    /* Above dialogs */
+    await click('#open-dlg'); await click('#dlg-menu');
+    check('a menu opened from inside a modal dialog shows above it', (await isOpen('ayni-menu')) && await ev(`(() => { const r = document.querySelector('#ayni-menu [data-act="cut"]').getBoundingClientRect(); return document.elementFromPoint(r.left + 20, r.top + r.height / 2)?.closest('[data-act]')?.dataset.act === 'cut'; })()`));
+    await click('#ayni-menu [data-act="cut"]'); await wait(60);
+    check('…and its items can be picked; the dialog stays open', (await log()).endsWith('cut') && await ev(`document.getElementById('dlg').open`), await log());
+    await reset();
+    check('…and back in the page once no dialog is open', await ev(`(Ayni.menuAt(items(), { x: 100, y: 100 }), document.getElementById('ayni-menu').parentElement === document.body)`));
+    await reset();
+    await click('#mb');
+    await ev(`(() => { const l = document.createElement('dialog'); l.className = 'panel lock'; l.id = 'lock'; l.innerHTML = '<div class="body">Locked</div>'; document.body.append(l); l.showModal(); return true; })()`); await wait(60);
+    check('an open menu closes when a lock screen shows', !(await isOpen('mm')));
+    await ev(`(document.getElementById('lock').close(), document.getElementById('lock').remove(), true)`); await reset();
+    check('no untranslated keys in the menus family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('no errors or warnings in the menus family', t.logs.length === 0, t.logs.slice());
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

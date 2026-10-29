@@ -41,7 +41,8 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 | --- | --- |
 | Click, tap, Enter, Space | Run the action, or select the item |
 | Double-click, long tap or Shift+Enter on a button with a dot | Run the button's second action |
-| Long tap on an area, list item or tree item | Open its pop-up menu (same as right-click) |
+| Long tap on an area or tree item | Open its pop-up menu (same as right-click) |
+| Long tap on a list item | Start picking: each tap then adds or removes an item (8.4) |
 | Long tap on a tree item, then move the finger | Drag the item (in a tree that allows moving) |
 | Right-click, Shift+F10, Menu key | Open the pop-up menu for what is under the pointer or focus |
 | Enter inside a Panel | Run that Panel's default button |
@@ -184,7 +185,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 - Esc closes the innermost popup, menu or dialog. In a search field the first Esc clears the text.
 - Shift+Enter on a button with a dot runs its second action.
 - Alt+Down or F4 opens a list picker or calendar.
-- Shift+F10 or the Menu key opens a pop-up menu. F10 focuses the menu bar.
+- Shift+F10 or the Menu key opens a pop-up menu. F10 focuses the menu bar. In a menu, Right opens a submenu and Left closes it; Tab closes the menu.
 - Ctrl+Page Down / Ctrl+Page Up switch tabs from anywhere inside the Panel.
 - Ctrl+Z (⌘Z on Mac) runs the Undo on screen, outside text fields (11.2).
 - On Mac, Ctrl in shortcuts reads ⌘.
@@ -193,7 +194,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 - A device counts as touch when its main pointer is coarse; Ayni marks the page with the class `touch` on `<html>`. An app can switch it by hand (a tablet with a mouse plugged in, a preview), and every touch rule follows. Sizes switch to the touch values above.
 - There are no tooltips on touch. Each view has a round Help button in its title row instead (chapter 15).
-- **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area, list item or tree item it opens that element's pop-up menu. While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
+- **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area or a tree item it opens that element's pop-up menu; on a list item it starts picking (8.4). While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
 - On phones (below 600 px), lists of the list picker open as a sheet at the bottom of the screen, kept above the on-screen keyboard.
 
 ### 2.7 Scrolling
@@ -464,10 +465,11 @@ Arrow keys, Home and End move the selection. The selected item has the Accent so
 - Shift+click or Shift+arrows select a range from the last anchor.
 - Ctrl+A (⌘A on Mac) selects all.
 - Page Up and Page Down jump one visible page.
+- **On touch**, a tap opens an item. A long tap starts picking: the squares show on every item, that item is picked, and each tap then adds or removes one. The actions for the picked items show in the toolbar (9.8), with the count and a Close that stops picking (Esc does too).
 
 ### 8.5 Pop-up menu on items
 
-Right-click, Shift+F10, the Menu key, or a long tap on touch opens the item's pop-up menu (chapter 9).
+Right-click, Shift+F10 or the Menu key opens the item's pop-up menu (chapter 9). Right-click on an item that is not picked picks only that one first; on the empty area it offers the area's actions (New, Paste, Select all). On touch a long tap starts picking instead (8.4); the actions are in the toolbar.
 
 ### 8.6 States
 
@@ -483,35 +485,92 @@ The tree view follows the same states (chapter 16).
 
 ## 9. Menus, popups and toolbars
 
-Menus and popups are Panels that open next to what opened them, close with Esc or a click outside, and close when the page scrolls or resizes.
+Menus and popups are Panels that open next to what opened them, in the top layer: above everything, a dialog too. Under a button they hang below it (above it when there is no room), lined up with the button's left edge, or with its right edge when the button sits in the right half of the screen; a pop-up menu opens at the pointer. Only one is open at a time (a submenu stays with its menu). They close with Esc, a press outside, a pick, Tab (menus), when the page scrolls or resizes (9.6), and when the window loses the focus (another window or frame was clicked).
+
+**The page keeps its focus.** Opening a menu or popup with the mouse or a finger, or pressing inside one, never takes the focus off the page: an editor's caret and a sheet's selected cells stay where they were, so the command acts on them. Fields inside a popup take the focus as usual. Opened from the keyboard, the first item takes the focus, and closing gives it back to the button.
 
 ### 9.1 Menu bar and pull-down menus
 
 - Menu bar items keep their text (File, Edit, View).
-- F10 focuses the bar. Left and Right move between menus, Down opens one.
-- Menu items show their keyboard shortcut at the right (Ctrl+S). Separators group related items.
-- Items can be plain actions, check items (Toolbar, Status bar) or radio items (one of a set, as in the search filter menu).
-- A disabled item is faded and the arrow keys skip it.
-- There are no submenus (see the appendix).
+- F10 focuses the bar. Left and Right move between menus, Down opens one. While one menu is open, moving the pointer along the bar switches to the next.
+- An app may offer the menu bar as an alternative to its toolbar, the user's choice; every menu item then runs the same action as its toolbar button, never a copy of it.
 
-### 9.2 Pop-up menu
+### 9.2 Menu items
 
-Opens the actions for what is under the pointer or focus: right-click, Shift+F10 or the Menu key; on touch, a long tap (the ring fills while holding, and the menu opens when the finger lifts). It works on areas, list items and tree items.
+- One row per item: the icon slot, the text, and the keyboard shortcut at the right (Ctrl+S; ⌘S on Mac). The icon slot is always there, empty when the item has no icon, so all the texts line up. Shortcuts are hidden on touch.
+- Kinds: plain actions, check items (Toolbar, Status bar), radio items (one of a set: a view, a sort order) and submenu items (9.3). Check and radio items show their tick in a column of its own before the icon; the icon stays.
+- A **danger** item (Delete) shows its text and icon in the Danger colour.
+- **Separators** group related items. A **caption** (small, dim text) may head a group ("Sort by").
+- A **disabled** item is faded and the arrow keys skip it; its tooltip says why ("Paste: nothing copied").
+- Under the pointer a row takes a grey tint, as buttons do; Accent is kept for active, selected and default. The row the keyboard is on also shows the Accent focus ring.
+- Rows are compact with a mouse and at least 44 px high on touch.
+- Up and Down move (wrapping round), Home and End jump, Enter or Space picks.
 
-### 9.3 Popups with controls
+### 9.3 Submenus
 
-A popup can hold any control: text fields, search fields, radio buttons, switches, sliders, check boxes, lists. Changes apply as they are made (no Accept button). When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it.
+- A submenu item shows a small arrow (›) at its right, and opens a second menu next to it: at its right, or at its left when there is no room. On a screen too narrow for either (a phone) it opens just below its item, so the item stays in sight.
+- It opens when the pointer rests on the item, on a click or tap, or with Right. Left or Esc closes it and the focus goes back to its item.
+- **One level only.** A submenu never holds another submenu.
+- Use one for a long set of choices that belong to one item: font, size, colour, zoom, recent files. Actions used often stay in the main menu.
 
-### 9.4 Closing on scroll and resize
+### 9.4 Pop-up menu
+
+- Opens the actions for what is under the pointer or focus: right-click, Shift+F10 or the Menu key. It works on areas, list items and tree items. The menu acts on the item it was opened on: that item joins the selection, or becomes it.
+- **On touch**, a long tap on an area or a tree item opens its pop-up menu (the ring fills while holding, and the menu opens when the finger lifts). On a list item a long tap starts picking instead (8.4): the actions for the picked items are in the toolbar.
+
+### 9.5 Popups with controls
+
+- A popup can hold any control: text fields, search fields, radio buttons, switches, sliders, check boxes, lists. Changes apply as they are made (no Accept button). When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it.
+- **Tool group:** one toolbar button stands for a run of related tools (the six alignments, the borders) and opens a popup holding them. They are the real tools, with their own tooltips and states; pressing one runs it and closes the popup. While a toggle inside is on (Wrap text), the group button shows as on too, so the state can be seen with the popup shut.
+
+### 9.6 Closing on scroll and resize
 
 Open menus and popups close when the page, or any container outside them, scrolls, or when the window resizes. Scrolling inside the popup does not close it. Dialogs and bottom sheets are not affected. On touch, a resize that only changes the height (the on-screen keyboard appearing while typing) is ignored.
 
-### 9.5 Toolbar
+### 9.7 Toolbar
 
-- A row of round tool buttons (30 px; 44 px on touch), with separators between groups.
-- The whole toolbar is one Tab stop; arrow keys move between tools.
-- Tools can be push buttons, toggle buttons (Bold, Italic) or a button that opens a menu (More, with its triangle).
+- A row of round tool buttons (30 px; 36 px in a title row), each with a 44 px hit area on touch.
+- Tools come in **groups**. A thin line is drawn between two groups that show; a group with nothing showing takes no room and no line. Nobody places a separator by hand.
+- The whole toolbar is one Tab stop; Left and Right move between tools, Home and End jump. A field inside it (a search field) is a Tab stop of its own.
+- Tools can be push buttons, toggle buttons (Bold, Italic) or a button that opens a menu or popup (with its triangle; the More button has none).
 - A disabled tool is faded but keeps its tooltip, which says why ("Underline: not available for headings").
+- In a title row the toolbar sits plain on the row. A toolbar on its own (above a tree) is a tinted strip with a border.
+
+### 9.8 The title row
+
+The title row of a view or window shows what you look at on the left and what you do on the right:
+
+- **Left:** Back (←, only in a sub-view), the app's icon, the title, the open file's name, the view switch (Day / Week / Month as toggles) and a pager.
+- **Right**, in groups, in this order: the actions for the picked items, Search, New (+), the app's tools, then the system group: More (⋮), Settings, Help (?).
+- A view opened by a toggle in the title row (a bin) is left with that same toggle, not with Back.
+
+### 9.9 A toolbar that does not fit
+
+- Every tool has a **rank**: 1 is the last to leave. While the title row does not fit on one line, the tool with the highest rank leaves first (of two equal ranks, the later one). The order never changes; the rest close up.
+- The tools that left are listed in the **More** (⋮) menu, at the start of the system group, in toolbar order, with a line between groups, and below them the app's own menu items. With nothing to list, there is no More button.
+- Search never leaves while nothing is picked. While items are picked, their actions get the room.
+- A tool run from More comes back to the row while it is in use (its menu or field is open), and leaves again on the next press elsewhere.
+- They come back as the row widens. Desktop windows work the same way (17.3).
+
+### 9.10 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| A menu | `.panel.menu[popover][role="menu"]` with `button[role="menuitem"]` items: `.icon`, the text, `<kbd>Ctrl+S</kbd>` |
+| Open it from a button | `popovertarget="id"` on the button (Ayni adds `aria-haspopup` and the triangle) |
+| Item kinds | `role="menuitemcheckbox"` or `role="menuitemradio"` with `aria-checked`; `.danger`; `[role="separator"]`; `.caption` |
+| Disabled item | `aria-disabled="true"` and `data-tip` saying why |
+| Submenu | an item with `aria-haspopup="menu"` and `data-submenu="id"` naming another `.panel.menu` |
+| What was picked | `ayni:action { item, menu, act }` on the menu; `ayni:choose` for a radio item |
+| A menu built in code | `Ayni.menuAt(items, { anchor, x, y, keyboard, onClose })`: under `anchor`, or at `x`, `y`; `keyboard: true` focuses the first item. Items: `{ id, label, icon, key, danger, disabled, why, checked, sub, run }`, `{ sep: true }`, `{ caption }`; `sub` is a list of items, or a function that returns one when it opens. Returns `{ close() }` |
+| Pop-up menu on an area | `Ayni.contextMenu(area, { menu, target, keyTarget, onDrag })` |
+| Long tap that picks | `Ayni.longTap(area, selector, (item, x, y) => …)`: the same ring and timing; the click its release leaves is swallowed |
+| Shortcut text | `Ayni.keyLabel('Ctrl+C')`: "Ctrl+C", or "⌘C" on Mac |
+| A popup | `.panel.popup.controls[popover]`, opened with `popovertarget` |
+| Tool group | `.panel.popup.tools[popover]` holding the real `.btn` tools; `data-lit-by="id id"` on the group button names the toggles that light it |
+| Toolbar | `[role="toolbar"]` (one Tab stop, wired by Ayni) with `.tb-group` children; the lines between groups are Ayni's |
+| Title row toolbar that fits | `data-rank="n"` on each tool or group; `Ayni.fitBar(row, { more: () => items, btn })` adds the app's own More items and can use the app's own More button |
+| Keep a popup open on scroll | listen for `ayni:dismiss` on it and call `preventDefault()` |
 
 ## 10. Dialogs
 
@@ -800,7 +859,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
 - **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the app's name and the three window buttons: minimise, maximise (restore while maximised) and close. A minimised window's icon is greyed.
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
-- **A toolbar that does not fit:** the app's icon and name never shrink. The tools that do not fit move, from the end, into a round "more" (⋯) button at the end of the title row; its menu lists them with their icon and tooltip text. They come back as the window widens.
+- **A toolbar that does not fit:** the app's icon and name never shrink. The tools leave by rank into the More (⋮) menu, as in every title row (9.9). They come back as the window widens.
 - **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. There is no snapping: dragging to a screen edge does nothing special. The title row always stays inside the work area.
 - **Modeless dialogs** belong to the window that opened them: such a dialog floats above its window inside the work area, moves by its title row, has no chip of its own, hides while its window is minimised and closes when its window closes. Modal dialogs dim the whole screen, as everywhere (10.3 says when they fill it).
 - Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. The selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.
@@ -839,7 +898,14 @@ These were considered and turned down; they are listed so they are not proposed 
 | Idea | Decision |
 | --- | --- |
 | Alt+letter hot keys (underlined mnemonics) | Dropped for good |
-| Submenus (cascading menus) | Rejected for good |
+| Submenus inside submenus | Not taken: one level (9.3) |
+| A long tap on a list item opening its pop-up menu | Replaced: it starts picking, and the actions are in the toolbar (8.4); right-click still opens the menu |
+| An Accent fill on the menu row under the pointer | Dropped: a grey tint, as on buttons |
+| Big 44 px menu rows with a mouse | Not taken: compact rows; 44 px on touch |
+| A tick drawn in place of the item's icon | Dropped: the tick has its own column, and the icon stays |
+| The first menu item taking the focus on a mouse click | Dropped: only from the keyboard; the caret and selection stay put |
+| Tools leaving an overfull toolbar from its end | Replaced: by rank (9.9) |
+| Separators placed by hand in a toolbar | Replaced: a line between groups, drawn by Ayni |
 | Closing a dialog by a click on the dimmed page around it | Dropped: one stray tap would lose what was typed; only the dialog's buttons and Esc close it |
 | Small dialogs full screen on phones | Not taken: a small dialog stays a centred card; only big dialogs fill the screen, below 1024 px |
 | Dragging a dialog from any free spot | Not taken: by its title row only |

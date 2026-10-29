@@ -75,6 +75,8 @@
 }
 /* Touch (html.touch, set by ayni-base.js): every target takes at least --touch, as an invisible hit area */
 html.touch { --touch: 44px; }
+/* RULE: hidden means gone, whatever display a control sets for itself (a .btn is inline-grid) */
+[hidden] { display: none !important; }
 /* On a phone, Safari zooms the page in on a field whose text is under 16px and never zooms back out */
 @media (max-width: 599px) { html.touch { --field-fs: 16px; } }
 @media (prefers-reduced-motion: reduce) { :root { --tr-fast: 0s; --tr-move: 0s; } }

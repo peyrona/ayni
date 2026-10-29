@@ -173,12 +173,25 @@ const folders = $('#tree');
 const folderOf = (it) => it && { name: $(':scope > .ti', it).textContent.trim(), back: it, at: $(':scope > .ti', it) };
 Ayni.contextMenu(folders, { menu: ctxMenu, target: (e) => e.target.closest('.ti') && folderOf(e.target.closest('[role="treeitem"]')),
   keyTarget: (e) => folderOf(e.target.closest('[role="treeitem"]')) });
-/* Toolbar: one Tab stop; the style buttons change the sample text */
-Ayni.toolbar($('#toolbar'));
+/* Toolbar: one Tab stop (every [role="toolbar"] is wired by Ayni); the style buttons change the sample text */
 $$('#toolbar [data-fmt]').forEach((b) => b.addEventListener('click', () => {
   const doc = $('#doc').style, on = b.getAttribute('aria-pressed') === 'true';
   ({ bold: () => (doc.fontWeight = on ? '600' : ''), italic: () => (doc.fontStyle = on ? 'italic' : ''), underline: () => (doc.textDecoration = on ? 'underline' : '') })[b.dataset.fmt]();
 }));
+/* A menu built in code; its items run after it has closed */
+$('#menu-code').addEventListener('click', (e) => Ayni.menuAt([
+  { caption: 'Message' },
+  { id: 'reply', label: 'Reply', icon: 'undo', key: 'R', run: () => say('menu-out', 'Code menu → Reply') },
+  { id: 'copy', label: 'Copy link', icon: 'copy', key: 'Ctrl+C', run: () => say('menu-out', 'Code menu → Copy link') },
+  { id: 'star', label: 'Starred', checked: codeStar, run: () => { codeStar = !codeStar; say('menu-out', 'Code menu → Starred ' + (codeStar ? 'on' : 'off')); } },
+  { id: 'move', label: 'Move to', icon: 'folder', sub: () => ['Work', 'Family', 'Trips'].map((f) => ({ id: f, label: f, run: () => say('menu-out', 'Code menu → Move to ' + f) })) },
+  { id: 'paste', label: 'Paste', icon: 'paste', disabled: true, why: 'Paste: nothing copied yet' },
+  { sep: true },
+  { id: 'delete', label: 'Delete', icon: 'trash', key: 'Del', danger: true, run: () => say('menu-out', 'Code menu → Delete') },
+], { anchor: e.currentTarget, keyboard: e.detail === 0 }));
+let codeStar = false;
+/* A title row that fits: the app's own item comes after the tools that left */
+Ayni.fitBar('#fit-head', { more: () => [{ id: 'about', label: 'About the inbox', icon: 'info', run: () => say('menu-out', 'Title row → About') }] });
 /* Popup with controls: every change applies at once */
 $('#pp-ctrl').addEventListener('input', (e) => {
   const t = e.target; let m;

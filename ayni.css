@@ -1,7 +1,6 @@
 /* Ayni library 0.1.0: the look of the Ayni controls not yet split into their own family file. Plain CSS, no build
    step, evergreen browsers 2024+. Load it after ayni-base.css (the colours, sizes and icons it uses); see README.md. */
 *, *::before, *::after { box-sizing: border-box; }
-[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); accent-color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -109,23 +108,6 @@ html.touch .ctx-area, html.touch [role="option"], html.touch [role="treeitem"] >
 [role="option"].active { box-shadow: inset 0 0 0 1px var(--accent); }
 [role="option"] .icon { --icon: 16px; }
 
-/* ---------- Menus & toolbar ---------- */
-[role="menubar"] { display: flex; gap: 2px; padding: 2px; background: var(--panel-head-bg); border: var(--panel-border); border-radius: var(--ctl-radius); }
-[role="menubar"] > button { font: inherit; color: var(--text); background: none; border: 0; border-radius: 3px; padding: 4px 10px; cursor: pointer; }
-[role="menubar"] > button:hover, [role="menubar"] > button[aria-expanded="true"] { background: var(--accent-soft); }
-.panel.menu { position: fixed; inset: auto; min-width: 200px; padding: 4px; gap: 0; }
-.panel.menu:not(:popover-open) { display: none; }
-.menu [role^="menuitem"] { font: inherit; color: var(--text); text-align: left; background: none; border: 0; border-radius: 4px;
-  padding: 6px 10px 6px 30px; display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
-.menu [role^="menuitem"] .icon { --icon: 16px; position: absolute; left: 8px; }
-.menu [role^="menuitem"] kbd { font: .8rem var(--font-mono); opacity: .7; margin-left: auto; padding-left: 24px; }
-.menu [role^="menuitem"]:hover, .menu [role^="menuitem"]:focus { background: var(--accent); color: var(--on-accent); outline: none; }
-.menu [role^="menuitem"][aria-disabled="true"] { opacity: .45; pointer-events: none; }
-.menu [role="separator"] { border-top: var(--panel-border); margin: 4px 0; }
-[role="toolbar"] { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; background: var(--panel-head-bg); border: var(--panel-border); border-radius: var(--ctl-radius); }
-[role="toolbar"] .btn { --btn: 30px; }
-[role="toolbar"].tall .btn { --btn: 36px; }   /* an app's title row: 36 px buttons */
-[role="toolbar"] .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
 
 .status { display: flex; align-items: center; gap: 8px; }
 .status.info { color: var(--accent); } .status.ok { color: var(--ok); } .status.warn { color: var(--warn); } .status.err { color: var(--danger); }
@@ -188,16 +170,11 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
 .slider-row input { min-width: 0; }
 .ticks { display: flex; justify-content: space-between; font: .72rem var(--font-mono); color: var(--text-dim); padding: 0 2px; }
 .date-field .input { font-variant-numeric: tabular-nums; }
-.panel.popup { position: fixed; inset: auto; }
-.panel.popup:not(:popover-open) { display: none; }
 .time-row { display: flex; align-items: center; gap: 6px; padding: 10px 8px; border-top: var(--panel-border); }
 .time-row label { font-size: .8rem; font-weight: 500; color: var(--text-dim); margin-right: auto; }
 .time-row .input-group { width: 100px; }
 .time-row .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
 .time-row .input::-webkit-inner-spin-button { -webkit-appearance: none; }
-.panel.popup.controls { width: min(300px, calc(100vw - 16px)); max-height: min(320px, calc(100dvh - 16px)); padding: 12px; gap: 12px; display: flex; flex-direction: column; }
-.panel.popup.controls:not(:popover-open) { display: none; }
-.panel.popup.controls h4 { margin: 0; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
 .cal { display: inline-flex; flex-direction: column; gap: 6px; padding: 8px; }
 .cal.inline { border: var(--panel-border); border-radius: var(--ctl-radius); align-self: flex-start; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
@@ -257,14 +234,13 @@ fieldset.group legend { padding: 0 4px; margin: 0; }
    Controls that look small (the "i", a tab's close, the splitter) keep their look and get an invisible larger hit area.
    Targets that tile edge to edge (list rows, menu items, calendar days) need no gap: each one is its own full 44 px cell. */
 html.touch { --ctl-h: 44px; }
-html.touch .row, html.touch [role="toolbar"], html.touch .input-group, html.touch .cal-head, html.touch .time-row,
+html.touch .row, html.touch .input-group, html.touch .cal-head, html.touch .time-row,
 html.touch .panel > footer, html.touch .panel > form > footer, html.touch .panel footer > .extra, html.touch .panel > header,
-html.touch .panel > form > header, html.touch [role="menubar"] { gap: 8px; }
+html.touch .panel > form > header { gap: 8px; }
 html.touch [role="tab"] { min-height: var(--touch); }
 html.touch [role="tab"] .tab-close { position: relative; margin-left: 6px; }
 html.touch [role="tab"] .tab-close::before { content: ""; position: absolute; inset: -13px; }
-html.touch [role="menubar"] > button, html.touch .menu [role^="menuitem"], html.touch [role="option"], html.touch [role="treeitem"] > .ti,
-html.touch [role="menubar"] > button, html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
+html.touch [role="option"], html.touch [role="treeitem"] > .ti, html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
 html.touch .info-tip::after, html.touch .err-mark::after { inset: -16px; }
 html.touch input[type="range"] { height: var(--touch); }
 html.touch .splitter { position: relative; }
@@ -347,11 +323,9 @@ fieldset:has(input[aria-readonly="true"]) { border-color: transparent; backgroun
 
 /* RULE: every container (panel body, dialog, menu, popup, list, tree, table, pane) scrolls vertically and horizontally,
    and its scrollbars appear only when the content does not fit */
-.panel > .body, .panel > form > .body, [role="tabpanel"], .panel.menu, .panel.popup, [role="listbox"], [role="tree"],
+.panel > .body, .panel > form > .body, [role="tabpanel"], [role="listbox"], [role="tree"],
 .split .pane { overflow: auto; }
 .panel > .body, .panel > form > .body { flex: 1 1 auto; min-height: 0; }
-.panel.menu, .panel.popup { max-height: calc(100dvh - 16px); max-width: calc(100vw - 16px); }
-.menu [role^="menuitem"] { white-space: nowrap; flex: none; }
 * { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 /* RULE: a list that allows multiple selection shows a check square at the left of each item */
 [role="listbox"][aria-multiselectable="true"] [role="option"] { position: relative; padding-left: 32px; }

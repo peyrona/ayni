@@ -113,6 +113,41 @@ const Ayni = {
   autoSave(field, save, options) {},
 
   /**
+   * A menu built from a list (ayni-menus.js), under a button or at a point. Items run after the menu has closed.
+   * @param {Array<{id?: string, label: string, icon?: string, key?: string|string[], danger?: boolean, disabled?: boolean,
+   *   why?: string, checked?: boolean, sub?: Array|Function, run?: (e: Event) => void}|{sep: true}|{caption: string}>} items
+   *   `checked` true or false makes a check item; `sub` is a submenu (one level), or a function that returns it.
+   * @param {object} [options]  { anchor, x, y, keyboard, onClose }; keyboard: true focuses the first item.
+   * @returns {{close: () => void}|null}  null when nothing was shown.
+   */
+  menuAt(items, options) {},
+
+  /**
+   * A long tap that acts while the finger is still down (ayni-menus.js), as picking in a list does: the ring fills
+   * for the hold time, then fn runs; the click its release leaves is swallowed.
+   * @param {HTMLElement} area
+   * @param {string} selector  The elements a long tap counts on.
+   * @param {(el: HTMLElement, x: number, y: number) => void} fn
+   */
+  longTap(area, selector, fn) {},
+
+  /**
+   * A shortcut as menus and tooltips show it (ayni-menus.js): "Ctrl+C", or "⌘C" on Mac, in the page's language.
+   * @param {string|string[]} keys  An array gives its first one.
+   * @returns {string}
+   */
+  keyLabel(keys) {},
+
+  /**
+   * Makes a title row fit (ayni-menus.js): tools with `data-rank` leave, highest first, into one More menu at the start
+   * of the system group (`.tb-group.tb-sys`), listed in toolbar order, then the app's own items.
+   * @param {HTMLElement|string} row
+   * @param {object} [options]  { more: () => items (as for menuAt), btn: the app's own More button }
+   * @returns {{fit: () => void, later: () => void, set: (options: object) => void, items: () => Array, button: HTMLButtonElement}}
+   */
+  fitBar(row, options) {},
+
+  /**
    * Markup of one icon, `<span class="icon" data-icon="name">`, drawn from the icon set in use.
    * @param {string} name  An Ayni icon name, or the app's own (a symbol with id "i-<name>", or a name in the set's map).
    * @returns {string}

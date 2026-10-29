@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="../ayni-buttons.css">
 <link rel="stylesheet" href="../ayni-toasts.css">
 <link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -18,6 +19,7 @@
 <script src="../ayni-buttons.js" defer></script>
 <script src="../ayni-toasts.js" defer></script>
 <script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -241,11 +243,10 @@
         <p class="rule">Built from data, with a top item (the root) that stays in place. Drag items to move them: a line means before or after, an outlined row means inside, and holding over a closed folder opens it. Ctrl+Shift+arrows (⌘⇧ on Mac) move the item one step; Ctrl+X, Ctrl+C and Ctrl+V cut, copy and paste. Insert adds a folder, F2 renames, Delete removes (with Undo). On touch, hold an item: lift for its menu, or move to drag it. Contracts is locked. Archive loads its folders the first time it opens.</p>
         <label for="tree-ed" id="tree-ed-l" class="list-label">Project files</label>
         <div role="toolbar" aria-label="Project files tools" data-tree="tree-ed">
-          <button class="btn primary" aria-label="New" data-tip="New folder (Insert)" data-tree-act="new"><span class="icon" data-icon="plus"></span></button>
+          <div class="tb-group"><button class="btn primary" aria-label="New" data-tip="New folder (Insert)" data-tree-act="new"><span class="icon" data-icon="plus"></span></button>
           <button class="btn icon-btn" aria-label="Rename" data-tip="Rename (F2)" data-tree-act="rename"><span class="icon" data-icon="edit"></span></button>
-          <button class="btn icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><span class="icon" data-icon="eye-off"></span></button>
-          <span class="sep" role="separator"></span>
-          <button class="btn icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><span class="icon" data-icon="trash"></span></button>
+          <button class="btn icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><span class="icon" data-icon="eye-off"></span></button></div>
+          <div class="tb-group"><button class="btn icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><span class="icon" data-icon="trash"></span></button></div>
         </div>
         <ul role="tree" id="tree-ed" aria-labelledby="tree-ed-l" data-edit="move insert delete rename hide" data-unique data-new-name="New folder"></ul>
         <label class="switch">Show hidden items<input type="checkbox" role="switch" id="tree-ed-hidden"></label>
@@ -390,35 +391,46 @@
   <div role="tabpanel" id="menus" aria-labelledby="t-menus" hidden>
     <div class="specimens">
       <div class="spec" style="grid-column: 1 / -1"><h3>Menu bar with pull-down menus</h3>
-        <p class="rule">F10 focuses the bar. Left and Right move between menus, Down opens one.</p>
+        <p class="rule">F10 focuses the bar. Left and Right move between menus, Down opens one. Opened with the mouse, a menu leaves the focus where it was (an editor's caret stays). View has check items, with their ticks in a column of their own, and a Zoom submenu: one level, opened by resting on it, a click or Right; Left or Esc closes it.</p>
         <div role="menubar" aria-label="Main" id="menubar">
           <button popovertarget="m-file" aria-haspopup="menu" aria-expanded="false">File</button>
           <button popovertarget="m-edit" aria-haspopup="menu" aria-expanded="false">Edit</button>
           <button popovertarget="m-view" aria-haspopup="menu" aria-expanded="false">View</button>
         </div></div>
       <div class="spec"><h3>Pop-up menu</h3>
-        <p class="rule">Right-click, Shift+F10 or the Menu key opens actions for what is under the pointer. On touch screens a long tap does the same: the ring fills while you hold, and the menu opens when you lift. It also works on the files list and the folder tree in the Lists tab.</p>
+        <p class="rule">Right-click, Shift+F10 or the Menu key opens actions for what is under the pointer. On touch screens a long tap does the same: the ring fills while you hold, and the menu opens when you lift. It also works on the files list and the folder tree in the Lists tab. Delete is a danger item.</p>
         <div class="ctx-area" tabindex="0" id="ctx-area">Right-click or long-tap here</div></div>
       <div class="spec"><h3>Popup with controls</h3>
         <p class="rule">A popup can hold any control: text fields, radio buttons, switches, sliders, lists. Changes apply as you make them. When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it.</p>
         <div class="row"><button class="btn" popovertarget="pp-ctrl" aria-label="View options" data-tip="View options"><span class="icon" data-icon="sliders"></span></button></div>
         <p class="out" id="pp-out"></p></div>
       <div class="spec"><h3>Toolbar</h3>
-        <p class="rule">One Tab stop. Arrow keys move between tools.</p>
+        <p class="rule">One Tab stop. Arrow keys move between tools. Tools come in groups, with a line between them. The last button stands for a group of tools: it opens them in a small popup, and it shows as on while Highlight, inside it, is on.</p>
         <div role="toolbar" aria-label="Formatting" id="toolbar">
-          <button class="btn icon-btn" aria-label="Undo" data-tip="Undo (Ctrl+Z)"><span class="icon" data-icon="undo"></span></button>
-          <button class="btn icon-btn" aria-label="Redo" data-tip="Redo (Ctrl+Y)"><span class="icon" data-icon="redo"></span></button>
-          <span class="sep" role="separator"></span>
-          <button class="btn icon-btn" aria-label="Bold" data-tip="Bold" aria-pressed="false" data-toggle data-fmt="bold"><span class="icon" data-icon="bold"></span></button>
+          <div class="tb-group"><button class="btn icon-btn" aria-label="Undo" data-tip="Undo (Ctrl+Z)"><span class="icon" data-icon="undo"></span></button>
+          <button class="btn icon-btn" aria-label="Redo" data-tip="Redo (Ctrl+Y)"><span class="icon" data-icon="redo"></span></button></div>
+          <div class="tb-group"><button class="btn icon-btn" aria-label="Bold" data-tip="Bold" aria-pressed="false" data-toggle data-fmt="bold"><span class="icon" data-icon="bold"></span></button>
           <button class="btn icon-btn" aria-label="Italic" data-tip="Italic" aria-pressed="false" data-toggle data-fmt="italic"><span class="icon" data-icon="italic"></span></button>
-          <button class="btn icon-btn" aria-label="Underline" data-tip="Underline" aria-pressed="false" data-toggle data-fmt="underline"><span class="icon" data-icon="underline"></span></button>
-          <span class="sep" role="separator"></span>
-          <button class="btn icon-btn" aria-label="More" data-tip="More" popovertarget="m-ctx"><span class="icon" data-icon="more"></span></button>
+          <button class="btn icon-btn" aria-label="Underline" data-tip="Underline" aria-pressed="false" data-toggle data-fmt="underline"><span class="icon" data-icon="underline"></span></button></div>
+          <div class="tb-group"><button class="btn icon-btn" aria-label="Insert" data-tip="Insert" popovertarget="tg-insert" data-lit-by="tg-mark"><span class="icon" data-icon="layout"></span></button></div>
         </div>
         <div class="doc" id="doc">Select a style in the toolbar to change this text.</div></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">A disabled menu item (Redo, in the Edit menu) is faded and the arrow keys skip it. A disabled toolbar button is faded but keeps its tooltip, which says why.</p>
         <div role="toolbar" aria-label="Formatting (with a disabled button)"><button class="btn" aria-label="Bold" data-tip="Bold"><span class="icon" data-icon="bold"></span></button><button class="btn" aria-disabled="true" aria-label="Underline" data-tip="Underline: not available for headings"><span class="icon" data-icon="underline"></span></button></div></div>
+      <div class="spec"><h3>Menu built in code</h3>
+        <p class="rule">Ayni.menuAt() builds a menu from a list: icons, shortcuts, a check item, a caption, a submenu, a disabled item whose tooltip says why, and a danger item. An item runs once the menu has closed.</p>
+        <div class="row"><button class="btn bordered" id="menu-code" aria-haspopup="menu" aria-label="Actions" data-tip="Actions"><span class="icon" data-icon="more"></span></button></div></div>
+      <div class="spec" style="grid-column: 1 / -1"><h3>A title row that fits</h3>
+        <p class="rule">Drag the corner to make the row narrower. The title keeps its place; the tools leave by rank (the least important first) into the More menu, in toolbar order, and the app's own items come after them. Search never leaves. They come back as the row widens.</p>
+        <div class="fit-demo"><header id="fit-head">
+          <h2>Inbox</h2>
+          <div role="toolbar" aria-label="Inbox tools">
+            <div class="tb-group"><button class="btn" aria-label="Search" data-tip="Search" data-rank="20"><span class="icon" data-icon="search"></span></button></div>
+            <div class="tb-group"><button class="btn primary" aria-label="New message" data-tip="New message" data-rank="21"><span class="icon" data-icon="plus"></span></button></div>
+            <div class="tb-group"><button class="btn" aria-label="Refresh" data-tip="Refresh" data-rank="22"><span class="icon" data-icon="refresh"></span></button><button class="btn" aria-label="Share" data-tip="Share" data-rank="24"><span class="icon" data-icon="share"></span></button><button class="btn" aria-label="Print" data-tip="Print" data-rank="25"><span class="icon" data-icon="print"></span></button><button class="btn" aria-label="Upload" data-tip="Upload" data-rank="23"><span class="icon" data-icon="upload"></span></button></div>
+            <div class="tb-group tb-sys"><button class="btn" aria-label="Settings" data-tip="Settings" data-rank="30"><span class="icon" data-icon="settings"></span></button><button class="btn" aria-label="Help" data-tip="Help" data-rank="31"><span class="icon" data-icon="help"></span></button></div>
+          </div></header></div></div>
     </div>
     <p class="out" id="menu-out" role="status" style="margin-top:12px"></p>
   </div>
@@ -567,7 +579,7 @@
 <div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="Help"></div>
 <div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>
 <div class="panel menu" popover id="m-filter" role="menu" aria-label="Filter">
-  <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all"><span class="icon" data-icon="check"></span>All fruits</button>
+  <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all">All fruits</button>
   <div role="separator"></div>
   <button role="menuitemradio" aria-checked="false" data-act="Citrus" data-f="citrus">Citrus</button>
   <button role="menuitemradio" aria-checked="false" data-act="Orchard" data-f="orchard">Orchard</button>
@@ -628,18 +640,29 @@
   <button role="menuitem" data-act="Paste"><span class="icon" data-icon="paste"></span>Paste<kbd>Ctrl+V</kbd></button>
 </div>
 <div class="panel menu" popover id="m-view" role="menu" aria-label="View">
-  <button role="menuitemcheckbox" aria-checked="true" data-act="Toolbar"><span class="icon" data-icon="check"></span>Toolbar</button>
+  <button role="menuitemcheckbox" aria-checked="true" data-act="Toolbar">Toolbar</button>
   <button role="menuitemcheckbox" aria-checked="false" data-act="Status bar">Status bar</button>
   <div role="separator"></div>
   <button role="menuitem" data-act="Zoom in"><span class="icon" data-icon="plus"></span>Zoom in<kbd>Ctrl++</kbd></button>
   <button role="menuitem" data-act="Zoom out"><span class="icon" data-icon="minus"></span>Zoom out<kbd>Ctrl+−</kbd></button>
+  <button role="menuitem" data-submenu="m-zoom">Zoom</button>
+</div>
+<div class="panel menu" popover id="m-zoom" role="menu" aria-label="Zoom">
+  <button role="menuitemradio" aria-checked="false" data-act="75%">75%</button>
+  <button role="menuitemradio" aria-checked="true" data-act="100%">100%</button>
+  <button role="menuitemradio" aria-checked="false" data-act="150%">150%</button>
+  <button role="menuitemradio" aria-checked="false" data-act="200%">200%</button>
+</div>
+<!-- Tool group: the real tools, under the one button that stands for them -->
+<div class="panel popup tools" popover id="tg-insert" role="group" aria-label="Insert">
+  <div class="row"><button class="btn" aria-label="Table" data-tip="Table"><span class="icon" data-icon="table"></span></button><button class="btn" aria-label="List" data-tip="List"><span class="icon" data-icon="list"></span></button><button class="btn" aria-label="Picture" data-tip="Picture"><span class="icon" data-icon="upload"></span></button><button class="btn" id="tg-mark" aria-label="Highlight" data-tip="Highlight" aria-pressed="false" data-toggle><span class="icon" data-icon="star"></span></button></div>
 </div>
 <div class="panel menu" popover id="m-ctx" role="menu" aria-label="Actions">
   <button role="menuitem" data-act="Cut"><span class="icon" data-icon="cut"></span>Cut</button>
   <button role="menuitem" data-act="Copy"><span class="icon" data-icon="copy"></span>Copy</button>
   <button role="menuitem" data-act="Paste"><span class="icon" data-icon="paste"></span>Paste</button>
   <div role="separator"></div>
-  <button role="menuitem" data-act="Delete"><span class="icon" data-icon="trash"></span>Delete</button>
+  <button role="menuitem" class="danger" data-act="Delete"><span class="icon" data-icon="trash"></span>Delete</button>
 </div>
 
 <!-- ===== Dialogs (Panel + <dialog>) ===== -->

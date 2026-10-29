@@ -1,8 +1,9 @@
 /* Ayni API, skeleton only (2026-10-26): every body is empty. See api/README.md. */
 
 /**
- * A toolbar (`role="toolbar"`): a row of buttons with one Tab stop; arrow keys, Home and End move inside it. Separators
- * split it into groups.
+ * A toolbar (`role="toolbar"`): a row of buttons with one Tab stop; arrow keys, Home and End move inside it. Its tools
+ * come in groups (`.tb-group`), with a line drawn between two groups that show. In a title row, `Ayni.fitBar` moves the
+ * tools that do not fit, by `data-rank`, into one More menu.
  * @extends Component
  */
 class Toolbar extends Component {

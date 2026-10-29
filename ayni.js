@@ -1,6 +1,8 @@
 /* Ayni library 0.1.0: the behaviour of the Ayni controls not yet split into their own family file. Plain JavaScript,
-   no build step, evergreen browsers 2024+. Load it after ayni-base.js:
+   no build step, evergreen browsers 2024+. Load it after ayni-base.js and ayni-menus.js (its menus, toolbars and
+   popup placing):
      <script src="ayni-base.js" defer></script>
+     <script src="ayni-menus.js" defer></script>
      <script src="ayni.js" defer></script>
    When the page has loaded it wires up every control it finds. Ayni.init(root) wires up controls added later
    (each control is wired once). Controls tell the app what happened with DOM events that bubble (ayni:change,
@@ -9,6 +11,9 @@
 'use strict';
 const { $, $$, isMac, icon, setIcon } = Ayni;
 const { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip } = Ayni.core;
+/* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js, which loads before this file */
+const { initMenu, initToolbar, contextMenu, place } = Ayni.core.menus;
+const invoker = () => Ayni.core.menus.invoker();
 
 /* Status bar: Ayni.status(text) writes the last action into the element marked data-ayni-status */
 const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
@@ -225,140 +230,6 @@ const initSpin = (g) => {
   check();
 };
 
-/* ---------- Menus and popups: positioning, keyboard, menu bar ---------- */
-/* invoker is the button that opened the current popup (any [popovertarget]); ctxPoint is set for pop-up menus */
-let invoker = null, ctxPoint = null, ctxName = null, ctxReturn = null, ctxMenu = null;
-/* Ayni.place(popup): below its button (above when there is no room), or at the pointer for a pop-up menu, kept on screen */
-const place = (menu) => {
-  const m = menu.getBoundingClientRect();
-  let x, y;
-  if (ctxPoint) { x = ctxPoint.x; y = ctxPoint.y; }
-  else { const r = invoker.getBoundingClientRect(); x = r.left; y = r.bottom + 4; if (y + m.height > innerHeight) y = r.top - m.height - 4; }
-  const edge = innerWidth < 360 ? 4 : 8; // very narrow phones: popups may come closer to the edge
-  menu.style.left = Math.max(edge, Math.min(x, innerWidth - m.width - edge)) + 'px';
-  menu.style.top = Math.max(8, Math.min(y, innerHeight - m.height - 8)) + 'px';
-};
-const inBar = (b) => b?.parentElement?.getAttribute('role') === 'menubar';
-const barItemsOf = (b) => $$('button', b.parentElement);
-const openMenu = (btn) => { invoker = btn; ctxPoint = null; $('#' + btn.getAttribute('popovertarget')).showPopover(); };
-/* A menu fires ayni:action with { item, menu, act } when an item is chosen (menu is the menu's name, or the name of
-   the thing a pop-up menu was opened on), and ayni:choose with the item when a menuitemradio is picked */
-const initMenu = (menu) => {
-  const items = () => $$('[role^="menuitem"]:not([aria-disabled="true"])', menu);
-  menu.addEventListener('toggle', (e) => {
-    const bar = inBar(invoker) ? invoker : null;
-    if (bar) bar.setAttribute('aria-expanded', e.newState === 'open');
-    if (e.newState === 'open') { place(menu); items()[0].focus(); }
-    else if (!menu.dataset.switching) (ctxPoint ? ctxReturn : invoker)?.focus();
-  });
-  menu.addEventListener('keydown', (e) => {
-    const list = items(), i = list.indexOf(document.activeElement);
-    const n = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: list.length - 1 }[e.key];
-    if (n !== undefined) { e.preventDefault(); list[(n + list.length) % list.length].focus(); return; }
-    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && inBar(invoker)) {
-      e.preventDefault();
-      const barItems = barItemsOf(invoker), j = barItems.indexOf(invoker), next = barItems[(j + (e.key === 'ArrowRight' ? 1 : -1) + barItems.length) % barItems.length];
-      menu.dataset.switching = '1'; menu.hidePopover(); delete menu.dataset.switching; invoker.setAttribute('aria-expanded', 'false');
-      openMenu(next);
-    }
-  });
-  menu.addEventListener('click', (e) => {
-    const it = e.target.closest('[role^="menuitem"]'); if (!it) return;
-    if (it.getAttribute('role') === 'menuitemradio') {
-      $$('[role="menuitemradio"]', menu).forEach((x) => { x.setAttribute('aria-checked', x === it); $('.icon', x)?.remove(); });
-      it.insertAdjacentHTML('afterbegin', icon('check'));
-      fire(menu, 'ayni:choose', it);
-    }
-    if (it.getAttribute('role') === 'menuitemcheckbox') {
-      const on = it.getAttribute('aria-checked') !== 'true'; it.setAttribute('aria-checked', on);
-      const ic = $('.icon', it); if (on && !ic) it.insertAdjacentHTML('afterbegin', icon('check')); if (!on && ic) ic.remove();
-    }
-    fire(menu, 'ayni:action', { item: it, menu: menu === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
-    menu.hidePopover();
-  });
-};
-/* Menu bar: arrows move, Down opens, hovering switches while a menu is open; F10 focuses the visible menu bar */
-const initMenubar = (bar) => {
-  const barItems = $$('button', bar);
-  barItems.forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
-  bar.addEventListener('keydown', (e) => {
-    const i = barItems.indexOf(document.activeElement);
-    const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: barItems.length - 1 }[e.key];
-    if (n !== undefined) { e.preventDefault(); barItems.forEach((b) => (b.tabIndex = -1)); const t = barItems[(n + barItems.length) % barItems.length]; t.tabIndex = 0; t.focus(); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); openMenu(barItems[i]); }
-  });
-  barItems.forEach((b) => b.addEventListener('pointerenter', () => {
-    const open = barItems.find((x) => x.getAttribute('aria-expanded') === 'true');
-    if (open && open !== b) { const m = $('#' + open.getAttribute('popovertarget')); m.dataset.switching = '1'; m.hidePopover(); delete m.dataset.switching; open.setAttribute('aria-expanded', 'false'); openMenu(b); }
-  }));
-};
-/* Pop-up (context) menu: right-click, Shift+F10 or the Menu key, and a long tap (500 ms hold) on touch.
-   RULE: a long tap means "more for this thing": on a button with a dot it runs the second action, on an area,
-   list item or tree item it opens that element's pop-up menu. iOS Safari sends no contextmenu, so the hold is
-   timed here, with the same ring as the buttons. */
-const openCtx = (menu, x, y, name, back) => { ctxPoint = { x, y }; invoker = back; ctxReturn = back; ctxName = name; ctxMenu = menu; menu.showPopover(); };
-let swallowUntil = 0, swallowIn = []; // after a long tap, ignore the click / mousedown its release may produce on the held element, or on the menu that opened under the finger
-const holdRing = (x, y) => {
-  const r = document.createElement('div'); r.className = 'hold-ring'; r.style.left = x + 'px'; r.style.top = y + 'px';
-  r.style.setProperty('--hold-ms', HOLD_MS + 'ms'); document.body.append(r); return r;
-};
-/* Ayni.contextMenu(area, { menu, target, keyTarget, onDrag }): target(e) returns { name, back, at? } for the element under
-   the event, or null; keyTarget(e) does the same for Shift+F10 and the Menu key (default: target). With onDrag(t, e),
-   moving the finger once the ring is full drags instead of opening the menu (the tree uses it) */
-const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
-  let rightDown = false, timer, ring, fired = null, start;
-  const stop = () => { clearTimeout(timer); ring?.remove(); ring = null; };
-  root.addEventListener('pointerdown', (e) => {
-    rightDown = e.button === 2;
-    if (e.pointerType === 'mouse' && !isTouch()) return;
-    const t = target(e); if (!t || e.button !== 0) return;
-    fired = null; start = { x: e.clientX, y: e.clientY }; ring = holdRing(e.clientX, e.clientY);
-    timer = setTimeout(() => { ring?.remove(); ring = null; fired = { ...t, ...start }; navigator.vibrate?.(15); }, HOLD_MS);
-  });
-  root.addEventListener('pointermove', (e) => {
-    const far = Math.hypot(e.clientX - start?.x, e.clientY - start?.y) > 10;
-    if (ring && far) stop();
-    else if (fired && onDrag && far) { const f = fired; fired = null; onDrag(f, e); }
-  });
-  /* While the ring is full the page must not scroll, so that the finger can still drag */
-  if (onDrag) root.addEventListener('touchmove', (e) => { if (fired) e.preventDefault(); }, { passive: false });
-  root.addEventListener('pointercancel', stop);
-  /* The menu opens on release, otherwise that release would close it as an outside click */
-  root.addEventListener('pointerup', () => {
-    stop(); if (!fired) return;
-    const f = fired; fired = null; swallowUntil = performance.now() + 600; swallowIn = [root, menu];
-    setTimeout(() => openCtx(menu, f.x, f.y, f.name, f.back));
-  });
-  root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') stop(); });
-  root.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    if (ring || fired || e.pointerType === 'touch') return; // touch holds are timed above
-    const t = target(e); if (!t) return;
-    const { clientX: x, clientY: y } = e;
-    if (rightDown) addEventListener('pointerup', () => { rightDown = false; setTimeout(() => openCtx(menu, x, y, t.name, t.back)); }, { once: true });
-    else openCtx(menu, x, y, t.name, t.back);
-  });
-  root.addEventListener('keydown', (e) => {
-    if (!((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu')) return;
-    const t = keyTarget(e); if (!t) return;
-    e.preventDefault(); const r = (t.at || t.back).getBoundingClientRect(); openCtx(menu, r.left + 16, r.top + r.height / 2, t.name, t.back);
-  });
-};
-/* Ayni.toolbar(el): one Tab stop, arrow keys move between tools (roving tabindex). Called by the page, not automatic */
-const initToolbar = (bar) => {
-  $$('button', bar).forEach((t, i) => (t.tabIndex = i ? -1 : 0));
-  bar.addEventListener('keydown', (e) => {
-    const tools = $$('button', bar).filter((t) => !t.hidden), i = tools.indexOf(document.activeElement);
-    const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tools.length - 1 }[e.key];
-    if (n !== undefined) { e.preventDefault(); tools.forEach((t) => (t.tabIndex = -1)); const t = tools[(n + tools.length) % tools.length]; t.tabIndex = 0; t.focus(); }
-  });
-};
-/* Popup with controls (.panel.popup.controls): placed next to its button, the focus goes to its first control and
-   comes back to the button when it closes */
-const initControlsPopup = (pop) => pop.addEventListener('toggle', (e) => {
-  if (e.newState === 'open') { place(pop); $('input:not([type="hidden"]), select, textarea, [tabindex="0"]', pop)?.focus(); } else invoker?.focus();
-});
-
 /* ---------- Calendar (shared by inline calendars and the date popups) ---------- */
 const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -475,7 +346,7 @@ const dateField = (inp, { popup, onChange } = {}) => {
   const cal = makeCalendar($('.cal', popup), (d) => { inp.value = iso(d); check(); popup.hidePopover(); onChange?.(d); });
   popup.addEventListener('toggle', (e) => {
     if (e.newState === 'open') { cal.set(parseIso(inp.value)); place(popup); cal.focus(); }
-    else invoker?.focus();
+    else invoker()?.focus();
   });
   return { check };
 };
@@ -502,7 +373,7 @@ const dateTimeField = (inp, { popup, value = new Date(), onChange } = {}) => {
   });
   popup.addEventListener('toggle', (e) => {
     if (e.newState === 'open') { const d = parseDT(inp.value); if (d) dt = d; show(); cal.set(dt); place(popup); cal.focus(); }
-    else invoker?.focus();
+    else invoker()?.focus();
   });
   show();
   return { set, get: () => dt };
@@ -1329,18 +1200,6 @@ const focusFirstError = (root = document) => {
   (errGroup(c) ? $('input:not([disabled]), [tabindex="0"], [role="option"]', c) || c : c).focus(); return true;
 };
 
-/* ---------- Open menus and popups close when the page scrolls or the window resizes (item 56) ----------
-   Scrolling inside the popup itself does not close it. Dialogs and bottom sheets are not affected. A popup that
-   wants to handle it itself listens for ayni:dismiss and calls preventDefault(). */
-let poppedAt = 0;
-const dismissPopups = (src) => {
-  if (performance.now() - poppedAt < 300) return;
-  $$('.panel.menu:popover-open, .panel.popup:popover-open').forEach((p) => {
-    if (p.classList.contains('sheet') || (src && p.contains(src))) return;
-    if (p.dispatchEvent(new Event('ayni:dismiss', { bubbles: true, cancelable: true }))) p.hidePopover();
-  });
-};
-
 /* ---------- Page-wide behaviour, set up once ---------- */
 const setup = () => {
   helpPop = layer('ayni-help', `<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="${tx('help')}"></div>`);
@@ -1352,19 +1211,12 @@ const setup = () => {
 
   /* Info labels: one shared help popup, filled from the clicked "i" (data-help) */
   helpPop.addEventListener('toggle', (e) => {
-    const tipBtn = invoker?.classList.contains('info-tip') ? invoker : null;
+    const tipBtn = invoker()?.classList.contains('info-tip') ? invoker() : null;
     if (e.newState === 'open' && tipBtn) { helpPop.textContent = tipBtn.dataset.help; tipBtn.setAttribute('aria-expanded', 'true'); place(helpPop); }
     else { $$('.info-tip[aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false')); }
   });
   addEventListener('click', (e) => { const l = e.target.closest('label[for]'); if (l && !l.control) { const c = document.getElementById(l.htmlFor); if (c) focusCtl(c); } });
 
-  document.addEventListener('click', (e) => { const b = e.target.closest('[popovertarget]'); if (b) { invoker = b; ctxPoint = null; ctxName = null; } }, true);
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'F10' || e.shiftKey) return;
-    const bar = $$('[role="menubar"]').find((m) => m.getClientRects().length); if (!bar) return;
-    e.preventDefault(); $('button', bar).focus();
-  });
-  ['click', 'mousedown'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn.some((el) => el.contains(e.target))) { e.stopPropagation(); e.preventDefault(); } }, true));
 
   /* Field errors */
   document.addEventListener('focusin', (e) => {
@@ -1380,16 +1232,6 @@ const setup = () => {
   errPop.addEventListener('ayni:dismiss', (e) => {
     e.preventDefault(); const c = errFor, a = document.activeElement;
     if (c && !errPinned && (a === c || (errGroup(c) && c.contains(a)))) showErr(c); else hideErr();
-  });
-
-  document.addEventListener('toggle', (e) => { if (e.newState === 'open') poppedAt = performance.now(); }, true);
-  addEventListener('scroll', (e) => dismissPopups(e.target instanceof Element ? e.target : null), true);
-  let lastW = innerWidth;
-  addEventListener('resize', () => {
-    const typing = document.activeElement?.matches('input, textarea, [contenteditable="true"]');
-    /* On touch, a height-only change while typing is the on-screen keyboard: keep the popup */
-    if (innerWidth === lastW && typing && isTouch()) return;
-    lastW = innerWidth; dismissPopups(null);
   });
 };
 
@@ -1588,7 +1430,7 @@ const initLauncher = (pop) => {
     if (empty) empty.hidden = shown().length > 0;
   };
   pop.addEventListener('toggle', (e) => {
-    if (e.newState !== 'open') { invoker?.focus(); return; }
+    if (e.newState !== 'open') { invoker()?.focus(); return; }
     const c = counts();
     items().sort((a, b) => (c[b.dataset.app] || 0) - (c[a.dataset.app] || 0) || a.dataset.pos - b.dataset.pos).forEach((b) => list.append(b));
     if (inp) inp.value = ''; filter(); place(pop); (inp || shown()[0])?.focus();
@@ -1605,7 +1447,7 @@ const initLauncher = (pop) => {
     const c = counts(); c[b.dataset.app] = (c[b.dataset.app] || 0) + 1;
     try { localStorage.setItem('ayni-launch', JSON.stringify(c)); } catch {}
     /* Focus goes back to the launcher button first, so the browser does not move it while the popup hides */
-    invoker?.focus(); pop.hidePopover(); fire(pop, 'ayni:launch', { app: b.dataset.app, item: b });
+    invoker()?.focus(); pop.hidePopover(); fire(pop, 'ayni:launch', { app: b.dataset.app, item: b });
   });
 };
 
@@ -1630,10 +1472,7 @@ const init = (root = document) => {
   each(root, '[data-reveal]', 'reveal', initReveal);
   each(root, '.info-tip', 'infotip', (b) => b.setAttribute('aria-expanded', 'false'));
   each(root, '.spin', 'spin', initSpin);
-  each(root, '.panel.menu', 'menu', initMenu);
-  each(root, '[role="menubar"]', 'menubar', initMenubar);
   each(root, '.date-field', 'datekeys', initDateKeys);
-  each(root, '.panel.popup.controls', 'controls', initControlsPopup);
   each(root, '[role="tree"]', 'tree', initTree);
   each(root, '.picker', 'picker', initPicker);
   each(root, '.split', 'split', initSplit);
@@ -1646,8 +1485,8 @@ const init = (root = document) => {
 };
 
 Object.assign(Ayni, {
-  status, place, contextMenu, fillHelp, focusFirstError, fold, makeTypeAhead, tree,
-  toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); }, calendar: makeCalendar, dateField, dateTimeField,
+  status, fillHelp, focusFirstError, fold, makeTypeAhead, tree,
+  calendar: makeCalendar, dateField, dateTimeField,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },
   setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,

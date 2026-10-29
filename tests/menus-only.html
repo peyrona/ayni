@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni menus family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs and menus families, and nothing else.
+     #demo opens a menu built in code with its submenu (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  window.L = [];
+  window.items = () => [
+    { id: 'cut', label: 'Cut', icon: 'cut', key: 'Ctrl+X', run: () => L.push('cut') },
+    { sep: true }, { caption: 'Sort' },
+    { id: 'tog', label: 'Toggle', checked: true, run: () => L.push('tog') },
+    { id: 'off', label: 'Off', disabled: true, why: 'Off: not now', run: () => L.push('off') },
+    { id: 'font', label: 'Font', sub: () => [{ id: 'serif', label: 'Serif', run: () => L.push('serif') }, { id: 'sans', label: 'Sans', run: () => L.push('sans') }] },
+    { id: 'del', label: 'Delete', icon: 'trash', danger: true, run: () => L.push('del') },
+    { sep: true },
+  ];
+  document.addEventListener('ayni:action', (e) => L.push('action ' + e.detail.act + ' @' + e.detail.menu));
+  document.addEventListener('ayni:choose', (e) => L.push('choose ' + e.detail.dataset.act));
+  Ayni.contextMenu(document.getElementById('ctx'), { menu: document.getElementById('mctx'), target: () => ({ name: 'Area', back: document.getElementById('ctx') }) });
+  window.fb = Ayni.fitBar('#hd', { more: () => [{ id: 'own', label: 'Own item', icon: 'info', run: () => L.push('own') }] });
+  Ayni.longTap(document.getElementById('lt'), '.row', (el) => L.push('hold ' + el.textContent));
+  document.getElementById('lt').addEventListener('click', () => L.push('click'));
+  document.getElementById('dlg-menu').addEventListener('click', (e) => Ayni.menuAt(items(), { anchor: e.currentTarget }));
+  if (location.hash === '#demo') {
+    const a = document.getElementById('anc');
+    Ayni.menuAt(items(), { anchor: a });
+    setTimeout(() => { const b = document.querySelector('#ayni-menu [data-act="font"]'); b.focus(); b.click(); }, 50);
+  }
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 200vh; }
+  .row { flex-wrap: wrap; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; }
+  #hd { display: flex; align-items: center; gap: 8px; width: 700px; max-width: 100%; border: var(--panel-border); }
+  #hd > h2 { flex: 1 0 auto; margin: 0; font-size: 1rem; white-space: nowrap; }
+  #lt { list-style: none; padding: 0; width: 300px; } #lt .row { height: 40px; border: var(--panel-border); }
+  #ctx { width: 200px; height: 60px; border: 1px dashed var(--line); }
+</style>
+</head>
+<body>
+<div class="row">
+  <input class="input" id="fld" aria-label="A field">
+  <button class="btn" id="anc" data-tip="Code menu"><span class="icon" data-icon="more"></span></button>
+  <button class="btn" id="mb" popovertarget="mm" data-tip="Markup menu"><span class="icon" data-icon="edit"></span></button>
+  <button class="btn" id="gb" popovertarget="gp" data-lit-by="w1" data-tip="Tool group"><span class="icon" data-icon="apps"></span></button>
+  <button class="btn" id="cb" popovertarget="cp" data-tip="Options"><span class="icon" data-icon="filter"></span></button>
+  <button class="btn" id="open-dlg" data-open-dialog="dlg" data-tip="Dialog…"><span class="icon" data-icon="file"></span></button>
+</div>
+
+<!-- A menu bar -->
+<div role="menubar" aria-label="Main" id="bar">
+  <button popovertarget="m-file" aria-haspopup="menu" aria-expanded="false">File</button>
+  <button popovertarget="m-view" aria-haspopup="menu" aria-expanded="false">View</button>
+</div>
+
+<!-- A standalone toolbar in groups, and a title row that fits -->
+<div class="row" style="margin-top:12px">
+  <div role="toolbar" id="rt" aria-label="Tools">
+    <div class="tb-group"><button class="btn" id="r1" data-tip="One"><span class="icon" data-icon="cut"></span></button><button class="btn" id="r2" data-tip="Two"><span class="icon" data-icon="copy"></span></button></div>
+    <div class="tb-group"><button class="btn" id="r3" data-tip="Three"><span class="icon" data-icon="paste"></span></button><div class="input-group"><input class="input" id="r-in" aria-label="Find"><button class="btn" id="r-in-x" data-tip="Clear"><span class="icon" data-icon="close"></span></button></div></div>
+  </div>
+</div>
+<header id="hd">
+  <h2>Title of the view</h2>
+  <div role="toolbar" aria-label="View tools">
+    <div class="tb-group" data-rank="20" id="h-search"><div class="input-group search-field"><input class="input" aria-label="Search" style="width:120px"></div></div>
+    <div class="tb-group"><button class="btn primary" id="h-new" data-rank="21" data-tip="New"><span class="icon" data-icon="plus"></span></button></div>
+    <div class="tb-group"><button class="btn" id="h-a" data-rank="22" data-tip="Alpha"><span class="icon" data-icon="cut"></span></button><button class="btn" id="h-b" data-rank="23" data-tip="Beta"><span class="icon" data-icon="copy"></span></button><button class="btn" id="h-c" data-rank="24" data-tip="Gamma" aria-pressed="true"><span class="icon" data-icon="paste"></span></button></div>
+  </div>
+</header>
+
+<ul id="lt"><li class="row">One</li></ul>
+<div id="ctx" tabindex="0">Right-click here</div>
+
+<!-- A markup menu: icons, a check item, radio items, a disabled item, a submenu -->
+<div class="panel menu" popover id="mm" role="menu" aria-label="Main menu">
+  <button role="menuitem" data-act="a"><span class="icon" data-icon="cut"></span>Alpha<kbd>Ctrl+A</kbd></button>
+  <button role="menuitemcheckbox" aria-checked="false" data-act="chk">Check me</button>
+  <button role="menuitemradio" aria-checked="true" data-act="r1">Radio one</button>
+  <button role="menuitemradio" aria-checked="false" data-act="r2">Radio two</button>
+  <button role="menuitem" aria-disabled="true" data-tip="Nope: not now" data-act="nope">Nope</button>
+  <button role="menuitem" data-submenu="ms" data-act="more">More</button>
+</div>
+<div class="panel menu" popover id="ms" role="menu" aria-label="Sub menu">
+  <button role="menuitem" data-act="s1">Sub one</button>
+  <button role="menuitem" data-act="s2">Sub two</button>
+</div>
+<div class="panel menu" popover id="m-file" role="menu" aria-label="File">
+  <button role="menuitem" data-act="new">New</button><button role="menuitem" data-act="open">Open</button>
+</div>
+<div class="panel menu" popover id="m-view" role="menu" aria-label="View">
+  <button role="menuitem" data-act="zoom">Zoom</button>
+</div>
+<div class="panel menu" popover id="mctx" role="menu" aria-label="Actions">
+  <button role="menuitem" data-act="copy">Copy</button>
+</div>
+
+<!-- A tool group and a popup with controls -->
+<div class="panel popup tools" popover id="gp" role="group" aria-label="Tools">
+  <div class="row"><button class="btn" id="w1" aria-pressed="false" data-toggle data-tip="Wrap"><span class="icon" data-icon="check"></span></button><button class="btn" id="w2" data-tip="Other"><span class="icon" data-icon="plus"></span></button></div>
+</div>
+<div class="panel popup controls" popover id="cp" role="dialog" aria-label="Options">
+  <input class="input" id="cp-in" aria-label="Filter">
+</div>
+
+<!-- A modal dialog with a button that opens a menu -->
+<dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+  <header><h2 id="dlg-t">Dialog</h2><button class="btn" data-close data-tip="Close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body"><button class="btn" id="dlg-menu" data-tip="Menu"><span class="icon" data-icon="more"></span></button></div>
+</dialog>
+</body>
+</html>
