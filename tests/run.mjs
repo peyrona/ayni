@@ -1367,6 +1367,7 @@ try {
     check('a count after the name, an end button, a heading row', await ev(`document.querySelector('#nav [data-id="docs"] > .ti > .count').textContent === '3' && !!document.querySelector('#nav [data-id="pics"] > .ti > .tail') && document.querySelector('#nav [data-id="lab"]').hasAttribute('data-heading')`));
     await click('#nav [data-id="docs"] > .ti .tn');
     check('a click goes there', (await log()) === 'go docs' && (await ev(`document.querySelector('#nav [data-id="docs"]').getAttribute('aria-current')`)) === 'true', await log());
+    check('…and stays full Accent under the mouse', (await bg('#nav [data-id="docs"] > .ti')) === accent && (await ev(`document.querySelector('#nav [data-id="docs"] > .ti').matches(':hover')`)));
     await key('ArrowDown');
     check('the arrows only move the focus', (await log()) === '' && (await focusedId()) === 'pics', await focusedId());
     await key('ArrowDown');
@@ -1463,6 +1464,13 @@ try {
     check('pick list: type-ahead', (await ev(`document.querySelector('#one [aria-selected="true"]').textContent`)) === 'México');
     await click('#all');
     check('Everybody: the switch greys the list out', (await ev(`getComputedStyle(document.getElementById('pick')).opacity`)) === '0.45');
+    await ev(`(document.getElementById('pick').focus(), true)`); await key(' ');
+    check('a disabled pick list: Space changes nothing', (await ev(`[...document.querySelectorAll('#pick [aria-selected="true"]')].map((o) => o.textContent).join()`)) === 'Bruno,Carmen');
+    await click('#all');
+    check('a page\'s own [role=listbox] (not .lb) keeps its look', await ev(`(() => { const d = document.createElement('div'); d.setAttribute('role', 'listbox'); d.innerHTML = '<div role="option">x</div>'; document.body.append(d); const ok = getComputedStyle(d).borderTopStyle === 'none' && getComputedStyle(d.firstChild).cursor !== 'pointer'; d.remove(); return ok; })()`));
+    check('Ayni.pickTick() gives the tick square', await ev(`/class="pick-tick"/.test(Ayni.pickTick()) && /data-tick/.test(Ayni.pickTick())`));
+    check('an action icon may be markup (an <svg>)', await ev(`(() => { const a = list.actions(); list.setActions(a.concat([{ id: 'mk', label: 'Mk', icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg>', run: () => {} }])); list.set(['a']); const ok = !!document.querySelector('#bar [data-pick-act="mk"] > span.icon > svg circle'); list.setActions(a); list.clear(); return ok; })()`));
+    check('navigation tree: the triangle is a 24 px target', await ev(`document.querySelector('#nav [aria-expanded] > .ti > .tw').getBoundingClientRect().width >= 24`));
     await ev(`(Ayni.setTouchPreview(true), true)`);
     check('touch: pick list and tree rows are 44 px tall', await ev(`document.querySelector('#one [role="option"]').getBoundingClientRect().height >= 44 && document.querySelector('#nav [role="treeitem"] > .ti').getBoundingClientRect().height >= 44 && document.querySelector('#ed [role="treeitem"] > .ti').getBoundingClientRect().height >= 44`));
     check('touch: the tick has a finger-sized press', await ev(`(() => { const a = getComputedStyle(document.querySelector('#rows .pick-tick'), '::after'); return a.content !== 'none' && parseFloat(a.inset || a.top) <= -10; })()`));

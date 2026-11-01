@@ -3,23 +3,25 @@
    Load it after ayni-base.css, ayni-buttons.css and ayni-menus.css. The rules are chapters 8 (lists) and 16 (tree
    view) of the guidelines. */
 
-/* ---------- Pick lists (list box; the list picker's popup uses the same rows) ---------- */
-html.touch [role="option"], html.touch [role="treeitem"] > .ti { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-[role="listbox"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 180px; overflow: auto; background: var(--panel-bg); }
-[role="listbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
-[role="option"] { padding: 5px 8px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; }
-[role="option"]:hover { background: var(--card-head); }
+/* ---------- Pick lists (list box; the list picker's popup uses the same rows) ----------
+   Only Ayni's own list boxes (.lb, the list picker's popup) take this look: a page's other [role="listbox"], such as an
+   item list (Ayni.list) with that role, keeps its own */
+html.touch :where(.lb, .picker-pop) [role="option"], html.touch [role="treeitem"] > .ti { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"] { list-style: none; margin: 0; padding: 4px; border: var(--panel-border); border-radius: var(--ctl-radius); max-height: 180px; overflow: auto; background: var(--panel-bg); }
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+:where(.lb, .picker-pop) [role="option"] { padding: 5px 8px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; }
+:where(.lb, .picker-pop) [role="option"]:hover { background: var(--card-head); }
 /* RULE: a picked or selected item has the soft Accent tint; full Accent marks only where you are (a navigation tree)
    and the chosen item of a list picker (ayni.css) */
-[role="option"][aria-selected="true"] { background: var(--accent-soft); }
-[role="option"].active { box-shadow: inset 0 0 0 1px var(--accent); }
-[role="option"] .icon { --icon: 16px; }
+:where(.lb, .picker-pop) [role="option"][aria-selected="true"] { background: var(--accent-soft); }
+:where(.lb, .picker-pop) [role="option"].active { box-shadow: inset 0 0 0 1px var(--accent); }
+:where(.lb, .picker-pop) [role="option"] .icon { --icon: 16px; }
 /* RULE: a list that allows multiple selection shows a check square at the left of each item */
-[role="listbox"][aria-multiselectable="true"] [role="option"] { position: relative; padding-left: 32px; }
-[role="listbox"][aria-multiselectable="true"] [role="option"]::before { content: ""; position: absolute; left: 9px; top: 50%; translate: 0 -50%;
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"][aria-multiselectable="true"] [role="option"] { position: relative; padding-left: 32px; }
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"][aria-multiselectable="true"] [role="option"]::before { content: ""; position: absolute; left: 9px; top: 50%; translate: 0 -50%;
   width: 14px; height: 14px; box-sizing: border-box; border: 1.5px solid var(--text-dim); border-radius: 3px; background: var(--panel-bg); }
-[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::before { border-color: var(--accent); background: var(--accent); }
-[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::after { content: ""; position: absolute; left: 14px; top: 50%;
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::before { border-color: var(--accent); background: var(--accent); }
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"][aria-multiselectable="true"] [role="option"][aria-selected="true"]::after { content: ""; position: absolute; left: 14px; top: 50%;
   width: 4px; height: 8px; border: solid var(--on-accent); border-width: 0 2px 2px 0; translate: 0 -65%; rotate: 45deg; }
 
 /* ---------- Tree view ---------- */
@@ -67,9 +69,9 @@ html.touch .tree-ghost { translate: -50% calc(-100% - 32px); }
 
 /* ---------- States of lists and trees (2.4, 8.9): disabled fades and ignores the pointer, read-only has the soft tint and
    no border, an error colours the border ---------- */
-[role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti { opacity: .45; cursor: default; pointer-events: none; }
-:is([role="listbox"], [role="tree"])[aria-readonly="true"] { border-color: transparent; background: var(--readonly-bg); }
-:is([role="listbox"], [role="tree"])[aria-invalid="true"] { border: 1px solid var(--danger); border-radius: var(--ctl-radius); }
+:where(.lb, .picker-pop [role="listbox"])[role="listbox"][aria-disabled="true"], [role="treeitem"][aria-disabled="true"] > .ti { opacity: .45; cursor: default; pointer-events: none; }
+:is(:where(.lb, .picker-pop [role="listbox"])[role="listbox"], [role="tree"])[aria-readonly="true"] { border-color: transparent; background: var(--readonly-bg); }
+:is(:where(.lb, .picker-pop [role="listbox"])[role="listbox"], [role="tree"])[aria-invalid="true"] { border: 1px solid var(--danger); border-radius: var(--ctl-radius); }
 
 /* ---------- Item lists (Ayni.list) ----------
    The tick: a square at the start of each row. With a mouse it shows on hover and on picked rows; on touch only while
@@ -117,7 +119,10 @@ html.touch .tree-ghost { translate: -50% calc(-100% - 32px); }
 [role="tree"][data-nav] [role="group"] { padding-left: 16px; }
 [role="tree"][data-nav] [role="treeitem"] > .ti { min-height: 30px; padding: 4px 6px 4px 4px; gap: 4px; margin-bottom: 1px; border-radius: var(--radius-s); font-size: .87rem; }
 [role="tree"][data-nav] [role="treeitem"] > .ti:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
-[role="tree"][data-nav] [aria-current="true"] > .ti { background: var(--accent); color: var(--on-accent); }
+/* The triangle: a 24 px target (a finger on a tablet), the row no taller */
+[role="tree"][data-nav] .ti > .tw { flex: 0 0 auto; width: 24px; height: 24px; margin: -4px -4px -4px -2px; color: var(--text-dim); --icon: 14px; }
+[role="tree"][data-nav] [aria-current="true"] > .ti > .tw { color: inherit; }
+[role="tree"][data-nav] [aria-current="true"] > .ti, [role="tree"][data-nav] [aria-current="true"] > .ti:hover { background: var(--accent); color: var(--on-accent); }
 [role="tree"][data-nav] .ti > .icon:not(.tw) { color: var(--text-dim); }
 [role="tree"][data-nav] [aria-current="true"] > .ti > .icon, [role="tree"][data-nav] [aria-current="true"] > .ti > .tail { color: inherit; }
 [role="tree"][data-nav] .tn { flex: 1 1 auto; }
@@ -145,7 +150,7 @@ html.touch .tree-ghost { translate: -50% calc(-100% - 32px); }
 }
 
 /* ---------- Touch sizes: rows 44 px tall; the tick takes a finger-sized press ---------- */
-html.touch [role="option"], html.touch [role="treeitem"] > .ti, html.touch [role="tree"][data-nav] [role="treeitem"] > .ti,
+html.touch :where(.lb, .picker-pop) [role="option"], html.touch [role="treeitem"] > .ti, html.touch [role="tree"][data-nav] [role="treeitem"] > .ti,
 html.touch .tree-sheet [role="tree"][data-nav] [role="treeitem"] > .ti, html.touch .item-list [aria-selected] { min-height: var(--touch); }
 html.touch .pick-tick { position: relative; }
 html.touch .pick-tick::after { content: ""; position: absolute; inset: -11px; }

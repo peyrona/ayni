@@ -218,6 +218,10 @@ const Ayni = {
   /** The ids being dragged from an Ayni list or tree, or null (a drag from the computer). */
   dragIds() {},
 
+  /** The tick square of an item list row, as markup, for a page that draws it in its own place in the row
+   *  (else Ayni.list puts it first in the row). @returns {string} */
+  pickTick() {},
+
   /**
    * A tree (ayni-lists.js). With { root, items } it builds a tree from data (or wires a markup tree) and returns its
    * controller. With { nav: true, items, isOpen, setOpen, current, go, menu, drag, drop, tail, keys, sheet, pick,

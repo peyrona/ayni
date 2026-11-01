@@ -11,7 +11,7 @@
 'use strict';
 const { $, $$, isMac, icon, setIcon } = Ayni;
 const { fire, wired, once, each, tx, txf, iconName, isRO, isTouch, retip, fold } = Ayni.core;
-const { initMenu, initToolbar, contextMenu } = Ayni.core.menus;
+const { initMenu, initToolbar, contextMenu, iconHtml } = Ayni.core.menus;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 /* ---------- Lists: shared type-ahead and multi-selection ---------- */
@@ -64,16 +64,19 @@ const initListbox = (lb) => {
   const toggle = (i) => { const o = opts[i]; o.setAttribute('aria-selected', o.getAttribute('aria-selected') !== 'true'); report(); };
   const ta = makeTypeAhead();
   const ms = multiSelect({ box: lb, items: () => opts, set: (o, on) => o.setAttribute('aria-selected', on), done: report });
+  /* Disabled or read-only: the focus may still walk the items, nothing changes */
+  const off = () => lb.getAttribute('aria-disabled') === 'true' || isRO(lb);
   lb.addEventListener('focus', () => setActive(active));
   lb.addEventListener('blur', () => opts.forEach((o) => o.classList.remove('active')));
   lb.addEventListener('mousedown', (e) => {
-    const i = opts.indexOf(e.target.closest('[role="option"]')); if (i < 0) return;
+    const i = opts.indexOf(e.target.closest('[role="option"]')); if (i < 0 || off()) return;
     e.preventDefault(); lb.focus();
     if (multi && e.shiftKey) ms.range(anchor, i);
     else if (multi) { toggle(i); anchor = i; }
     setActive(i);
   });
   lb.addEventListener('keydown', (e) => {
+    if (off() && (!multi || e.key === ' ' || ms.isSelectAll(e) || e.shiftKey)) return;
     if (multi && ms.isSelectAll(e)) { e.preventDefault(); ms.all(); return; }
     const n = { ArrowDown: active + 1, ArrowUp: active - 1, Home: 0, End: opts.length - 1,
       PageDown: ms.page(active, 1), PageUp: ms.page(active, -1) }[e.key];
@@ -189,7 +192,7 @@ const dropZone = (host, cfg) => {
    menu; on a row that is not picked it picks only that row first; on empty space it gives the area actions.
    ONE list of actions feeds the buttons, the menu and the keys:
      { id, label, icon, key, rank, group, danger, noBar, hideOff, where, when, why, run }
-   label: text or fn(ids) (Star / Unstar); icon: an icon name or fn(ids); key: 'Del', 'F2', 'Ctrl+C', 'S' or an array
+   label: text or fn(ids) (Star / Unstar); icon: an icon name, markup (an <svg>) or fn(ids); key: 'Del', 'F2', 'Ctrl+C', 'S' or an array
    (the first is shown); rank: 1 = the last button to leave a narrow title row (Select all is 4); group: menu section;
    noBar: menu and key only; hideOff: hidden, not disabled, when `when` says no; where(): false hides it in this view;
    when(ids): false disables it, why(ids) says why; run(ids, event) does it.
@@ -199,6 +202,8 @@ const dropZone = (host, cfg) => {
    ({ text(ids), can(id) }), tree (the navigation tree beside it), main (true: the view's main list, whose keys work
    while the focus is on the title row's buttons too), active() (false: not now, a sub-view), onSelect(ids),
    contextmenu (false: none). The page never redraws the list on a pick: the list paints aria-selected in place */
+/* The tick square of a row, for a page that draws it in its own place in the row (else the list puts it first) */
+const tickHtml = () => `<button type="button" class="pick-tick" data-tick tabindex="-1" data-tip="${tx('pick')}" aria-label="${tx('pick')}">${icon('check')}</button>`;
 const list = (el, cfg = {}) => {
   const box = typeof el === 'string' ? $(el) : el;
   const rowSel = cfg.row || '[data-id]', idOf = cfg.idOf || ((r) => r.dataset.id);
@@ -265,7 +270,6 @@ const list = (el, cfg = {}) => {
 
   /* ---- Paint ---- */
   let painting = false;
-  const tickHtml = () => `<button type="button" class="pick-tick" data-tick tabindex="-1" data-tip="${tx('pick')}" aria-label="${tx('pick')}">${icon('check')}</button>`;
   const paint = () => {
     painting = true;
     box.classList.toggle('picking', picking); box.classList.add('item-list');
@@ -330,7 +334,7 @@ const list = (el, cfg = {}) => {
       .forEach(({ a, i }) => {
         const l = labelOf(a, ids), gap = g !== null && (a.group || 0) !== g; g = a.group || 0;
         html += `<button type="button" class="btn${a.danger ? ' danger' : ''}${gap ? ' pick-gap' : ''}" data-pick-act="${esc(a.id)}" data-rank="${a.rank || 40 + i}" data-group="${g}"` +
-          ` data-tip="${esc(l + (a.key ? ` (${Ayni.keyLabel(a.key)})` : ''))}" aria-label="${esc(l)}"${enabled(a, ids) ? '' : ' aria-disabled="true"'}>${icon(iconOf(a, ids))}</button>`;
+          ` data-tip="${esc(l + (a.key ? ` (${Ayni.keyLabel(a.key)})` : ''))}" aria-label="${esc(l)}"${enabled(a, ids) ? '' : ' aria-disabled="true"'}>${iconHtml(iconOf(a, ids) || '')}</button>`;
       });
     bar.innerHTML = html; bar.hidden = false;
     fitter?.fit();
@@ -1130,9 +1134,9 @@ const navTree = (host, cfg) => {
         html.push(`<li role="treeitem" data-id="${esc(n.id)}" tabindex="${n.id === (kbd != null ? kbd : cur) ? 0 : -1}"` +
           (kids ? ` aria-expanded="${open ? 'true' : 'false'}"` : '') + (n.id === cur ? ' aria-current="true"' : '') +
           (off ? ' aria-disabled="true"' : '') + (n.heading ? ' data-heading' : '') + (n.cls ? ` class="${esc(n.cls)}"` : '') + '>' +
-          `<div class="ti"${n.tip ? ` data-tip="${esc(n.tip)}"` : ''}>${TW()}${icon(n.icon || 'folder')}<span class="tn">${esc(n.name)}</span>` +
+          `<div class="ti"${n.tip ? ` data-tip="${esc(n.tip)}"` : ''}>${TW()}${iconHtml(n.icon || 'folder')}<span class="tn">${esc(n.name)}</span>` +
           (n.count ? `<span class="count">${esc(n.count)}</span>` : '') +
-          (n.tail ? `<button class="btn sm tail" type="button" data-tail aria-pressed="${n.tail.on ? 'true' : 'false'}" data-tip="${esc(n.tail.tip || '')}" aria-label="${esc(n.tail.tip || '')}">${icon(n.tail.icon)}</button>` : '') +
+          (n.tail ? `<button class="btn sm tail" type="button" data-tail aria-pressed="${n.tail.on ? 'true' : 'false'}" data-tip="${esc(n.tail.tip || '')}" aria-label="${esc(n.tail.tip || '')}">${iconHtml(n.tail.icon)}</button>` : '') +
           '</div>');
         if (open) { html.push('<ul role="group">'); walk(n.children, n.id); html.push('</ul>'); }
         html.push('</li>');
@@ -1346,6 +1350,6 @@ const init = (root = document) => {
 };
 
 Ayni.core.lists = { makeTypeAhead };
-Object.assign(Ayni, { list, tree, pickNode, dropZone, makeTypeAhead, keyMatches, dragIds: () => drag.ids });
+Object.assign(Ayni, { list, tree, pickNode, dropZone, makeTypeAhead, keyMatches, dragIds: () => drag.ids, pickTick: tickHtml });
 Ayni.core.family({ setup, init });
 })();

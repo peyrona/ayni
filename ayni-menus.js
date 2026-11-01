@@ -634,7 +634,7 @@ const init = (root) => {
   each(root, '[data-lit-by]', 'litby', initLitBy);
 };
 
-Ayni.core.menus = { initMenu, initToolbar, contextMenu, place, invoker: () => invoker };
+Ayni.core.menus = { initMenu, initToolbar, contextMenu, place, iconHtml, invoker: () => invoker };
 Object.assign(Ayni, {
   place, menuAt, fillMenu: fillPage, keyLabel, contextMenu, longTap, fitBar,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); },
