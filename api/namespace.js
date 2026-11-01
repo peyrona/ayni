@@ -316,12 +316,33 @@ const Ayni = {
   setTouchPreview(on) {},
 
   /**
-   * Fills the help dialog used on touch, where there are no tooltips: every element of the view with its icon, its
-   * tooltip and a short explanation (data-help on an element gives its own).
-   * @param {HTMLElement} body  The dialog's body.
-   * @param {Array<[string, HTMLElement]>} entries  [group name, element] pairs, in order.
+   * Sets the view's Help card, opened by its Help button ([data-help-open]); calling it again replaces it.
+   * Also: help.show(options?) opens it, help.hold() keeps it away for this page load, help.items() gives the card and
+   * tour rows for a Help menu.
+   * @param {{ title?: string, lead?: string|string[], rows?: Array<{ sel?: string, text?: string, name?: string,
+   *   icon?: string, svg?: string, section?: string, tour?: false|object }>, tip?: string, tour?: Array|Function|true,
+   *   menu?: boolean, autoShow?: boolean, key?: string }} options
+   * @returns {Function} Ayni.help
    */
-  fillHelp(body, entries) {},
+  help(options) {},
+
+  /**
+   * Starts the guided tour: the given steps, or the card's. tour.add(name, () => step, 'first') adds a shared step
+   * ('first': it starts every tour).
+   * @param {Array<string|object>} [steps]  'rows', a shared step name, { use, … } or { sel, text, title, tap, open,
+   *   ghost, icon, optional, picked, before, after }.
+   * @param {object} [card]  The card whose rows 'rows' reads (default: the view's card, Ayni.help).
+   * @returns {boolean} False when a tour is already running or there is no step.
+   */
+  tour(steps, card) {},
+
+  /**
+   * Shows the first-visit marks once per site: a ring and a bubble on each target, a × that counts down first.
+   * @param {Array<{ sel?: string, els?: HTMLElement[], text: string }>} items
+   * @param {{ key?: string, secs?: number, force?: boolean }} [options]  key default 'ayni-coach-seen', secs 9.
+   * @returns {boolean} False when already seen.
+   */
+  coach(items, options) {},
 
   /**
    * Focuses the first control with an error inside `root`.

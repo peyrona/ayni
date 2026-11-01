@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni help family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus (the More menu and a page menu the tour opens)
+     and help families, and nothing else. #demo opens the Help card (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-help.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-help.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  /* What reaches the page, in order */
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') L.push('esc reached the page'); });
+  document.addEventListener('click', (e) => { const b = e.target.closest('[id]'); L.push('click ' + (b ? b.id : e.target.tagName)); });
+  $('#pm-menu').addEventListener('ayni:action', (e) => L.push('menu ' + e.detail.act));
+  window.fb = Ayni.fitBar('#hd');
+  window.CARD = {
+    title: 'Photos',
+    lead: ['Your photos, newest first.', 'A second paragraph.'],
+    rows: [
+      { sel: '#add', text: 'Adds photos.' },
+      { sel: '#tog', text: 'Plays them.', tour: { tap: true } },
+      { sel: '#pm', text: 'Export and more.' },
+      { sel: '#nope', text: 'Not in this layout.' },
+      { sel: '#exp', name: 'More → Export', text: 'Saves them all.', tour: { open: '#pm' } },
+      { sel: '#add2', text: 'Kept out of the tour.', tour: false },
+      { section: 'In the list' },
+      { icon: 'check', name: 'Pick photos', text: 'Click a photo.', tour: { sel: '#list li[aria-selected]', ghost: '#empty' } },
+      { icon: 'edit', name: 'Just an idea', text: 'No button, no tour.' },
+    ],
+    tip: 'Tip: drag photos in.',
+    tour: ['rows'],
+  };
+  Ayni.help(CARD);
+  if (location.hash === '#demo') Ayni.help.show();
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 150vh; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; flex-wrap: wrap; }
+  #hd { display: flex; align-items: center; gap: 8px; width: 700px; max-width: 100%; border: var(--panel-border); padding: 4px 8px; box-sizing: border-box; }
+  #hd > h2 { flex: 1 0 auto; margin: 0; font-size: 1rem; white-space: nowrap; }
+  #empty { width: 400px; height: 120px; border: 1px dashed var(--line); margin: 12px 0; }
+  #list { list-style: none; padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<!-- A title row: tools that leave by rank into More, a page menu, a toggle and the Help button -->
+<header id="hd">
+  <h2>Photos</h2>
+  <div role="toolbar" aria-label="Photo tools">
+    <div class="tb-group"><button class="btn primary" id="add" data-rank="21" data-tip="Add photos"><span class="icon" data-icon="plus"></span></button><button class="btn" id="tog" data-toggle aria-pressed="false" data-rank="22" data-tip="Slide show"><span class="icon" data-icon="play"></span></button><button class="btn" id="wide" data-rank="40" data-tip="Wide tool"><span class="icon" data-icon="copy"></span></button></div>
+    <div class="tb-group tb-sys"><button class="btn" id="pm" popovertarget="pm-menu" data-tip="Photo menu"><span class="icon" data-icon="file"></span></button><button class="btn" id="help" data-help-open data-tip="Help"><span class="icon" data-icon="help"></span></button></div>
+  </div>
+</header>
+<div class="panel menu" popover id="pm-menu" role="menu" aria-label="Photo menu">
+  <button role="menuitem" data-act="exp" id="exp"><span class="icon" data-icon="copy"></span>Export</button>
+  <button role="menuitem" data-act="hidrow" data-menu="hid"><span class="icon" data-icon="cut"></span>Hidden twin</button>
+</div>
+<button class="btn" id="hid" hidden data-tip="Hidden one"><span class="icon" data-icon="cut"></span></button>
+<button class="btn danger" id="add2" data-tip="Delete all"><span class="icon" data-icon="trash"></span></button>
+
+<div class="row">
+  <span class="static">Delivery slot</span><button type="button" class="info-tip" id="i1" aria-label="About Delivery slot" data-help="Morning is 9 to 13.
+Routes: https://example.org/routes"></button>
+  <span class="static">Unnamed</span><button type="button" class="info-tip" id="i2" data-help="An info label with no name of its own."></button>
+  <button class="btn" id="open-dlg" data-open-dialog="dlg" data-tip="Dialog…"><span class="icon" data-icon="file"></span></button>
+</div>
+<div id="empty" aria-label="An empty list"><ul id="list"></ul></div>
+
+<dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+  <header><h2 id="dlg-t">Settings</h2><button class="btn" data-close data-tip="Close" id="dlg-x"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body">
+    <label class="switch">Compact<button type="button" class="info-tip" id="i3" aria-label="About Compact" data-help="Less room between things."></button><input type="checkbox" role="switch" id="sw"></label>
+    <button class="btn" id="dlg-btn" data-tip="A tool in the dialog"><span class="icon" data-icon="edit"></span></button>
+  </div>
+</dialog>
+</body>
+</html>

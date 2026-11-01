@@ -41,11 +41,7 @@ textarea.input[data-autogrow] { resize: none; overflow-y: auto; max-height: var(
   color: var(--text-dim); background: var(--panel-bg); border: 1px solid var(--field-line); border-radius: 999px; pointer-events: none; }
 .ta-wrap:has(textarea:focus-visible) .ta-count { border-color: var(--accent); }
 .ta-wrap:has(textarea[aria-invalid="true"]) .ta-count { border-color: var(--danger); }
-/* Info label: a small "i" in a circle next to any control; a click opens a short help popup */
 .label-row { display: flex; align-items: center; gap: 6px; }
-.info-tip { position: relative; width: 12px; height: 12px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--accent); background: var(--panel-bg);
-  color: var(--accent); font: 600 8.5px/1 var(--font-sans); display: inline-grid; place-items: center; cursor: pointer; }
-.info-tip::after { content: ""; position: absolute; inset: -8px; } /* larger touch target, same small look */
 /* RULE: field errors (Frasquito, 2026-10-22). Space is precious, so nothing is added below the field: the border takes the
    Danger colour and a small red "!" (the size of the info "i") sits inside the field at its end, before any end buttons,
    taking no layout space. For groups (radios, check boxes, lists) the "!" sits next to the group label; a list with no visible label shows it inside its top-right corner. The message floats
@@ -63,8 +59,6 @@ textarea.input[data-autogrow] { resize: none; overflow-y: auto; max-height: var(
 legend > .err-mark, .static-label > .err-mark { margin-left: 6px; vertical-align: -1px; }
 .panel.popup.err-pop { position: fixed; inset: auto; margin: 0; padding: 6px 10px; max-width: min(280px, calc(100vw - 16px));
   font-size: .8rem; color: var(--text); border-color: var(--danger); }
-.info-tip:hover, .info-tip[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
-.panel.help { max-width: min(280px, calc(100vw - 16px)); padding: 10px 12px; font-size: .85rem; line-height: 1.45; }
 .spin { width: 150px; }
 .spin .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
 .spin .input::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -171,7 +165,7 @@ html.touch [role="tab"] { min-height: var(--touch); }
 html.touch [role="tab"] .tab-close { position: relative; margin-left: 6px; }
 html.touch [role="tab"] .tab-close::before { content: ""; position: absolute; inset: -13px; }
 html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
-html.touch .info-tip::after, html.touch .err-mark::after { inset: -16px; }
+html.touch .err-mark::after { inset: -16px; }
 html.touch input[type="range"] { height: var(--touch); }
 html.touch .splitter { position: relative; }
 html.touch .splitter::before { content: ""; position: absolute; inset: 0 -19px; z-index: 1; }
@@ -197,17 +191,6 @@ html.touch .cal-title { min-height: var(--touch); }
 html.touch .time-row { flex-wrap: wrap; justify-content: space-between; padding: 10px 4px; gap: 6px 4px; } html.touch .time-row label { flex-basis: 100%; }
 html.touch .time-row .input-group { width: auto; } html.touch .time-row .input { width: 44px; flex: none; }
 
-/* RULE: on touch there are no tooltips. A Help button in the title row opens a dialog that lists every element
-   of the current view with its icon, its tooltip and a short explanation. */
-html:not(.touch) .touch-only { display: none; }
-.help-group { margin: 4px 0 0; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
-.help-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.help-list li { display: grid; grid-template-columns: 32px 1fr; gap: 2px 10px; align-items: center; }
-html .help-list .help-ico { --btn: 32px; pointer-events: none; grid-row: span 2; }
-.help-list .help-ico .icon { --icon: 16px; }
-.help-list .help-ico.info-tip { width: 14px; height: 14px; justify-self: center; }
-.help-list b { font-weight: 600; }
-.help-list p { grid-column: 2; margin: 0; font-size: .8rem; color: var(--text-dim); }
 
 /* RULE: one list picker serves every drop-down list and combo box, on every device: no native select, datalist or
    wheel. A field with our popup triangle; the list opens in a Panel popup below the field (above when there is no

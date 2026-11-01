@@ -29,7 +29,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 1. **One look, one meaning.** A visual sign has exactly one meaning across the whole interface. A filled background means "default button" and nothing else. A small dot on a button means "second action". A small down-pointing triangle means "opens a list or popup". Colour of an icon carries meaning (danger, success, warning). No sign is reused for something else.
 2. **One control per job.** There is one list picker for every drop-down list and combo box, one search field, one number field, one date field. Native browser widgets whose look or behaviour differ between browsers (select, datalist, date wheels) are not used.
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
-4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. On phones, where there are no tooltips, a Help dialog lists every element of the view.
+4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. Every view has a Help button (?) that explains its buttons in words, on every device; on touch, where there are no tooltips, it is the way to learn what a button does.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
 6. **Responsive by default.** The same screens work from a 320 px phone up. On touch devices every target takes at least 44 px, as an invisible hit area around what is drawn. From 1024 px wide, desktop mode with windows switches on automatically; below that there is none (see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
@@ -193,12 +193,13 @@ A disabled group box fades everything inside it at once. A read-only field never
 - Ctrl+Page Down / Ctrl+Page Up switch tabs from anywhere inside the Panel.
 - Ctrl+Z (⌘Z on Mac) runs the Undo on screen, outside text fields (11.2).
 - Alt+N makes a new item in the view (a folder, an album), F2 renames, Delete deletes. A view's main list takes its keys while the focus is on the title row's buttons too (8.4).
+- In a guided tour, Right goes on, Left goes back and Esc ends the tour (15.3).
 - On Mac, Ctrl in shortcuts reads ⌘.
 
 ### 2.6 Touch
 
 - A device counts as touch when its main pointer is coarse; Ayni marks the page with the class `touch` on `<html>`. An app can switch it by hand (a tablet with a mouse plugged in, a preview), and every touch rule follows. Sizes switch to the touch values above.
-- There are no tooltips on touch. Each view has a round Help button in its title row instead (chapter 15).
+- There are no tooltips on touch. The Help button (?) in the title row explains every button instead (chapter 15).
 - **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area or a tree item it opens that element's pop-up menu; on a list item it starts picking (8.4). While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
 - On phones (below 600 px), lists of the list picker open as a sheet at the bottom of the screen, kept above the on-screen keyboard.
 
@@ -208,7 +209,7 @@ Every container (Panel bodies, dialogs, menus, popups, lists, tables, panes) can
 
 ### 2.8 Language
 
-Every text Ayni shows (tooltips, "Loading…", the calendar's month names, the Help dialog) comes in the page's language. Ayni ships English, Spanish, Portuguese, French and German.
+Every text Ayni shows (tooltips, "Loading…", the calendar's month names, the guided tour) comes in the page's language. Ayni ships English, Spanish, Portuguese, French and German.
 
 - **No text lives in the code.** Every text is a key in one file per language (`i18n/<lang>.json`). Ayni has its own files, and an app keeps its own beside them; both are read with the same functions.
 - **In the page:** `<span data-i18n="key"></span>` for text, `data-i18n-attr="title:key, aria-label:key2"` for attributes. Content added later is translated by `Ayni.i18n.apply(element)`, and on its own when it is added to the page.
@@ -254,7 +255,7 @@ A button may have one second action, for example Print (first action) and Print 
 - **Marked by:** a small solid dot in the Accent colour at the lower right of the button, on every device. Nothing else marks it.
 - **Timing:** a single click on a button with a dot waits about 250 ms in case a second click follows. A double-click runs only the second action, never the first. Taps and Enter act at once. Buttons without a dot never wait. (Browsers cannot read the system double-click time, so 250 ms is fixed.)
 - **Hold feedback:** while the finger holds, a ring paints in around the button over the hold time.
-- **Tooltip:** generated from both actions and the ways to reach them. Mouse and keyboard: "Print · Double-click or Shift+Enter: Print with the last settings". Touch (in the Help dialog): "Print · Hold: Print with the last settings".
+- **Tooltip:** generated from both actions and the ways to reach them. Mouse and keyboard: "Print · Double-click or Shift+Enter: Print with the last settings". Touch (in the Help card): "Print · Hold: Print with the last settings".
 - **Never on a button that opens a popup, menu or dialog.** Ayni strips the second action from such buttons and warns.
 - **Use it only where it helps:** a second action is a shortcut for people who know it; the first action must make sense alone.
 
@@ -730,7 +731,7 @@ Feedback never hides the only copy of important information and never disappears
 - They are Ayni's own (`data-tip`), not the browser's `title`: they show at once on keyboard focus, look the same everywhere and also show on a disabled button.
 - A disabled control's tooltip says why it is off. A second-action button's tooltip names both actions (3.4).
 - Tooltips never hold the only copy of important text.
-- On touch there are no tooltips: the Help dialog replaces them (chapter 15).
+- On touch there are no tooltips: the Help card replaces them (chapter 15).
 
 ### 11.2 Notifications (toasts)
 
@@ -838,22 +839,70 @@ Every control has a visible label, and any control can have a small "i" that ope
 
 ### 14.2 Info label
 
-- A small plain-text "i" in a 12 px circle, about the height of the capital letters of the label, placed right after the label of any control.
-- Its tooltip is "What is this?".
-- Click it, or focus it and press Enter, to open a popup with short help ("Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00."). Esc or a click elsewhere closes it.
-- On touch it keeps its small look with a 44 px invisible hit area.
-- Use it for help that does not fit in a placeholder; keep the text to one or two sentences.
+- A small "i" icon in a circle, 16 px, in the link colour (`--link`), placed right after the label of any control (in a list of settings: text, then the "i", then the switch at the row's end). It turns Accent while its popup is open or under the pointer.
+- It opens a small popup with one or two sentences of help ("Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00."). The popup is not a dialog: no ×, no dimmed page, nothing blocked.
+- **With a mouse** the popup opens on hover, so the texts can be read by sweeping the dots, and stays open while the pointer is on the "i" or on the popup. A click pins it: from then on it behaves as on touch.
+- **On touch, and pinned:** a tap or Enter opens it; a second tap, a tap elsewhere, Esc, a scroll or a resize closes it. Esc closes only the popup, never the dialog under it.
+- Line breaks in the text are kept, and a web address in it becomes a link that opens in a new tab.
+- Inside a dialog the popup belongs to that dialog, so it can be read and its links pressed.
+- On touch it keeps its small look with a 44 px invisible hit area. Its accessible name is "What is this?"; it has no tooltip (the popup is the tip).
+- Use it for help that does not fit in a placeholder; anything longer belongs in a dialog.
 
-## 15. Help dialog on touch devices
+## 15. Help, guided tour and first-visit marks
 
-On touch devices there are no tooltips; a round Help button in the title row of each view opens a dialog that explains every element of that view.
+Every view explains itself: a Help button opens a card that says what each button does, the card can start a guided tour that walks the screen button by button, and a brand-new user is shown, once, where the help is.
 
-- **Button:** round, "?" icon, shown only on touch devices, in the title row.
-- **Contents:** every element of the current view, grouped by section. Each entry shows the element's icon, its tooltip text and a short explanation.
-- **Explanation:** taken from the element's own help text when it has one; otherwise built from what it is: default button, danger, opens a popup, opens a dialog, toggle, second action ("Hold: Print with the last settings"), disabled and why.
-- **Closing:** Esc, or the close button in the title row.
-- **Rejected alternatives:** showing the tooltip while holding (hold-to-peek) and showing it as a notification. A long tap is reserved for "more for this thing".
-- **For developers:** every new control needs a tooltip (`data-tip`), plus a help text (`data-help`) when the built explanation would be weak, and touch CSS that meets 44 × 44 px.
+### 15.1 Help button
+
+- A round button with the "?" icon, on every device, last in the system group of the title row (9.8). Its tooltip is "Help".
+- It opens the view's Help card. In a document app it may open a Help menu instead (Statistics, Keyboard shortcuts, the card as "Toolbar buttons", the tour).
+- The guided tour always ends on it, so the user knows where to find the help again.
+
+### 15.2 Help card
+
+- A small dialog (10.3) with the view's name as its title and the Close button (×) in the title row; Esc closes it. A long card scrolls under its title row.
+- From the top: one or more short paragraphs on what the view is for; the **See the tour** text button (with a play icon), when the view has a tour; one row per button; an optional tip line at the end.
+- **A row** shows a small copy of the round button (its icon, in its colour: primary, danger, ok, warn; the triangle of a popup button), the button's tooltip in bold, and a sentence that says what it does. The sentences are written by hand for each view, never built from the button's kind.
+- Rows come in the order the page gives, grouped under section headings (a line, then a subtitle). A row whose button this layout does not have is left out. A row may explain a gesture or an idea with no single button behind it ("Hold a message to answer it"): it gives its own icon and name.
+- A view with two screens (a list and one open item) has one card for each; the "?" opens the one on screen.
+- **Never on its own.** The card opens only from the "?". The one exception is a home page, which may open it on every visit with a **Don't show again** button at the bottom until the user presses it. Something more important on a first visit (setting a password) holds the card back for that page load.
+
+### 15.3 Guided tour
+
+- Started only by the card's **See the tour** button or the Help menu's row; never on its own, not even on a first visit.
+- **Spotlight:** the page is dimmed except the element being explained, which gets a ring. A bubble next to it (under it, else over it, else inside a big area such as a month grid) shows an optional icon and title, the text, a short note when needed, "3 of 12", **Back**, **Next** (**Done** on the last step) and ×. With nothing to point at, the bubble sits in the middle.
+- **Nothing is skipped.** A button behind a menu, a folded search, a tab or the More menu (9.9) is reached the way a user would: the tour opens what hides it, lights it there (the note says "In the More menu"), and closes it again on leaving. A button that is not there yet (no items) gets a dashed ring on the area where it will appear, its icon in the bubble and the note "Not here yet: this is where it appears". Only a step that this layout lacks entirely is left out.
+- **Tap steps:** for a thing the user must try (a row's tick), the lit element itself takes the tap and its action runs; the note says "Tap it to go on", and Next taps it for them.
+- A step about the picked items' actions picks the first item, and lets it go after the last such step.
+- Presses on the dimmed page do nothing and never reach the page behind. Right goes on, Left goes back, Esc or × ends the tour; the focus sits on Next.
+- The tour stays on top of the menus and dialogs it opens.
+- **Shared steps** have one text for every view: the search (Search button), More, the tick of a row, the picked group in the title row, and the Help button. A view lists only its own steps; the card's rows can be its steps as they are.
+
+### 15.4 First-visit marks
+
+- The first time anyone opens a page of the site (one flag for the whole site), a dimmed layer rings the two or three things a newcomer never finds alone (the way home, the Help button) and hangs a bubble with one sentence off each.
+- Each bubble's × first counts down from 9; only then it works, and Esc is held for that time too, so the marks cannot be swatted away unread.
+- They count as seen when the count ends, not when they open or close: whoever leaves earlier meets them again on the next page.
+- Taps on the layer do nothing. Bubbles keep clear of each other and of the ringed things, joined to their target by a thin line when they had to move; they follow resizes and scrolling.
+- They wait while a dialog holds the screen, and are not shown on a page that lacks their targets (that page does not use up the flag).
+
+### 15.5 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| The Help button | `.btn[data-help-open]` with the `help` icon, in the system group of the title row |
+| The card | `Ayni.help({ title, lead, rows, tip, tour })`: `lead` is a text or a list of paragraphs; calling it again replaces the card (a view with two screens) |
+| A row | `{ sel, text }` (glyph and name come from the button `sel` finds); `name` and `icon` (or `svg`) for a row with no button, or to tell two look-alike buttons apart; `{ section: 'Title' }` starts a group; `tour: false` keeps a row out of the tour, `tour: { … }` makes it a step with its own fields |
+| Open it from code | `Ayni.help.show()` |
+| A Help menu on the "?" | `Ayni.help({ …, menu: true })`: the "?" opens the page's own menu (`popovertarget`); `Ayni.help.items()` gives its card ("Toolbar buttons") and tour rows, for `Ayni.fillMenu` or `Ayni.menuAt` |
+| Home page card | `autoShow: true, key: 'flag-name'` adds Don't show again and opens it on each visit until pressed; `Ayni.help.hold()` holds it back for this page load |
+| The tour | `tour: [steps]` in `Ayni.help` (a function that returns them, or `true` = the card's rows); `Ayni.tour(steps, card)` starts one from code (`'rows'` reads `card`, by default the view's) |
+| A shared step of the page's own | `Ayni.tour.add(name, () => step)`; with `'first'` as a third argument it starts every tour (a way home) |
+| A step | `'rows'` (the card's rows), a shared step (`'search'`, `'more'`, `'pick'`, `'picked'`, `'help'`), `{ use: 'pick', … }` (a shared step with some fields changed), or `{ sel, text, title, tap, open, ghost, icon, optional, picked, before, after }` |
+| Step fields | `sel`: what to light (the first one on screen); `tap`: the user taps it; `open`: a button, or a chain of them, that shows `sel`; `ghost`: the area to ring while `sel` is missing, with `icon` in the bubble; `optional`: dropped when the layout lacks it; `picked`: needs a picked item; `before` / `after`: anything else the step sets up or puts back |
+| A menu row standing for a hidden button | `data-menu="<the button's id>"` on the row: the tour lights the row |
+| First-visit marks | `Ayni.coach([{ els: [elements], text }], { key, secs })`: `false` when already seen or the targets are missing; `{ force: true }` shows them again (a demo) |
+| Info label | `button.info-tip[data-help]` (Ayni draws the icon and wires it); `Ayni.init(element)` for one added later |
 
 ## 16. Tree view
 
@@ -1043,7 +1092,15 @@ These were considered and turned down; they are listed so they are not proposed 
 | Tools vanishing while an open search needs their room | Replaced: they go into More by rank (9.9) |
 | Ctrl+/ to reach the search | Dropped: Ctrl+F in every view |
 | Ring with a dot, or a second ring, to mark a second action | Rejected: a single small dot |
-| Hold-to-peek or notifications to show tooltips on touch | Rejected: the Help dialog |
+| Hold-to-peek or notifications to show tooltips on touch | Rejected: the Help card |
+| A Help button on touch devices only | Replaced: on every device; it also starts the tour, and the card says more than a tooltip (15.1) |
+| A Help list built by scanning the screen, with sentences made from each button's kind | Dropped: the card's rows are written by hand for each view (15.2) |
+| A plain icon on each Help card row | Not taken: a small copy of the round button, in its colour (15.2) |
+| A guided tour that opens on a first visit | Rejected: only from the card or the Help menu (15.3) |
+| Skipping a tour step whose button is hidden or missing | Not taken: the tour opens what hides it, or rings where it will appear (15.3) |
+| First-visit marks with a × that works at once | Not taken: it counts down 9 s first (15.4) |
+| An info label that opens only on a click | Replaced: with a mouse it opens on hover, a click pins it (14.2) |
+| A letter "i" drawn in an Accent circle | Replaced: an "i" icon in the link colour (14.2) |
 | Native select, datalist or date wheels | Rejected: the Ayni list picker and calendar |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |

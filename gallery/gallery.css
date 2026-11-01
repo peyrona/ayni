@@ -59,5 +59,6 @@ body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .il-row:not([aria-selected="true"]):hover { background: var(--card-head); }
 .il-row .sz { margin-left: auto; color: var(--text-dim); font-size: .8rem; }
 .il-treebtn { display: none; }
+.hd-list { list-style: none; margin: 0; padding: 24px 8px; min-height: 80px; }
 @media (min-width: 641px) { .files-pane { width: 190px; flex: none; overflow: auto; padding: 4px; border-right: 1px solid var(--line); } }
 @media (max-width: 640px) { .il-treebtn { display: inline-flex; } }

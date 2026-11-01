@@ -33,6 +33,7 @@ Ayni.icons.lucide = {
     more: 'ellipsis-vertical',
     ok: 'circle-check',
     paste: 'clipboard-paste',
+    play: 'play',
     plus: 'plus',
     restore: 'copy',
     search: 'search',

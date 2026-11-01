@@ -25,7 +25,7 @@ const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detai
 const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
 
 /* Shared layers, created when the page does not have them yet */
-let helpPop, errPop;
+let errPop;
 
 
 /* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
@@ -312,56 +312,6 @@ const initDateKeys = (g) => {
   });
 };
 
-/* ---------- Help on touch: every element of the view with its icon, tooltip and a short explanation ---------- */
-/* RULE: on touch there are no tooltips. A Help button in the title row opens a dialog that lists every element
-   of the current view. Ayni.fillHelp(body, entries) fills it: entries are [group name, element] pairs, in order;
-   each element with a visible data-tip is listed once per group. data-help on an element gives its explanation. */
-const explain = (el) => {
-  const b = el.matches('button, [role="button"]') ? el : $('button', el) || el, out = [];
-  if (el.dataset.help) return el.dataset.help;
-  if (el.matches('[role="tab"]')) return txf('help.tab', { name: el.textContent.trim() });
-  if (el.matches('[data-close]')) return tx('help.tabClose');
-  if (b.getAttribute('aria-disabled') === 'true') out.push(tx('help.off'));
-  if (b.classList.contains('primary')) out.push(tx('help.default'));
-  if (b.classList.contains('danger')) out.push(tx('help.danger'));
-  if (b.classList.contains('ok')) out.push(tx('help.ok'));
-  if (b.classList.contains('warn')) out.push(tx('help.warn'));
-  if (b.hasAttribute('aria-pressed')) out.push(tx('help.toggle'));
-  if (b.dataset.openDialog) out.push(tx('help.dialog'));
-  else if (b.hasAttribute('popovertarget')) out.push(tx(b.getAttribute('aria-haspopup') === 'menu' ? 'help.menu' : 'help.popup'));
-  if (b.dataset.alt) out.push(txf('help.hold', { what: b.dataset.alt.charAt(0).toLowerCase() + b.dataset.alt.slice(1) }));
-  return out.join(' ') || tx('help.plain');
-};
-const helpIcon = (el) => {
-  const b = el.matches('button') ? el : $('button', el) || el, ico = document.createElement('span');
-  ico.setAttribute('aria-hidden', 'true');
-  if (b.classList.contains('info-tip')) { ico.className = 'info-tip help-ico'; ico.textContent = 'i'; return ico; }
-  ico.className = 'btn help-ico ' + [...b.classList].filter((c) => ['primary', 'danger', 'ok', 'warn'].includes(c)).join(' ');
-  if (b.dataset.alt) ico.dataset.alt = '';
-  if (b.hasAttribute('popovertarget') && !b.dataset.openDialog) ico.setAttribute('aria-haspopup', 'true');
-  const ic = $('.icon:not(.tw)', el); if (ic) ico.append(ic.cloneNode(true));
-  return ico;
-};
-const fillHelp = (body, entries) => {
-  const groups = new Map();
-  entries.forEach(([name, el]) => {
-    const tipText = el.dataset.tip; if (!tipText || !el.getClientRects().length) return;
-    if (!groups.has(name)) groups.set(name, new Map());
-    const g = groups.get(name); if (!g.has(tipText)) g.set(tipText, el);
-  });
-  body.replaceChildren();
-  groups.forEach((items, name) => {
-    const h = document.createElement('h3'); h.className = 'help-group'; h.textContent = name;
-    const ul = document.createElement('ul'); ul.className = 'help-list';
-    items.forEach((el, tipText) => {
-      const li = document.createElement('li'), t = document.createElement('b'), p = document.createElement('p');
-      t.textContent = tipText; p.textContent = explain(el);
-      li.append(helpIcon(el), t, p); ul.append(li);
-    });
-    body.append(h, ul);
-  });
-};
-
 /* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
 /* RULE: one list picker serves every drop-down list and combo box, on every device. Fires ayni:change on the .picker
    with { value, name, field, input } when the user picks or types a value. */
@@ -562,19 +512,12 @@ const focusFirstError = (root = document) => {
 
 /* ---------- Page-wide behaviour, set up once ---------- */
 const setup = () => {
-  helpPop = layer('ayni-help', `<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="${tx('help')}"></div>`);
   errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
 
   /* Read-only radios and sliders show their value but cannot change (check boxes and switches: ayni-buttons.js) */
   addEventListener('keydown', (e) => { if (isRO(e.target) && /radio|range/.test(e.target.type) && /^(Arrow|Page|Home|End)/.test(e.key)) e.preventDefault(); }, true);
   addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
 
-  /* Info labels: one shared help popup, filled from the clicked "i" (data-help) */
-  helpPop.addEventListener('toggle', (e) => {
-    const tipBtn = invoker()?.classList.contains('info-tip') ? invoker() : null;
-    if (e.newState === 'open' && tipBtn) { helpPop.textContent = tipBtn.dataset.help; tipBtn.setAttribute('aria-expanded', 'true'); place(helpPop); }
-    else { $$('.info-tip[aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false')); }
-  });
   addEventListener('click', (e) => { const l = e.target.closest('label[for]'); if (l && !l.control) { const c = document.getElementById(l.htmlFor); if (c) focusCtl(c); } });
 
 
@@ -828,7 +771,6 @@ const init = (root = document) => {
   each(root, '.ta-wrap', 'count', initCount);
   each(root, 'textarea[data-autogrow]', 'grow', initGrow);
   each(root, '[data-reveal]', 'reveal', initReveal);
-  each(root, '.info-tip', 'infotip', (b) => b.setAttribute('aria-expanded', 'false'));
   each(root, '.spin', 'spin', initSpin);
   each(root, '.date-field', 'datekeys', initDateKeys);
   each(root, '.picker', 'picker', initPicker);
@@ -842,7 +784,7 @@ const init = (root = document) => {
 };
 
 Object.assign(Ayni, {
-  status, fillHelp, focusFirstError,
+  status, focusFirstError,
   calendar: makeCalendar, dateField, dateTimeField,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },

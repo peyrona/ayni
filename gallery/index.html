@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="../ayni-menus.css">
 <link rel="stylesheet" href="../ayni-search.css">
 <link rel="stylesheet" href="../ayni-lists.css">
+<link rel="stylesheet" href="../ayni-help.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -24,6 +25,7 @@
 <script src="../ayni-menus.js" defer></script>
 <script src="../ayni-search.js" defer></script>
 <script src="../ayni-lists.js" defer></script>
+<script src="../ayni-help.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -35,9 +37,9 @@
   <header>
     <h2 id="g-title">Ayni Components</h2>
     <span class="mode" id="mode"></span>
-    <button class="btn" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode" data-help="Switches between light and dark colours."><span class="icon" data-icon="moon"></span></button>
+    <button class="btn" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode"><span class="icon" data-icon="moon"></span></button>
     <label class="switch">Touch preview<input type="checkbox" role="switch" id="sim-touch"></label>
-    <button class="btn touch-only" id="help-btn" data-open-dialog="dlg-help" data-help="Lists every element on this page and what it does." aria-label="Help: what each element does" data-tip="Help"><span class="icon" data-icon="help"></span></button>
+    <button class="btn" id="help-btn" data-help-open data-tip="Help"><span class="icon" data-icon="help"></span></button>
   </header>
 
   <div role="tablist" aria-label="Component families" id="tabs" data-hash>
@@ -48,6 +50,7 @@
     <button role="tab" id="t-pickers" aria-controls="pickers"><span class="icon" data-icon="sliders"></span>Pickers</button>
     <button role="tab" id="t-menus" aria-controls="menus"><span class="icon" data-icon="menu"></span>Menus</button>
     <button role="tab" id="t-feedback" aria-controls="feedback"><span class="icon" data-icon="bell"></span>Feedback</button>
+    <button role="tab" id="t-help" aria-controls="help"><span class="icon" data-icon="help"></span>Help</button>
     <button role="tab" id="t-layout" aria-controls="layout"><span class="icon" data-icon="layout"></span>Layout</button>
     <button role="tab" id="t-icons" aria-controls="icons"><span class="icon" data-icon="star"></span>Icons</button>
   </div>
@@ -321,14 +324,14 @@
           <input id="tf-name" class="input" required placeholder="As it appears on your ID"></div></div>
       <div class="spec"><h3>Info label</h3>
         <p class="rule">A small "i" in a circle can sit next to any control. Click it, or focus it and press Enter, to open a short help popup. Esc or a click elsewhere closes it.</p>
-        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Delivery slot" data-tip="What is this?" data-help="Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00.">i</button></div>
+        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" aria-label="About Delivery slot" data-help="Choose when the driver can come. Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00."></button></div>
         <p class="hint">More examples sit next to Email, Password, Copies, and Image quality on the Pickers tab.</p></div>
       <div class="spec"><h3>Text field</h3>
         <p class="rule">Help goes in the placeholder, not under the field. Nothing appears under the field, errors included: an error colours the border and shows a small red "!" at the end of the field, and its message (how to fix it) pops up while the field has focus, or on hovering or clicking the "!". When the form is sent with errors, the focus goes to the first wrong field, so its message shows. Buttons can sit inside the field, at the start or the end. A read-only field (Customer ID) has no border and a soft tint: you can focus it, select and copy its text, but not change it. A disabled field (Promo code) is faded and can't be focused.</p>
-        <div class="field"><div class="label-row"><label for="tf-email">Email</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Email" data-tip="What is this?" data-help="We send invoices and delivery notices here. We never share it.">i</button></div>
+        <div class="field"><div class="label-row"><label for="tf-email">Email</label><button type="button" class="info-tip" aria-label="About Email" data-help="We send invoices and delivery notices here. We never share it."></button></div>
           <input id="tf-email" class="input" type="email" value="ana.morales@" placeholder="name@example.com" aria-describedby="tf-email-err">
           <span class="error" id="tf-email-err" hidden>Enter a full address, like name@example.com.</span></div>
-        <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Password" data-tip="What is this?" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess.">i</button></div>
+        <div class="field"><div class="label-row"><label for="tf-pw">Password</label><button type="button" class="info-tip" aria-label="About Password" data-help="Use at least 8 characters. Mixing words and numbers makes it harder to guess."></button></div>
           <div class="input-group"><input id="tf-pw" class="input" type="password" value="giralda-2026" placeholder="At least 8 characters">
             <button class="btn" type="button" id="pw-toggle" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><span class="icon" data-icon="eye"></span></button></div></div>
         <div class="field"><label for="tf-ro">Customer ID</label>
@@ -374,7 +377,7 @@
         <div class="doc-demo"><div id="fb-bar"></div><div class="doc-text" id="fb-doc" tabindex="0" aria-label="Letter"></div></div></div>
       <div class="spec"><h3>Spin button</h3>
         <p class="rule">A number in a range. Arrow keys or the buttons inside the field step it; holding a button repeats, slowly then faster. Page Up and Page Down step 10 times, Home and End go to the limits. A value out of range shows an error (red border and "!") instead of being corrected. Both "," and "." work as the decimal mark.</p>
-        <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
+        <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" aria-label="About Copies" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again."></button></div>
           <div class="input-group spin">
             <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
             <input id="spin" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="99" data-step="1" value="2" aria-describedby="spin-err">
@@ -407,7 +410,7 @@
         <p class="rule">A value in a range where the exact number matters less. Arrow keys step it, Page Up and Page Down jump.</p>
         <div class="field"><label for="sl-vol">Volume</label>
           <div class="slider-row"><input id="sl-vol" type="range" min="0" max="100" value="60"><output for="sl-vol" id="sl-vol-out">60%</output></div></div>
-        <div class="field"><div class="label-row"><label for="sl-q">Image quality</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Image quality" data-tip="What is this?" data-help="Higher quality makes sharper images and larger files. Medium suits most screens.">i</button></div>
+        <div class="field"><div class="label-row"><label for="sl-q">Image quality</label><button type="button" class="info-tip" aria-label="About Image quality" data-help="Higher quality makes sharper images and larger files. Medium suits most screens."></button></div>
           <input id="sl-q" type="range" min="1" max="5" step="1" value="3" list="q-ticks" aria-valuetext="Medium">
           <datalist id="q-ticks"><option value="1"><option value="2"><option value="3"><option value="4"><option value="5"></datalist>
           <div class="ticks" aria-hidden="true"><span>Draft</span><span>Low</span><span>Medium</span><span>High</span><span>Best</span></div></div></div>
@@ -488,7 +491,7 @@
   <div role="tabpanel" id="feedback" aria-labelledby="t-feedback" hidden>
     <div class="specimens">
       <div class="spec"><h3>Tooltips</h3>
-        <p class="rule">Appear after half a second of hover, or at once on keyboard focus. Esc hides them. They never hold the only copy of important text. On touch screens there are no tooltips: the Help button at the top opens a dialog that lists every element of the view with its tooltip and a short explanation (turn on Touch preview to try it).</p>
+        <p class="rule">Appear after half a second of hover, or at once on keyboard focus. Esc hides them. They never hold the only copy of important text. On touch screens there are no tooltips: the Help button (?) of each view opens its card, which explains every button (Help tab).</p>
         <div class="row">
           <button class="btn" aria-label="Print" data-tip="Print (Ctrl+P)"><span class="icon" data-icon="print"></span></button>
           <button class="btn icon-btn" aria-label="Settings" data-tip="Settings"><span class="icon" data-icon="settings"></span></button>
@@ -512,6 +515,45 @@
         <div class="state-box"><p class="state-msg"><span class="busy" aria-hidden="true"></span>Loading…</p></div>
         <div class="state-box"><p class="state-msg">No messages</p></div>
         <p class="error">Could not load the messages. Check the connection.</p></div>
+    </div>
+  </div>
+
+  <!-- ===== HELP ===== -->
+  <div role="tabpanel" id="help" aria-labelledby="t-help" hidden>
+    <div class="specimens">
+      <div class="spec" style="grid-column: 1 / -1"><h3>Help button and card</h3>
+        <p class="rule">Every view has a round Help button (?), on every device, last in its title row. It opens the view's card: what the view is for, See the tour, then one row per button with a small copy of the button, its tooltip in bold and a sentence written by hand. Rows come in groups under a line and a subtitle; a row may explain a gesture with no button behind it. A button this layout lacks is left out. The card never opens on its own (a home page may, until Don't show again). Try the ? of this small Photos view.</p>
+        <div class="files-demo">
+          <header id="hd-head">
+            <h2>Photos</h2>
+            <div role="toolbar" aria-label="Photo tools">
+              <div class="tb-group"><button class="btn primary" id="hd-add" aria-label="Add photos" data-tip="Add photos (Alt+N)"><span class="icon" data-icon="plus"></span></button>
+                <button class="btn" id="hd-show" data-toggle aria-pressed="false" aria-label="Slide show" data-tip="Slide show"><span class="icon" data-icon="play"></span></button></div>
+              <div class="tb-group tb-sys"><button class="btn" id="hd-more" popovertarget="hd-menu" aria-label="More" data-tip="More"><span class="icon" data-icon="more"></span></button>
+                <button class="btn" id="hd-help" aria-label="Help" data-tip="Help"><span class="icon" data-icon="help"></span></button></div>
+            </div></header>
+          <div class="panel menu" popover id="hd-menu" role="menu" aria-label="More">
+            <button role="menuitem" data-act="export" id="hd-export"><span class="icon" data-icon="share"></span>Export all</button>
+            <button role="menuitem" class="danger" data-act="empty"><span class="icon" data-icon="trash"></span>Empty the album</button>
+          </div>
+          <ul class="hd-list" id="hd-list" aria-label="Photos"><li class="state-msg">No photos yet</li></ul>
+        </div>
+        <p class="out" id="hd-out"></p></div>
+      <div class="spec"><h3>Guided tour</h3>
+        <p class="rule">Started only from the card's See the tour, or a Help menu. The page dims except one lit element with a ring; the bubble says what it does, with Back, Next and "2 of 7". Nothing is skipped: a row inside a menu is reached by opening the menu, a button that is not there yet gets a dashed ring where it will appear, and a thing to try is tapped by the user (Next taps it for them). Right goes on, Left goes back, Esc ends. It always ends on the Help button.</p>
+        <div class="row"><button class="btn text bordered sm" id="hd-tour"><span class="icon" data-icon="play"></span><span class="label">Take the Photos tour</span></button></div></div>
+      <div class="spec"><h3>First-visit marks</h3>
+        <p class="rule">Once per site, the first time anyone opens a page: a ring and one sentence on the two things a newcomer never finds alone. The × counts down from 9 first, and Esc waits too, so they are read. Seen when the count ends. Here they show every time.</p>
+        <div class="row"><button class="btn text bordered sm" id="hd-coach"><span class="icon" data-icon="info"></span><span class="label">Show the marks</span></button></div></div>
+      <div class="spec"><h3>Help menu</h3>
+        <p class="rule">A document app may make its ? a menu: its own entries (Statistics, Keyboard shortcuts), then the card as Toolbar buttons and See the tour, which Ayni gives.</p>
+        <div class="row"><button class="btn" id="hm-btn" popovertarget="hm-menu" aria-label="Help" data-tip="Help"><span class="icon" data-icon="help"></span></button></div>
+        <div class="panel menu" popover id="hm-menu" role="menu" aria-label="Help"></div>
+        <p class="out" id="hm-out"></p></div>
+      <div class="spec"><h3>Info label</h3>
+        <p class="rule">A small "i" after a label opens one or two sentences. With a mouse it opens on hover and a click pins it; on touch a tap opens it. A second tap, a tap elsewhere, Esc or a scroll closes it; in a dialog, Esc closes only the popup. Line breaks stay and web addresses become links. Gallery settings has one too.</p>
+        <div class="row"><span class="static">Delivery slot</span><button type="button" class="info-tip" aria-label="About Delivery slot" data-help="Choose when the driver can come.
+Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.org/routes"></button></div></div>
     </div>
   </div>
 
@@ -566,12 +608,12 @@
         <p class="rule">Drag the bar to resize the two panes. In its middle, two small arrows send the bar to either end, hiding that pane, and the dot between them puts both panes back to their default sizes. An arrow is disabled when its pane is already hidden, and when the bar is too short only the dot shows. Shortcuts: focus the bar and use the arrow keys (Left and Right side by side, Up and Down top and bottom), Home and End for the limits, Enter to hide or show the first pane; a double-click also resets.</p>
         <div class="split" id="split" data-default="35">
           <div class="pane"><ul class="log" style="list-style:none;margin:0;padding:0;line-height:1.9"><li>Invoices</li><li>Contracts</li><li>Pictures</li><li>Music</li></ul></div>
-          <div class="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize" data-help="Drag the bar to resize the panes, or use the arrow keys. Enter hides or shows the left pane; a double-click resets both panes."></div>
+          <div class="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize"></div>
           <div class="pane"><p style="margin:0">Invoices holds 24 files. Select one on the left to preview it here.</p></div>
         </div>
         <div class="split rows" id="split-rows" data-default="50">
           <div class="pane"><p style="margin:0">Message list: 12 unread.</p></div>
-          <div class="splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Resize top and bottom panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize" data-help="Drag the bar to resize the panes, or use the arrow keys. Enter hides or shows the top pane; a double-click resets both panes."></div>
+          <div class="splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Resize top and bottom panes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" data-tip="Drag to resize"></div>
           <div class="pane"><p style="margin:0">Preview of the selected message.</p></div>
         </div></div>
       <div class="spec"><h3>States</h3>
@@ -625,7 +667,6 @@
 </section>
 
 <!-- Shared layers used by ayni.js (it creates them when a page leaves them out): help popup for info labels, field error popup -->
-<div class="panel popup help" popover id="ayni-help" role="dialog" aria-label="Help"></div>
 <div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>
 <div class="panel menu" popover id="m-filter" role="menu" aria-label="Filter">
   <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all">All fruits</button>
@@ -733,17 +774,11 @@
     <div class="body"><div class="msg info"><span class="icon" data-icon="info"></span><p>3 files were uploaded to Invoices.</p></div></div>
   </form>
 </dialog>
-<dialog class="panel" id="dlg-help" aria-labelledby="dh-t">
-  <form method="dialog" style="display:contents">
-    <header><h2 id="dh-t">Help</h2><button class="btn" value="close" data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
-    <div class="body" id="dh-body"></div>
-  </form>
-</dialog>
 <dialog class="panel" id="dlg-settings" aria-labelledby="ds-t">
   <form method="dialog" style="display:contents">
     <header><h2 id="ds-t">Gallery settings</h2><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></header>
     <div class="body">
-      <label class="switch">Compact spacing<input type="checkbox" role="switch" id="set-compact"></label>
+      <label class="switch">Compact spacing<button type="button" class="info-tip" aria-label="About Compact spacing" data-help="Less room between the specimens, so more of them fit on the screen."></button><input type="checkbox" role="switch" id="set-compact"></label>
       <label class="switch">Show status bar<input type="checkbox" role="switch" id="set-status" checked></label>
       <p class="hint">Changes apply as you make them.</p>
     </div>

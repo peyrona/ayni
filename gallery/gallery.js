@@ -380,7 +380,7 @@ const iconUse = {
   'arrow-down': 'Tree menu', 'arrow-up': 'Tree menu', calendar: 'Date field', check: 'Menus', 'chev-down': 'Calendar',
   'chev-right': 'Tree, calendar', close: 'Notifications, search, tabs', copy: 'Tree menu', cut: 'Tree menu', edit: 'Tree menu',
   error: 'Notifications', eye: 'Password, tree', 'eye-off': 'Password, tree', file: 'Tree', filter: 'Search field', folder: 'Tree',
-  help: 'Help on touch', info: 'Notifications', minus: 'Number field', ok: 'Notifications', paste: 'Tree menu',
+  help: 'Help button, Help menu', info: 'Notifications', minus: 'Number field', ok: 'Notifications', paste: 'Tree menu', play: 'Help card, tour',
   plus: 'Number field, tree', search: 'Search field', today: 'Calendar', trash: 'Tree menu', undo: 'Undo notification', warn: 'Notifications',
 };
 $('#icon-grid').innerHTML = Ayni.icons.names.map((n) => `<div class="icon-cell">${Ayni.icon(n)}<b>${n}</b><small>${iconUse[n]}</small></div>`).join('');
@@ -415,15 +415,56 @@ Ayni.dateField($('#date-f'), { popup: $('#cal-pop'), onChange: (d) => status('De
   Ayni.dateTimeField($('#dt-f'), { popup: $('#dt-pop'), value: new Date(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours() + 1, 0),
     onChange: (d) => status('Appointment: ' + formatDateTime(d)) }); }
 
-/* ---------- Help on touch: the Window controls, then each specimen of the current tab ---------- */
-$('#help-btn').addEventListener('click', () => {
-  const page = $('.gallery > [role="tabpanel"]:not([hidden])'), tabName = $('#tabs [aria-selected="true"]').textContent.trim();
-  $('#dh-t').textContent = 'Help: ' + tabName;
-  Ayni.fillHelp($('#dh-body'), [
-    ...$$('.gallery > header [data-tip], #tabs [data-tip]').map((el) => ['Window', el]),
-    ...$$('[data-tip]', page).map((el) => [$('h3', el.closest('.spec') || page)?.textContent || tabName, el]),
+/* ---------- Help: the page's card (the ? at the top), and the Help tab's demos ---------- */
+Ayni.help({
+  title: 'Ayni Components',
+  lead: 'Every control of the Ayni library, family by family. Each tab is one family; each box shows one control with its rules.',
+  rows: [
+    { sel: '#tabs', icon: 'layout', name: 'Families', text: 'One tab per family of controls. Left and Right switch tabs.' },
+    { sel: '#theme-btn', text: 'Switches between light and dark colours.' },
+    { sel: '#sim-touch', icon: 'sliders', name: 'Touch preview', text: 'Shows the touch layout with a mouse: bigger targets, no tooltips.' },
+    { sel: '#help-btn', text: 'Opens this card.' },
+  ],
+  tip: 'The Help tab shows the card, the tour and the first-visit marks of a small view.',
+  tour: ['rows'],
+});
+
+/* The Photos view's own card: rows from its buttons, a group, a gesture with no button, a row inside its menu */
+const hdSay = (m) => { say('hd-out', m); status(m); };
+const photosCard = {
+  title: 'Photos',
+  lead: ['Your photos, newest first.', 'A small view to show the Help card and the tour.'],
+  rows: [
+    { sel: '#hd-add', text: 'Adds photos from this device.' },
+    { sel: '#hd-show', text: 'Plays the photos one after another. Press it again to stop.', tour: { tap: true } },
+    { sel: '#hd-more', text: 'Export and Empty the album.' },
+    { sel: '#hd-export', name: 'More → Export all', text: 'Saves every photo in one file.', tour: { open: '#hd-more' } },
+    { section: 'In the list' },
+    { icon: 'check', name: 'Pick photos', text: 'Click a photo to pick it; Ctrl+click picks more. On touch, hold a photo.', tour: { sel: '#hd-list li:not(.state-msg)', ghost: '#hd-list' } },
+  ],
+  tip: 'Tip: drag photos from your computer onto the list.',
+  tour: ['rows'],
+};
+$('#hd-help').addEventListener('click', () => Ayni.help.show(photosCard));
+$('#hd-tour').addEventListener('click', () => Ayni.tour(photosCard.tour, photosCard));
+$('#hd-add').addEventListener('click', () => hdSay('Add photos'));
+$('#hd-show').addEventListener('click', () => hdSay('Slide show ' + ($('#hd-show').getAttribute('aria-pressed') === 'true' ? 'on' : 'off')));
+$('#hd-menu').addEventListener('ayni:action', (e) => hdSay('More → ' + e.detail.item.textContent.trim()));
+$('#hd-coach').addEventListener('click', () => Ayni.coach([
+  { sel: '#hd-add', text: 'Add your first photos here.' },
+  { sel: '#hd-help', text: 'The question mark opens the help; from there a guided tour shows each button.' },
+], { key: 'ayni-gallery-coach', force: true }));
+/* A Help menu: the page's own entries, then the card and the tour as Ayni gives them */
+$('#hm-menu').addEventListener('beforetoggle', (e) => {
+  if (e.newState !== 'open') return;
+  const said = (m) => () => { say('hm-out', m); status(m); };
+  Ayni.fillMenu($('#hm-menu'), [
+    { id: 'stats', label: 'Statistics', icon: 'list', run: said('Help → Statistics') },
+    { id: 'keys', label: 'Keyboard shortcuts', icon: 'text', run: said('Help → Keyboard shortcuts') },
+    { sep: true },
+    ...Ayni.help.items(),
   ]);
-}, true);
+});
 
 /* ---------- Touch preview: lets a mouse try the touch layout; on a real touch device it shows on and locked ---------- */
 const coarse = matchMedia('(pointer: coarse)'), sim = $('#sim-touch');
