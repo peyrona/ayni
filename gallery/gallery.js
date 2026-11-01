@@ -65,7 +65,7 @@ $('#dlg-form').addEventListener('close', () => {
   say('dlg-out', m); status(m);
 });
 $('#open-modeless').onclick = () => { const d = $('#dlg-find'); d.open ? d.close() : d.show(); $('#dfi-q').focus(); };
-$('#find-all').onclick = () => status(`Listed all matches for "${$('#dfi-q').value}"`);
+$('#find-all').onclick = () => status('Cleared the list of files found');
 /* Built in code */
 $('#code-confirm').onclick = async () => {
   const yes = await Ayni.confirm({ title: 'Delete report.pdf?', body: 'The file goes to the bin.\nYou can restore it for 30 days.', confirm: 'Delete', danger: true });
@@ -77,7 +77,7 @@ $('#code-ask').onclick = async () => {
   const m = name ? `Created folder ${name}` : 'No folder created'; say('dlg-out', m); status(m);
 };
 $('#code-alert').onclick = () => Ayni.alert({ title: 'Upload complete', body: '3 files were uploaded to Invoices.' });
-$('#find-next').onclick = () => { const m = `Find next: "${$('#dfi-q').value}"`; say('dlg-out', m); status(m); };
+$('#find-next').onclick = () => { const m = `Searched for "${$('#dfi-q').value}" in ${$('#dfi-in').value}`; say('dlg-out', m); status(m); };
 
 /* ---------- Buttons ---------- */
 const all = $('#chk-all'), subs = $$('.chk-sub');
@@ -91,7 +91,7 @@ document.addEventListener('ayni:press', (e) => { say('alt-out', e.detail.label);
 const reportList = (lb) => {
   const sel = $$('[role="option"][aria-selected="true"]', lb).map((o) => o.textContent.trim());
   say(lb.id + '-out', 'Selected: ' + (sel.join(', ') || 'none'));
-  if (lb.getAttribute('aria-multiselectable') === 'true') $('#sb-sel').textContent = sel.length ? `${sel.length} file${sel.length > 1 ? 's' : ''} selected` : 'No selection';
+  if (lb.id === 'lb-multi') $('#sb-sel').textContent = sel.length ? `${sel.length} file${sel.length > 1 ? 's' : ''} selected` : 'No selection';
 };
 $$('.lb').forEach((lb) => { lb.addEventListener('ayni:change', () => reportList(lb)); reportList(lb); });
 /* List picker: what the form would send */
@@ -131,6 +131,75 @@ $('#tree-ed').addEventListener('ayni:load', (e) => setTimeout(() => e.detail.don
   { name: '2024', children: [{ name: 'taxes-2024.pdf', leaf: true }] },
   { name: '2025', children: [{ name: 'taxes-2025.pdf', leaf: true }] },
 ]), 900));
+/* ---------- Item list beside a folder tree: Ayni.list, a navigation tree, drag and drop, Move to… ---------- */
+const ilFolders = { id: 'home', name: 'My files', icon: 'home', children: [
+  { id: 'docs', name: 'Documents', children: [{ id: 'inv', name: 'Invoices' }, { id: 'con', name: 'Contracts' }] },
+  { id: 'pics', name: 'Pictures' }, { id: 'music', name: 'Music' }] };
+let ilFiles = [['notes.txt', '2 KB', 'home'], ['todo.txt', '1 KB', 'home'], ['budget-2026.xlsx', '48 KB', 'home'], ['plan-2027.pdf', '310 KB', 'home'],
+  ['receipt-0912.pdf', '96 KB', 'home'], ['summary.txt', '3 KB', 'home'], ['report-q3.docx', '120 KB', 'docs'], ['letter.docx', '22 KB', 'docs'],
+  ['2026-09.pdf', '80 KB', 'inv'], ['2026-10.pdf', '82 KB', 'inv'], ['rental.pdf', '400 KB', 'con'], ['beach.jpg', '2.1 MB', 'pics'],
+  ['giralda.jpg', '1.8 MB', 'pics'], ['song.mp3', '4.4 MB', 'music']].map(([name, size, at], i) => ({ id: 'f' + i, name, size, at }));
+let ilHere = 'home', ilN = ilFiles.length;
+const ilOpen = { home: true }, ilFlat = {};
+(function walk(n) { ilFlat[n.id] = n; n.children?.forEach(walk); })(ilFolders);
+const ilFile = (id) => ilFiles.find((f) => f.id === id);
+const ilWhat = (ids) => (ids.length === 1 ? ilFile(ids[0]).name : ids.length + ' files');
+const ilSay = (m) => { say('il-out', m); status(m); };
+const ilCounted = (n) => ({ ...n, count: ilFiles.filter((f) => f.at === n.id).length || null, children: n.children?.map(ilCounted) });
+const ilRowsEl = $('#il-rows');
+const ilDraw = () => {
+  $('#il-title').textContent = ilFlat[ilHere].name;
+  const mine = ilFiles.filter((f) => f.at === ilHere);
+  ilRowsEl.innerHTML = mine.map((f) => `<div class="il-row" data-id="${f.id}" data-name="${f.name}">${Ayni.icon('file')}<span>${f.name}</span><span class="sz">${f.size}</span></div>`).join('')
+    || '<p class="state-msg">No files</p>';
+  ilTree.build();
+};
+const ilMove = (ids, to) => {
+  const from = ids.map((id) => [ilFile(id), ilFile(id).at]);
+  from.forEach(([f]) => (f.at = to)); ilDraw();
+  Ayni.toast('ok', `Moved ${ilWhat(ids)} to ${ilFlat[to].name}`, { undo: () => { from.forEach(([f, at]) => (f.at = at)); ilDraw(); } });
+  ilSay(`Moved ${ilWhat(ids)} to ${ilFlat[to].name}`);
+};
+const ilNewFile = () => {
+  const f = { id: 'f' + ilN, name: `new-${++ilN}.txt`, size: '0 KB', at: ilHere }; ilFiles.push(f); ilDraw();
+  ilList.set([f.id]); ilList.focus(f.id); ilSay('Created ' + f.name);
+};
+const ilTree = Ayni.tree($('#il-tree'), { nav: true, items: () => [ilCounted(ilFolders)], sheet: $('#il-pane'),
+  isOpen: (id) => !!ilOpen[id], setOpen: (id, v) => { ilOpen[id] = v; },
+  current: () => ilHere, go: (id) => { ilHere = id; ilDraw(); ilSay('Opened the folder ' + ilFlat[id].name); },
+  menu: (id, x, y) => Ayni.menuAt([{ id: 'open', label: 'Open', icon: 'folder', run: () => { ilHere = id; ilDraw(); } }], { x, y }),
+  drop: { can: (ids, id) => (ids.every((x) => ilFile(x)?.at === id) ? { zone: 'inside', ok: false } : 'inside'),
+    drop: (ids, id, zone, e, ok) => (ok ? ilMove(ids, id) : Ayni.toast('info', `${ilWhat(ids)}: already in ${ilFlat[id].name}`)) } });
+const ilOne = (ids) => ids.length === 1;
+const ilList = Ayni.list(ilRowsEl, { bar: '#il-bar', row: '.il-row', tree: ilTree,
+  actions: [
+    { id: 'open', label: 'Open', icon: 'eye', key: 'Enter', when: ilOne, run: (ids) => ilSay('Opened ' + ilFile(ids[0]).name) },
+    { id: 'rename', label: 'Rename', icon: 'edit', key: 'F2', rank: 5, group: 1, when: ilOne, why: () => 'Pick only one file to rename',
+      run: async (ids) => { const f = ilFile(ids[0]), v = await Ayni.ask({ title: 'Rename ' + f.name, value: f.name }); if (v) { f.name = v.trim(); ilDraw(); ilSay('Renamed to ' + f.name); } } },
+    { id: 'move', label: 'Move to…', icon: 'folder', rank: 3, group: 1,
+      run: async (ids) => { const to = await Ayni.pickNode({ title: `Move ${ilWhat(ids)} to`, items: () => [ilFolders], current: ilHere, disabled: (id) => id === ilHere,
+        note: (lit) => (lit ? 'Into ' + ilFlat[lit].name : 'Pick a folder') }); if (to) ilMove(ids, to); } },
+    { id: 'delete', label: 'Delete', icon: 'trash', key: 'Del', rank: 2, group: 2, danger: true,
+      run: (ids) => { const gone = ilFiles.filter((f) => ids.includes(f.id)); ilFiles = ilFiles.filter((f) => !ids.includes(f.id)); ilDraw();
+        Ayni.toast('ok', 'Deleted ' + (gone.length === 1 ? gone[0].name : gone.length + ' files'), { undo: () => { ilFiles = ilFiles.concat(gone); ilDraw(); } }); } },
+  ],
+  area: [{ id: 'new', label: 'New file', icon: 'plus', key: 'Alt+N', run: ilNewFile }],
+  open: (id) => ilSay('Opened ' + ilFile(id).name),
+  drag: { text: (ids) => ids.map((id) => ilFile(id).name).join('\n') },
+  onSelect: (ids) => status(ids.length ? `Picked ${ilWhat(ids)}` : 'Nothing picked') });
+$('#il-new').addEventListener('click', ilNewFile);
+$('#il-treebtn').addEventListener('click', () => ilTree.openSheet());
+$('#il-help').addEventListener('click', () => ilSay('Help: see the text above the demo'));
+ilDraw();
+Ayni.fitBar('#il-head');
+
+/* Pick list with an Everybody switch above it */
+const people = $('#pl-people'), plAll = $('#pl-all');
+plAll.addEventListener('change', () => {
+  people.setAttribute('aria-disabled', plAll.checked); people.tabIndex = plAll.checked ? -1 : 0;
+  say('pl-people-out', plAll.checked ? 'Shared with everybody, also people who join later' : 'Shared with the people picked');
+});
+
 const showHidden = $('#tree-ed-hidden');
 showHidden.addEventListener('change', () => projectTree.showHidden(showHidden.checked));
 $('#tree-ed').addEventListener('ayni:showhidden', (e) => { showHidden.checked = e.detail.on; status('Hidden items ' + (e.detail.on ? 'shown' : 'hidden')); });
@@ -142,18 +211,99 @@ email.addEventListener('blur', checkEmail); email.addEventListener('input', () =
 const fruits = ['Apple', 'Apricot', 'Banana', 'Cherry', 'Fig', 'Grape', 'Lemon', 'Mango', 'Orange', 'Pear', 'Plum'];
 const groups = { citrus: ['Lemon', 'Orange'], orchard: ['Apple', 'Apricot', 'Fig', 'Pear', 'Plum'], tropical: ['Banana', 'Mango'], berries: ['Cherry', 'Grape'] };
 let fruitGroup = 'all';
-const sf = $('#sf'), filter = () => {
-  const q = sf.value.trim().toLowerCase();
-  const r = fruits.filter((f) => f.toLowerCase().includes(q) && (fruitGroup === 'all' || groups[fruitGroup].includes(f)));
+const sf = $('#sf'), sfApi = Ayni.searchField(sf.parentElement);
+const filter = () => {
+  const m = Ayni.matcher(sf.value), all = fruits.filter((f) => fruitGroup === 'all' || groups[fruitGroup].includes(f));
+  const r = all.filter((f) => !m || m(f));
+  sfApi.count(m ? `${r.length} / ${all.length}` : '');
   say('sf-out', r.length ? r.join(' · ') : 'No matches. Try another word or filter.');
 };
 $('#m-filter').addEventListener('ayni:choose', (e) => {
-  fruitGroup = e.detail.dataset.f; const b = $('#sf-filter');
-  b.dataset.tip = 'Filter: ' + e.detail.dataset.act.toLowerCase(); b.classList.toggle('is-active', fruitGroup !== 'all'); filter();
+  fruitGroup = e.detail.dataset.f;
+  sfApi.filtered(fruitGroup !== 'all' && e.detail.dataset.act.toLowerCase()); filter();
 });
-sf.addEventListener('input', filter);
-$('#sf-go').onclick = () => { filter(); sf.focus(); status(`Searched for "${sf.value}"`); };
+sf.parentElement.addEventListener('ayni:search', filter);
 filter();
+
+/* Folded search in a title row: the count is shown / all */
+const mails = ['Invoice March – Telefónica', 'Train tickets to Málaga', 'Re: dinner on Friday', 'Your parcel is on its way',
+  'Photos from the trip', 'Invoice April – Iberdrola', 'Meeting moved to Monday', 'Newsletter: autumn recipes'];
+const foldApi = Ayni.searchField($('#fold-q').parentElement);
+const showMails = (m) => {
+  const r = mails.filter((t) => !m || m(t));
+  $('#fold-list').replaceChildren(...r.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+  foldApi.count(m ? `${r.length} / ${mails.length}` : '');
+};
+$('#fold-q').parentElement.addEventListener('ayni:search', (e) => showMails(e.detail.test));
+Ayni.fitBar('#fold-head');
+showMails(null);
+
+/* Hits in place: nothing hides, the hits are marked and the current one ringed */
+const lines = ['Shall we take the train on Friday?', 'Yes! The 9:15 train is cheapest.', 'I booked two seats.',
+  'Great. Bring the tickets, please.', 'The train was late, sorry!', 'No problem, see you at the station.'];
+$('#step-list').replaceChildren(...lines.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+let hits = [], at = -1;
+const markHits = () => {
+  const lis = $$('#step-list li');
+  lis.forEach((li, i) => { li.classList.toggle('hit', hits.includes(i)); li.classList.toggle('current', hits[at] === i); });
+  if (at >= 0) lis[hits[at]].scrollIntoView({ block: 'nearest' });
+  stepApi.count($('#step-q').value ? (hits.length ? `${at + 1} / ${hits.length}` : '0') : '');
+  stepApi.canStep(hits.length > 0);
+};
+const stepApi = Ayni.searchField($('#step-f'), {
+  step: (d) => { if (hits.length) { at = (at + d + hits.length) % hits.length; markHits(); } },
+});
+$('#step-f').addEventListener('ayni:search', (e) => {
+  const m = e.detail.test;
+  hits = m ? lines.map((t, i) => (m(t) ? i : -1)).filter((i) => i >= 0) : [];
+  at = hits.length ? 0 : -1; markHits();
+});
+
+/* Search on Enter: the words go to the "server" only on Enter or Go */
+const words = { casa: 'house, home', gato: 'cat', perro: 'dog', libro: 'book', mesa: 'table' };
+$('#dict-q').parentElement.addEventListener('ayni:search', (e) => {
+  const t = e.detail.text.trim(), w = Ayni.fold(t);
+  say('dict-out', !w ? '' : words[w] ? `${t}: ${words[w]}` : `"${t}" is not in this little dictionary`);
+  if (w) status(`Looked up "${t}"`);
+});
+
+/* Find bar: the page finds, marks and replaces; Ayni draws the bar and keeps its keys */
+let letter = 'Dear Ana, thank you for the photos of the trip. The photos from the beach are lovely, and the one of the old harbour is my favourite. Could you send me the Photos folder link again? The last link no longer works. Love, Marta';
+const doc = $('#fb-doc');
+let found = [], cur = -1, fq = '', mc = false;
+const look = () => {
+  found = [];
+  if (!fq) return;
+  const hay = mc ? letter : letter.toLowerCase(), n = mc ? fq : fq.toLowerCase();
+  for (let i = hay.indexOf(n); i >= 0; i = hay.indexOf(n, i + n.length)) found.push(i);
+};
+const paintDoc = () => {
+  doc.replaceChildren();
+  let from = 0;
+  found.forEach((i, n) => {
+    const mk = document.createElement('mark');
+    mk.textContent = letter.slice(i, i + fq.length); if (n === cur) mk.className = 'current';
+    doc.append(letter.slice(from, i), mk); from = i + fq.length;
+  });
+  doc.append(letter.slice(from));
+  $('mark.current', doc)?.scrollIntoView({ block: 'nearest' });
+  fb.count(cur + 1, found.length);
+};
+const fb = Ayni.findBar($('#fb-bar'), {
+  find: (text, { matchCase }) => { fq = text; mc = matchCase; look(); cur = found.length ? 0 : -1; paintDoc(); },
+  step: (d) => { if (found.length) { cur = (cur + d + found.length) % found.length; paintDoc(); } },
+  replace: (text, all) => {
+    if (!found.length) return;
+    const keep = Math.max(cur, 0), n = all ? found.length : 1;
+    (all ? [...found].reverse() : [found[keep]]).forEach((i) => { letter = letter.slice(0, i) + text + letter.slice(i + fq.length); });
+    look(); cur = found.length ? Math.min(keep, found.length - 1) : -1; paintDoc();
+    status(`Replaced ${n} ${n === 1 ? 'match' : 'matches'}`);
+  },
+  selected: () => (doc.contains(getSelection().anchorNode) ? getSelection().toString() : ''),
+  onClose: () => { fq = ''; found = []; cur = -1; paintDoc(); doc.focus(); },
+});
+$('#fb-open').onclick = () => fb.open(false);
+paintDoc();
 let timer;
 $('#pg-start').onclick = () => {
   const pg = $('#pg'); clearInterval(timer); pg.value = 0;

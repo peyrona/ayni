@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni search family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus (for the title row that fits) and search
+     families, and nothing else. #demo opens the find bar with its replace row and the folded search (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-search.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-search.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  /* Everything the fields tell, in order */
+  document.addEventListener('ayni:search', (e) => L.push(`search ${e.target.id}:${e.detail.text}:${e.detail.test ? 'test' : 'null'}`));
+  document.addEventListener('ayni:searchclose', (e) => L.push('close ' + e.target.id));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') L.push('esc reached the page'); });
+  window.plain = Ayni.searchField($('#plain'), { filter: () => L.push('filter pressed') });
+  window.fold = Ayni.searchField($('#fold'));
+  window.fold2 = Ayni.searchField($('#fold2'), { onClose: () => L.push('onClose fold2') });
+  window.step = Ayni.searchField($('#step'), { step: (d) => L.push('step ' + d) });
+  Ayni.searchField($('#notip'), { tip: false });
+  window.fb = Ayni.fitBar('#hd');
+  /* The document under the find bar: the page finds and counts */
+  const text = 'One fish, two fish, red Fish, blue fish.';
+  let found = [], at = 0;
+  window.bar = Ayni.findBar($('#fb'), {
+    find: (q, { matchCase }) => {
+      L.push(`find ${q}:${matchCase}`);
+      found = []; if (q) { const h = matchCase ? text : text.toLowerCase(), n = matchCase ? q : q.toLowerCase(); for (let i = h.indexOf(n); i >= 0; i = h.indexOf(n, i + 1)) found.push(i); }
+      at = found.length ? 1 : 0; bar.count(at, found.length);
+    },
+    step: (d) => { L.push('fstep ' + d); if (found.length) { at = ((at - 1 + d + found.length) % found.length) + 1; bar.count(at, found.length); } },
+    replace: (q, all) => L.push(`replace ${q}:${all}`),
+    selected: () => window.SEL || '',
+    onClose: () => { L.push('fb closed'); $('#doc').focus(); },
+  });
+  window.bare = Ayni.findBar($('#fb2'), { find: () => {} });
+  if (location.hash === '#demo') {
+    bar.open(true, 'fish'); $('#fb .find-replace input').value = 'cat'; $('#fb input').focus();
+    fold.open(); $('#fold input').value = 'invoice'; fold.count('2 / 8');
+    plain.filtered(2); $('#plain input').value = 'apple'; $('#plain input').dispatchEvent(new Event('input', { bubbles: true })); plain.count('3 / 11');
+    step.canStep(true); $('#step input').value = 'train'; step.count('1 / 3');
+  }
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 150vh; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 0 0 12px; flex-wrap: wrap; }
+  .row > .search-field { width: 300px; }
+  #hd { display: flex; align-items: center; gap: 8px; width: 700px; max-width: 100%; border: var(--panel-border); padding: 4px 8px; }
+  #hd > h2 { flex: 1 0 auto; margin: 0; font-size: 1rem; white-space: nowrap; }
+  #docbox { width: 700px; max-width: 100%; border: var(--panel-border); margin-bottom: 12px; }
+  #doc { padding: 12px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <input class="input" id="fld" aria-label="Another field" style="width:200px">
+  <!-- A plain live field with a filter button made in code -->
+  <div class="input-group search-field" id="plain"><input class="input" type="search" aria-label="Search fruits"></div>
+  <!-- One that steps through hits -->
+  <div class="input-group search-field" id="step"><input class="input" type="search" aria-label="Find in the chat"></div>
+</div>
+<div class="row">
+  <!-- Search on Enter: Go made by Ayni, and the page's own Go -->
+  <div class="input-group search-field" data-enter id="enter"><input class="input" type="search" aria-label="Dictionary"></div>
+  <div class="input-group search-field" data-enter id="enter2"><input class="input" type="search" aria-label="Server search"><button class="btn" type="button" data-go id="own-go" data-tip="Go"><span class="icon" data-icon="search"></span></button></div>
+  <!-- No how-to tooltip: the words go to a server with its own rules -->
+  <div class="input-group search-field" id="notip"><input class="input" type="search" aria-label="Mail server"></div>
+  <!-- A folded field with no Search button of its own -->
+  <div class="input-group search-field fold" id="fold2"><input class="input" type="search" aria-label="Search two"></div>
+  <button class="btn" id="pp-btn" popovertarget="pp" data-tip="Options"><span class="icon" data-icon="filter"></span></button>
+  <button class="btn" id="open-dlg" data-open-dialog="dlg" data-tip="Dialog…"><span class="icon" data-icon="file"></span></button>
+</div>
+
+<!-- A title row: the folded search and tools that leave by rank -->
+<header id="hd">
+  <h2>Mail</h2>
+  <div role="toolbar" aria-label="Mail tools">
+    <div class="tb-group"><button class="btn" data-search id="fold-btn" data-rank="20" data-tip="Search mail"><span class="icon" data-icon="search"></span></button><div class="input-group search-field fold" id="fold"><input class="input" type="search" aria-label="Search mail"></div></div>
+    <div class="tb-group"><button class="btn primary" id="h-new" data-rank="21" data-tip="New"><span class="icon" data-icon="plus"></span></button><button class="btn" id="h-a" data-rank="22" data-tip="Alpha"><span class="icon" data-icon="cut"></span></button><button class="btn" id="h-b" data-rank="23" data-tip="Beta"><span class="icon" data-icon="copy"></span></button></div>
+  </div>
+</header>
+
+<!-- A document with its find bar -->
+<div id="docbox"><div id="fb"></div><div id="doc" tabindex="0">One fish, two fish, red Fish, blue fish.</div></div>
+<!-- A find bar with no replace -->
+<div id="docbox2"><div id="fb2"></div></div>
+
+<!-- A popup and a modal dialog, each with a plain search field -->
+<div class="panel popup controls" popover id="pp" role="dialog" aria-label="Options">
+  <div class="input-group search-field" id="pp-sf"><input class="input" type="search" aria-label="Filter by name"></div>
+</div>
+<dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+  <header><h2 id="dlg-t">Pick a person</h2><button class="btn" data-close data-tip="Close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body"><input class="input" id="dlg-other" aria-label="Note"><div class="input-group search-field" id="dlg-sf"><input class="input" type="search" aria-label="Find a person"></div></div>
+</dialog>
+</body>
+</html>

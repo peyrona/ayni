@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni lists family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus and lists families, and nothing else (no
+     ayni.js). #demo picks two files, opens Documents and shows the picked group (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-lists.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-lists.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  const say = (m) => L.push(m);
+  /* The folders: the page keeps the data and the open state */
+  window.OPEN = { home: true };
+  window.cur = 'home';
+  window.FOLDERS = { id: 'home', name: 'Home', children: [
+    { id: 'docs', name: 'Documents', count: 3, children: [{ id: 'old', name: 'Old' }, { id: 'tax', name: 'Taxes' }] },
+    { id: 'pics', name: 'Pictures', tail: { icon: 'eye', tip: 'Hide', on: true } },
+    { id: 'music', name: 'Music' },
+    { id: 'lab', name: 'Labels', heading: true, noMenu: true, children: [{ id: 'red', name: 'Red' }] }] };
+  window.nav = Ayni.tree($('#nav'), { nav: true, items: () => [FOLDERS], sheet: $('#pane'),
+    isOpen: (id) => !!OPEN[id], setOpen: (id, v) => { OPEN[id] = v; say(`open ${id} ${v}`); },
+    current: () => cur, go: (id) => { cur = id; say('go ' + id); nav.build(); },
+    tail: (id) => say('tail ' + id), keys: true, disabled: (id) => id === 'music',
+    menu: (id) => say('menu ' + id),
+    drag: (id) => (id === 'pics' ? [id] : null),
+    drop: { can: (ids, id) => (id === 'old' ? { zone: 'inside', ok: false } : 'inside'), drop: (ids, id, zone, e, ok) => say(`drop ${ids.join(',')} on ${id} ${ok}`) } });
+  /* The main list: S stars, so typing does not jump here */
+  const one = (ids) => ids.length === 1;
+  window.list = Ayni.list('#rows', { bar: '#bar', main: true, tree: nav,
+    actions: [
+      { id: 'open', label: 'Open', icon: 'file', key: 'Enter', when: one, run: (ids) => say('open ' + ids) },
+      { id: 'ren', label: 'Rename', icon: 'edit', key: 'F2', rank: 5, group: 1, when: one, why: () => 'Pick one only', run: (ids) => say('ren ' + ids) },
+      { id: 'zip', label: 'Extract', icon: 'folder', group: 1, hideOff: true, when: (ids) => ids.every((x) => x === 'z'), run: (ids) => say('zip ' + ids) },
+      { id: 'star', label: (ids) => (ids.includes('a') ? 'Unstar' : 'Star'), icon: 'plus', key: 'S', rank: 6, group: 1, run: (ids) => say('star ' + ids) },
+      { id: 'copy', label: 'Copy', icon: 'copy', key: 'Ctrl+C', group: 1, noBar: true, run: (ids) => say('copy ' + ids) },
+      { id: 'del', label: 'Delete', icon: 'trash', key: 'Del', rank: 2, group: 2, danger: true, run: (ids) => say('del ' + ids) }],
+    area: [{ id: 'new', label: 'New', icon: 'plus', key: 'Alt+N', run: () => say('new') }],
+    open: (id) => say('opened ' + id), openMiddle: (id) => say('middle ' + id),
+    pickable: (id) => id !== 'hdr',
+    drag: { text: (ids) => ids.join(',') },
+    onSelect: (ids) => say('sel ' + ids.join('')) });
+  /* A grid of cards with no letter keys: typing jumps, arrows go by place */
+  window.grid = Ayni.list('#grid', { grid: () => true, count: false,
+    actions: [{ id: 'del', label: 'Delete', icon: 'trash', key: 'Del', run: (ids) => say('gdel ' + ids) }],
+    open: (id) => say('gopen ' + id) });
+  /* The editable tree, without ayni.js */
+  window.ed = Ayni.tree($('#ed'), { root: { name: 'My files' }, items: [{ name: 'Docs', children: [{ name: 'a.txt', leaf: true }] }, { name: 'Pics' }] });
+  $('#ed').addEventListener('ayni:insert', (e) => say('insert ' + e.detail.name));
+  /* The pick list with Everybody */
+  $('#all').addEventListener('change', () => { $('#pick').setAttribute('aria-disabled', $('#all').checked); });
+  $('#pick').addEventListener('ayni:change', (e) => say('picked ' + e.detail.selected.join(',')));
+  if (location.hash === '#demo') { list.set(["b", "c"]); OPEN.docs = true; cur = 'docs'; nav.build(); }
+  window.READY = true;
+</script>
+<style>
+  body { margin: 0; padding: 16px; }
+  #hd { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: var(--panel-border); border-radius: var(--radius-m); background: var(--card); max-width: 760px; }
+  #hd > h2 { flex: 1 1 auto; margin: 0; font-size: 1rem; white-space: nowrap; }
+  .wrap { display: flex; gap: 0; max-width: 760px; height: 220px; border: var(--panel-border); border-radius: var(--radius-m); margin-top: 8px; overflow: hidden; background: var(--card); }
+  @media (min-width: 641px) { #pane { width: 200px; flex: none; overflow: auto; padding: 4px; border-right: 1px solid var(--line); } }
+  #rows { flex: 1; overflow: auto; padding: 4px; }
+  #rows > div { display: flex; align-items: center; gap: 8px; padding: 4px 8px; height: 32px; box-sizing: border-box; border-radius: var(--radius-s); }
+  #rows > .hdr { font-weight: 700; color: var(--text-dim); }
+  #grid { display: grid; grid-template-columns: repeat(3, 120px); gap: 8px; margin-top: 8px; }
+  #grid > div { position: relative; height: 60px; border: 1px solid var(--line); border-radius: var(--radius-s); padding: 6px; }
+  #grid .pick-tick { position: absolute; top: 4px; right: 4px; }
+  .low { display: flex; gap: 24px; margin-top: 8px; align-items: flex-start; }
+</style>
+</head>
+<body>
+  <header id="hd" class="topbar"><h2>Files</h2>
+    <div role="toolbar" aria-label="File tools" class="tall">
+      <div class="tb-group" id="bar" hidden></div>
+      <div class="tb-group"><button class="btn primary" id="newbtn" aria-label="New" data-tip="New (Alt+N)" data-rank="21"><span class="icon" data-icon="plus"></span></button></div>
+      <div class="tb-group tb-sys"><button class="btn" id="help" aria-label="Help" data-tip="Help" data-rank="31"><span class="icon" data-icon="help"></span></button></div>
+    </div></header>
+  <div class="wrap">
+    <div id="pane"><ul id="nav" aria-label="Folders" data-fit></ul></div>
+    <div id="rows" aria-label="Files">
+      <div class="hdr" data-id="hdr">Name</div>
+      <div data-id="a" data-name="Apple">Apple</div>
+      <div data-id="b" data-name="Banana">Banana <button type="button" class="btn sm" id="inner" aria-label="Play" data-tip="Play"><span class="icon" data-icon="plus"></span></button></div>
+      <div data-id="c" data-name="Cherry">Cherry</div>
+      <div data-id="d" data-name="Date">Date</div>
+      <div data-id="e" data-name="Elder">Elder</div>
+      <div data-id="f" data-name="Fig">Fig</div>
+      <div data-id="g" data-name="Grape">Grape</div>
+      <div data-id="h" data-name="Hazel">Hazel</div>
+      <div data-id="i" data-name="Iris">Iris</div>
+      <div data-id="j" data-name="Juniper">Juniper</div>
+      <div data-id="k" data-name="Kiwi">Kiwi</div>
+      <div data-id="z" data-name="Zip">Zip</div>
+    </div>
+  </div>
+  <div id="grid" aria-label="Photos">
+    <div data-id="p1">Beach</div><div data-id="p2">City</div><div data-id="p3">Dunes</div>
+    <div data-id="p4">Forest</div><div data-id="p5">Giralda</div><div data-id="p6">Harbour</div>
+  </div>
+  <div class="low">
+    <div><ul role="tree" id="ed" aria-label="Project files" data-edit="move insert delete rename hide" data-unique data-new-name="New folder"></ul></div>
+    <div>
+      <label class="switch end">Everybody<input type="checkbox" role="switch" id="all"></label>
+      <ul role="listbox" tabindex="0" aria-label="People" aria-multiselectable="true" class="lb" id="pick">
+        <li role="option">Ana</li><li role="option">Bruno</li><li role="option">Carmen</li><li role="option">Diego</li>
+      </ul>
+      <ul role="listbox" tabindex="0" aria-label="Country" class="lb" id="one"><li role="option">Chile</li><li role="option" aria-selected="true">España</li><li role="option">México</li></ul>
+    </div>
+  </div>
+</body>
+</html>

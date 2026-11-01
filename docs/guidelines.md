@@ -42,11 +42,14 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 | Click, tap, Enter, Space | Run the action, or select the item |
 | Double-click, long tap or Shift+Enter on a button with a dot | Run the button's second action |
 | Long tap on an area or tree item | Open its pop-up menu (same as right-click) |
+| Ctrl+click (⌘+click) on a list item | Add it to the picks, or take it out (8.4) |
 | Long tap on a list item | Start picking: each tap then adds or removes an item (8.4) |
 | Long tap on a tree item, then move the finger | Drag the item (in a tree that allows moving) |
 | Right-click, Shift+F10, Menu key | Open the pop-up menu for what is under the pointer or focus |
 | Enter inside a Panel | Run that Panel's default button |
-| Esc | Close the innermost popup, menu or dialog (after first clearing a search field) |
+| Esc | Close the innermost popup, menu or dialog (a search field with text is cleared first; an empty folded search folds) |
+| Ctrl+F (⌘F on Mac) | Open the view's search, or a document's find bar |
+| Alt+N | New item (a new folder) in the view |
 | Alt+Down or F4 in a field with a list or calendar | Open the list or calendar |
 
 ## 2. Foundations
@@ -173,7 +176,7 @@ Every control shows each state with the same look.
 | Read-only | No border, soft tint (Read-only background), text at full contrast | Can be focused, selected and copied; value cannot change |
 | Loading | Short centred line with a spinner: "Loading…" | Control is marked busy |
 | Empty | Short centred line: "No files" | Nothing to pick |
-| Error | Danger border, plus a small red "!" circle; the message opens in a popup from it (4.6) | Message says how to fix it; border, "!" and popup disappear once fixed |
+| Error | Danger border, plus a small red "!" circle; the message opens in a popup from it (4.7) | Message says how to fix it; border, "!" and popup disappear once fixed |
 | Busy (buttons) | Spinner replaces the icon in the same circle | Clicks ignored; tooltip says what is running |
 
 A disabled group box fades everything inside it at once. A read-only field never says "(read only)" in its label: the look says it. Read-only pickers hide their triangle, and read-only date fields hide the calendar button.
@@ -182,12 +185,14 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 - Tab moves between controls; composite controls (lists, toolbars, tab rows, menu bars, radio groups) are one Tab stop, and arrow keys move inside them.
 - Enter inside a Panel runs its default button, except in a text area, on another button or item, or while a list or menu is open.
-- Esc closes the innermost popup, menu or dialog. In a search field the first Esc clears the text.
+- Esc closes the innermost popup, menu or dialog. In a search field with text the first Esc only clears it; on an empty folded search Esc folds it (4.5).
+- Ctrl+F (⌘F on Mac) opens the view's search and puts the cursor in it, even from inside a text field; in a document it opens the find bar, Ctrl+H with its replace row (4.6).
 - Shift+Enter on a button with a dot runs its second action.
 - Alt+Down or F4 opens a list picker or calendar.
 - Shift+F10 or the Menu key opens a pop-up menu. F10 focuses the menu bar. In a menu, Right opens a submenu and Left closes it; Tab closes the menu.
 - Ctrl+Page Down / Ctrl+Page Up switch tabs from anywhere inside the Panel.
 - Ctrl+Z (⌘Z on Mac) runs the Undo on screen, outside text fields (11.2).
+- Alt+N makes a new item in the view (a folder, an album), F2 renames, Delete deletes. A view's main list takes its keys while the focus is on the title row's buttons too (8.4).
 - On Mac, Ctrl in shortcuts reads ⌘.
 
 ### 2.6 Touch
@@ -304,8 +309,8 @@ A text field shows its hint in the placeholder, can hold round buttons inside it
 
 - **Label:** every field has a visible label above it, linked to it; clicking the label focuses the field. A required field shows a red mark (Danger) after its label.
 - **Hint:** goes in the placeholder ("As it appears on your ID", "name@example.com"), never in a message below the field.
-- **Buttons inside the field:** one or more round, quiet buttons can sit inside the border, at the start and/or the end (show password, clear, calendar, filter, search). They follow every button rule: icon only, tooltip, 44 px on touch.
-- **Error:** a Danger border and a red "!" inside the field, whose popup says how to fix it (4.6). Nothing is added below the field.
+- **Buttons inside the field:** one or more round, quiet buttons can sit inside the border, at the start and/or the end (show password, clear, calendar, filter, the up / down pair of a search). They follow every button rule: icon only, tooltip, 44 px on touch.
+- **Error:** a Danger border and a red "!" inside the field, whose popup says how to fix it (4.7). Nothing is added below the field.
 - **Read-only:** no border, soft tint, text at full contrast, normal text cursor. It can be focused (with the focus ring), and its text can be selected and copied. The label does not say "read only".
 - **Disabled:** faded to 45%, cannot be focused.
 
@@ -331,14 +336,35 @@ A number in a range, laid out as − field +.
 
 ### 4.5 Search field
 
-Every search field in Ayni is the same control.
+Every search field in Ayni is the same control, and every one finds by the same rule.
 
-- Filters as the user types.
-- The magnifier sits at the right edge. An optional filter button sits just before it; a clear button appears before that once there is text.
-- **Filter button:** opens a menu of filters. Its icon is grey while no filter is active and Accent while one is active; its tooltip names the filter ("Filter: all fruits").
-- **Esc:** the first Esc clears the field and stops there. A second Esc (field already empty) closes the popup or dialog the field sits in.
+- **What it finds:** words in any order ("bill light"), "an exact phrase" in quotes, and -word to leave out. Accents and case are ignored; ß is ss, œ is oe, æ is ae and ’ is '. German umlauts match both ways: "Müller" finds "Mueller" and "Mueller" finds "Müller". A "-" inside a word (e-mail) or on its own is just a letter. A server that searches for the page folds its text the same way.
+- **Filters as the user types.** A field whose words go to a server that only answers on request (a dictionary) searches on Enter instead, and only that field has a Go button (magnifier) inside. A field that filters as you type has no magnifier inside: a button that does nothing typing doesn't do would only look pressable.
+- **Its tooltip** says how to search (the rule above), unless its words go to a server with rules of its own (a mail server).
+- **Down** moves from the field to the first result.
 
-### 4.6 Errors
+**Folded, in a title row.** At rest only a Search button (magnifier) shows, in the toolbar's place for Search (9.8). Pressing it, or Ctrl+F, opens the field in its place with the cursor in it; the field takes the room the row has left, up to 360 px. If that is under 180 px, tools leave into More by rank until it fits, and come back when it folds (9.9). A search the app opens by itself (from a link) opens without the cursor, so no phone keyboard pops up.
+
+**Inside the field, at the right end, in this order:**
+
+- **Count:** "12 / 300" (shown / all), dim, while the field holds text; "0" when nothing matches. Screen readers announce it.
+- **Filter button** (optional): opens a menu of filters, or a dialog when the filters need fields of their own (From, dates). Its icon is grey while no filter is on and Accent while any is; its tooltip says which ("Filter: fruits") or how many ("Filters: 2"). The field stays usable with a filter on.
+- **Up / down pair** (optional), for a view that finds its hits in place instead of filtering (a calendar, a conversation): the count reads "3 / 12" (this hit / all hits), Enter goes to the next hit and Shift+Enter to the previous one; the pair is faded while there is nothing to step to.
+- **Close (×):** in a folded search, always shown: it clears the field and folds it in one press. In a plain search field (in a dialog, a popup, a list picker) it is a clear button, shown only while there is text, and the field stays.
+
+**Esc:** with text, the first Esc only clears it; the field stays open with the cursor in it. With the field empty, Esc folds it, or closes the popup or dialog a plain field sits in. An Esc that clears never reaches the dialog behind.
+
+### 4.6 Find bar
+
+Finding inside a document (a text, a spreadsheet) uses a find bar: a strip above the document, not a dialog, so the document stays in view and can be edited.
+
+- **Find row:** a search field (4.5) with the count "3 / 12", the up / down pair, Match case (Aa, a toggle), a ▾ toggle that shows the replace row, and Close. Close is the bar's only ×: the field has no clear button of its own (Esc clears it). Nothing found reads as a red "0".
+- **Replace row:** the replacement field, then Replace and Replace all (text buttons, 3.9). Replace all is one action the user can undo.
+- **Keys:** Ctrl+F opens it, Ctrl+H opens it with the replace row; Enter goes to the next match and Shift+Enter to the previous one, and the cursor stays in the bar; Esc as in 4.5, then closes the bar.
+- **Marks:** every match in view is marked, the current one more strongly, and the document scrolls to the current one.
+- **Closing** puts the cursor back in the document, on the last match.
+
+### 4.7 Errors
 
 Space is precious, so an error never adds a line below the field: it shows as a Danger border and a small red "!" whose popup holds the message.
 
@@ -350,6 +376,21 @@ Space is precious, so an error never adds a line below the field: it shows as a 
 - **Groups** (radio and check groups, lists): the "!" sits next to the group's title or label, and the group border turns Danger. A list without a label shows its "!" inside its top-right corner, as inside a text field.
 - **Touch:** the "!" keeps its small look with a 44 px invisible hit area.
 - **Info and error together:** the "i" (help) stays next to the label; the "!" (error) sits inside the field. Each keeps one meaning.
+
+### 4.8 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| Search field | `.input-group.search-field` with an `input.input[type="search"]` and a `[data-clear]` button; Ayni wires it |
+| Folded search in a title row | `.input-group.search-field.fold` right after its Search button (`.btn[data-search]`) |
+| Filter button | `.btn.filter-btn` inside the field: `popovertarget` for a menu, or the page opens its dialog on `click`; `.is-active` while a filter is on |
+| Search on Enter only | `data-enter` on the field; its Go button (`.btn[data-go]`) is made at the end when the page has none |
+| Options, count and steps | `Ayni.searchField(field, { filter, filterTip, step, onClose, tip, toggle })`, returns `{ open(quiet), close(quiet), isOpen(), count(text), canStep(on), clear(), filtered(what) }`; `step(d)` gets -1 or +1; `tip: false` drops the how-to-search tooltip |
+| Which filter is on | `filtered(2)` (tooltip "Filters: 2"), `filtered('fruits')` ("Filter: fruits"), `filtered(0)` (none); the icon turns Accent while one is on |
+| The rule in code | `Ayni.matcher(text)`: `null` when nothing is asked, else a test `m(itemText)` with `m.terms` and `m.not`; `Ayni.fold(text)` for one string |
+| What was typed | `ayni:search { text, test }` on the field after each change (on Enter for `data-enter`); `ayni:searchclose` once it is emptied and folded or closed |
+| Find bar | an empty element above the document; `Ayni.findBar(bar, { find(text, { matchCase }), step(d), replace(text, all), selected(), onClose })` fills it (`.find-bar[role="search"]`) and returns `{ open(withReplace, text), close(), isOpen(), count(at, total) }`; `selected()` gives the document's selected words for the field |
+| Ctrl+F (⌘F) | Ayni handles it: the open popup or dialog the cursor is in, else the top modal dialog, else the page; there a find bar (Ctrl+H with its replace row), else the first folded search, else the first plain one. A page that handles the key itself calls `preventDefault()` first |
 
 ## 5. Choice and range controls
 
@@ -427,7 +468,7 @@ One Ayni list picker serves every drop-down list and every combo box, on every d
 |  | Drop-down list | Combo box |
 | --- | --- | --- |
 | Use for | One choice from a fixed set (Priority) | A value that can be typed or picked (City) |
-| Typing | Off. A letter jumps to the first match, even while the list is closed | On. The list shows only the suggestions that match, ignoring accents and case |
+| Typing | Off. A letter jumps to the first match, even while the list is closed | On. The list shows only the suggestions that match, by the search rule (4.5) |
 | Free text | Not possible | Kept when nothing matches |
 | Enter | Picks the highlighted item | Picks the highlighted suggestion, or keeps what was typed |
 
@@ -442,46 +483,86 @@ One Ayni list picker serves every drop-down list and every combo box, on every d
 
 ## 8. Lists
 
-A list box shows items to choose from; single-select lists choose one, multi-select lists show a check square on each item.
+There are two kinds of list:
+
+- **Item lists** are what a view shows: files, mails, bookmarks, photos. You pick some items and act on them, the way a file manager works. A view has one main list.
+- **Pick lists** sit in a dialog or a form and only ask for a choice: one country, or the people to share with. These are list boxes.
 
 ### 8.1 Label
 
-A visible label above a list is optional. If present it names the list and clicking it moves focus to the list. If absent, the list still has a hidden name for assistive technology, and an error "!" goes inside the list's top-right corner (8.6).
+A visible label above a list is optional. If present it names the list and clicking it moves focus to the list. If absent, the list still has a hidden name for assistive technology, and an error "!" goes inside the list's top-right corner (8.9).
 
 ### 8.2 Single selection
 
-Arrow keys, Home and End move the selection. The selected item has the Accent soft background.
+Arrow keys, Home and End move the selection. The selected item has the soft Accent tint (8.9).
 
-### 8.3 Type-ahead (all lists and the drop-down list)
+### 8.3 Type-ahead
 
 - Letters typed within 500 ms build one search: "me" reaches México.
-- Accents and case are ignored.
+- Accents and case are ignored, folded as in the search field (4.5).
 - Repeating one letter cycles through the items that start with it.
+- It works in pick lists, the list picker, trees, and item lists whose actions do not use plain letters. In an item list where a letter runs an action (S stars, R replies), the letters run the actions and there is no type-ahead.
 
-### 8.4 Multiple selection
+### 8.4 Picking in an item list
 
-- A small check-box-like square at the left of each item shows that several can be chosen; it is checked when the item is selected. Single-select lists never show the square.
-- Click or Space toggles an item.
-- Shift+click or Shift+arrows select a range from the last anchor.
-- Ctrl+A (⌘A on Mac) selects all.
-- Page Up and Page Down jump one visible page.
-- **On touch**, a tap opens an item. A long tap starts picking: the squares show on every item, that item is picked, and each tap then adds or removes one. The actions for the picked items show in the toolbar (9.8), with the count and a Close that stops picking (Esc does too).
+- **Mouse:** a click picks that item alone. Ctrl+click (⌘ on Mac) adds or removes one item. Shift+click picks a range from the last anchor, and Ctrl+Shift+click adds that range. A click on empty space clears the picks. A double-click or Enter opens the item; a middle click can open it in a new tab where that makes sense.
+- **The tick:** a small square at the start of each item. With a mouse it shows on hover and on picked items, and a click on it adds or removes that item. On touch it shows only while picking. In a grid of cards it sits in the card's corner.
+- **Keyboard:** the arrows move and pick the item they reach; Shift+arrows extend the range; Ctrl+arrows move the focus only, and Space then adds or removes the focused item. Home, End, Page Up and Page Down jump. Ctrl+A (⌘A) picks every item shown. Esc clears the picks. In a grid, the arrows move by place on the screen. Shift+F10 or the Menu key opens the pop-up menu.
+- The keys of a view's main list work while the focus is on the title row's buttons too (after pressing Delete in the toolbar, the Delete key still works). They do not work while a text field, a menu or a dialog has the focus.
+- **Touch:** a tap opens an item. A long tap starts picking: the squares show on every item, that item is picked, and each tap then adds or removes one. Esc or the × of the count stops.
+- A button inside an item (a star, a play button, a tag) does its own job; it never picks the item.
+- When the list is drawn again (new data, a search), the picks that are still there stay picked. When a search closes, the first picked item is scrolled into view.
 
-### 8.5 Pop-up menu on items
+### 8.5 Picked items in the title row
 
-Right-click, Shift+F10 or the Menu key opens the item's pop-up menu (chapter 9). Right-click on an item that is not picked picks only that one first; on the empty area it offers the area's actions (New, Paste, Select all). On touch a long tap starts picking instead (8.4); the actions are in the toolbar.
+While items are picked, the title row shows their group first (9.8):
 
-### 8.6 States
+- The **count** with its × (clears the picks; Esc too). A press on the number scrolls to the next picked item, which flashes once.
+- **Select all**, which becomes **Unselect all** while every item shown is picked.
+- **Every action** of the items' pop-up menu as a round button, in the menu's order, with a gap between the menu's groups. An action that cannot run on these items is disabled and its tooltip says why; an action only for some kinds of item (Extract, for a .zip) hides instead.
+- What does not fit goes into More by rank (9.9). The pop-up menu, these buttons and the keys come from one list of actions, so they always agree.
+
+### 8.6 Pick lists
+
+- A pick list is a list box. With several choices allowed, a small square at the left of each item is always shown, and a click or Space adds or removes the item: each item is a choice of its own. Single-choice lists never show the square.
+- Shift+click or Shift+arrows choose a range, and Ctrl+A (⌘A) chooses all. Page Up and Page Down jump one visible page.
+- A choice that covers everything ("Everybody") is a switch above the list, and the list greys out while it is on.
+- A few independent options in a form (the kinds of place to show on a map) are check boxes (5.2), not a list.
+
+### 8.7 Pop-up menu on items
+
+Right-click, Shift+F10 or the Menu key opens the item's pop-up menu (chapter 9). Right-click on an item that is not picked picks only that one first; on the empty area it offers the area's actions (New, Paste, Select all). On touch a long tap starts picking instead (8.4); the actions are in the title row (8.5).
+
+### 8.8 Drag and drop
+
+- **Mouse and pen only.** Drag an item, or all the picked items when the dragged one is picked. Drop it on a folder (the row is outlined in Accent) or between two rows where the list keeps an order (an Accent line with a dot). The list scrolls by itself near its edges, and Esc cancels.
+- Items can be dropped from a list onto a folder of the tree beside it, and files from the computer drop the same way.
+- A place that refuses the items shows no marker; dropping there says why ("A folder cannot go inside itself").
+- **On touch** a list has no dragging: the scroll stays sure, and Move to… (16.10) does the job.
+
+### 8.9 States
 
 | State | Look |
 | --- | --- |
+| Picked or selected item | Soft Accent tint. Full Accent marks only where you are (the open folder in a tree) and the chosen item of a list picker |
 | Disabled list or item | Faded, ignores the pointer |
 | Read-only | Soft tint, no border; choices visible, not changeable |
 | Loading | A spinner row: "Loading…" |
 | Empty | A short centred line: "No files" |
 | Error | Danger border and a red "!" next to the list's label (inside the top-right corner when the list has no label); its popup says "Pick at least one file to attach." |
 
-The tree view follows the same states (chapter 16).
+Rows are 44 px tall on touch. The tree view follows the same states (chapter 16).
+
+### 8.10 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| A pick list | `ul.lb[role="listbox"]` with `[role="option"]` items; `aria-multiselectable="true"` for several; listen for `ayni:change` |
+| An item list | `Ayni.list(element, { row, idOf, bar, actions, area, open, preview, clickOpens, openMiddle, pickable, count, grid, drag, tree, main, onSelect })`, returns `{ ids, has, set, clear, selectAll, toggle, refresh, redraw, focus, menu, picking, setActions, run, key, items }` |
+| One action | `{ id, label, icon, key, rank, group, danger, noBar, hideOff, where, when, why, run }`: `label` may be a function of the ids (Star / Unstar); `where()` false hides it in this view; `when(ids)` false disables it, `why(ids)` says why; `noBar` keeps it out of the title row; `hideOff` hides it instead of disabling it; `run(ids, event)` does it |
+| The picked group | an empty `.tb-group` in the title row, passed as `bar`; Ayni fills it and fits the row (9.9) |
+| Picked state | `aria-selected` on each row; the list has `.picking` while touch picking is on |
+| Dropping on rows | `Ayni.dropZone(host, { sel, target, can, drop })`: `can(ids, id, row, event)` gives `'inside'`, `'before'`, `'after'`, `false`, or `{ zone, ok: false }` for a place that refuses (the drop still comes, so the page can say why) |
 
 ## 9. Menus, popups and toolbars
 
@@ -516,7 +597,7 @@ Menus and popups are Panels that open next to what opened them, in the top layer
 ### 9.4 Pop-up menu
 
 - Opens the actions for what is under the pointer or focus: right-click, Shift+F10 or the Menu key. It works on areas, list items and tree items. The menu acts on the item it was opened on: that item joins the selection, or becomes it.
-- **On touch**, a long tap on an area or a tree item opens its pop-up menu (the ring fills while holding, and the menu opens when the finger lifts). On a list item a long tap starts picking instead (8.4): the actions for the picked items are in the toolbar.
+- **On touch**, a long tap on an area or a tree item opens its pop-up menu (the ring fills while holding, and the menu opens when the finger lifts). On a list item a long tap starts picking instead (8.4): the actions for the picked items are in the title row (8.5).
 
 ### 9.5 Popups with controls
 
@@ -541,7 +622,7 @@ Open menus and popups close when the page, or any container outside them, scroll
 The title row of a view or window shows what you look at on the left and what you do on the right:
 
 - **Left:** Back (←, only in a sub-view), the app's icon, the title, the open file's name, the view switch (Day / Week / Month as toggles) and a pager.
-- **Right**, in groups, in this order: the actions for the picked items, Search, New (+), the app's tools, then the system group: More (⋮), Settings, Help (?).
+- **Right**, in groups, in this order: the actions for the picked items (8.5), Search (folded, 4.5), New (+), the app's tools, then the system group: More (⋮), Settings, Help (?).
 - A view opened by a toggle in the title row (a bin) is left with that same toggle, not with Back.
 
 ### 9.9 A toolbar that does not fit
@@ -549,6 +630,7 @@ The title row of a view or window shows what you look at on the left and what yo
 - Every tool has a **rank**: 1 is the last to leave. While the title row does not fit on one line, the tool with the highest rank leaves first (of two equal ranks, the later one). The order never changes; the rest close up.
 - The tools that left are listed in the **More** (⋮) menu, at the start of the system group, in toolbar order, with a line between groups, and below them the app's own menu items. With nothing to list, there is no More button.
 - Search never leaves while nothing is picked. While items are picked, their actions get the room.
+- An open search needs at least 180 px: while it has less, tools leave into More by rank as above, and they come back when it folds. Nothing ever just vanishes.
 - A tool run from More comes back to the row while it is in use (its menu or field is open), and leaves again on the next press elsewhere.
 - They come back as the row widens. Desktop windows work the same way (17.3).
 
@@ -562,6 +644,7 @@ The title row of a view or window shows what you look at on the left and what yo
 | Disabled item | `aria-disabled="true"` and `data-tip` saying why |
 | Submenu | an item with `aria-haspopup="menu"` and `data-submenu="id"` naming another `.panel.menu` |
 | What was picked | `ayni:action { item, menu, act }` on the menu; `ayni:choose` for a radio item |
+| A page menu filled as it opens | `Ayni.fillMenu(menu, items)` in the menu's `beforetoggle` (rows as for `Ayni.menuAt`; a menu bar's menus) |
 | A menu built in code | `Ayni.menuAt(items, { anchor, x, y, keyboard, onClose })`: under `anchor`, or at `x`, `y`; `keyboard: true` focuses the first item. Items: `{ id, label, icon, key, danger, disabled, why, checked, sub, run }`, `{ sep: true }`, `{ caption }`; `sub` is a list of items, or a function that returns one when it opens. Returns `{ close() }` |
 | Pop-up menu on an area | `Ayni.contextMenu(area, { menu, target, keyTarget, onDrag })` |
 | Long tap that picks | `Ayni.longTap(area, selector, (item, x, y) => …)`: the same ring and timing; the click its release leaves is swallowed |
@@ -569,7 +652,7 @@ The title row of a view or window shows what you look at on the left and what yo
 | A popup | `.panel.popup.controls[popover]`, opened with `popovertarget` |
 | Tool group | `.panel.popup.tools[popover]` holding the real `.btn` tools; `data-lit-by="id id"` on the group button names the toggles that light it |
 | Toolbar | `[role="toolbar"]` (one Tab stop, wired by Ayni) with `.tb-group` children; the lines between groups are Ayni's |
-| Title row toolbar that fits | `data-rank="n"` on each tool or group; `Ayni.fitBar(row, { more: () => items, btn })` adds the app's own More items and can use the app's own More button |
+| Title row toolbar that fits | `data-rank="n"` on each tool or group (the Search button of a folded search: `data-search`, so it stays while nothing is picked); `Ayni.fitBar(row, { more: () => items, btn })` adds the app's own More items and can use the app's own More button |
 | Keep a popup open on scroll | listen for `ayni:dismiss` on it and call `preventDefault()` |
 
 ## 10. Dialogs
@@ -600,7 +683,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 | Applied on close | Rename file | Close in the title row; the new name applies when the dialog closes (Close or Esc); an invalid name is not applied |
 | Question | "Name of the new album" | One field. Bottom row: Cancel (Close icon, also Esc) and Accept (default, faded while the field is empty) |
 | Confirmation | "Delete contract.pdf?" | Bottom row: Cancel (Close icon, also Esc) and the action (Accept, or Delete as danger). A danger action is never the default: the focus starts on Cancel. A third choice ("Don't save") may sit between them. Used only when a change cannot be applied live |
-| Modeless | Find | Stays open while the user keeps working, no backdrop. Bottom row: Close and Find next at the right, List all matches at the left |
+| Modeless | Find in files (a desktop window) | Close in the title row. Stays open while the user keeps working, no backdrop. Finding inside a document is the find bar (4.6), not a dialog |
 
 Modal dialogs dim the page behind them with the backdrop colour. In desktop mode a modeless dialog belongs to the window that opened it (17.3).
 
@@ -776,17 +859,25 @@ On touch devices there are no tooltips; a round Help button in the title row of 
 
 A tree shows items inside items, such as folders and files or the sections of a book. It is a list (chapter 8) with levels: it follows the same label, selection, type-ahead and state rules, and adds opening, closing and, when the page allows it, editing.
 
+A tree is used in two ways:
+
+- **To go somewhere** (a navigation tree): the folders in a side pane beside an item list. The tree shows where you are, and a click goes there.
+- **To choose or edit** (a selection tree): the tree is the thing being worked on, as in an outline, or it asks for a choice.
+
 ### 16.1 What the page switches on
 
+- `data-nav` makes a navigation tree (16.4).
 - A tree only browses unless the page switches editing on, one feature at a time: moving, inserting, deleting, renaming and hiding (`data-edit="move insert delete rename hide"`). A tree that only allows renaming, for example, never offers to delete.
 - A locked item (`data-lock`) cannot be moved, deleted or renamed, even in an editable tree. Its actions stay visible but disabled, and their tooltip says "Contracts is locked".
 - A read-only tree allows no change at all.
+- A page that keeps its data on a server can leave the tree's own editing off and give the tree the actions of its item list instead (16.7): its dialogs, its checks, its saving.
 
 ### 16.2 Root, folders and leaves
 
 - **Root (optional).** A tree either has one top item that holds everything ("My files") or shows several items at the top level. The root opens and closes, but it is never moved, deleted or hidden; it can be renamed only where renaming is allowed and it is not locked. Without a root, new top-level items come from the pop-up menu of the tree's empty area, or from the toolbar.
 - **Folders and leaves.** Any item can hold children (as in an outline). Items that never can, such as files, are leaves (`data-leaf`). Something dropped, pasted or inserted on a leaf goes right after it.
 - A triangle before the name shows that an item has children; it points right when closed and down when open.
+- **Extras on a row:** a count after the name (unread mails), one small button at the row's end (show or hide a folder), and a tooltip. A heading row ("Labels") only opens and closes; it is never a place to go.
 
 ### 16.3 Hidden items
 
@@ -796,43 +887,60 @@ A tree shows items inside items, such as folders and files or the sections of a 
 
 ### 16.4 Selection, opening and keyboard
 
-- Single selection by default: the selection follows the focus, as in a list.
-- Multiple selection works as in the lists (8.4): a check square after the triangle, click or Space toggles, Shift+click and Shift+arrows select a range, Ctrl+A (⌘A) selects every shown item.
+- **Navigation tree:** a click, Enter or Space goes to the item, and the tree marks it as where you are (full Accent). The arrows only move the focus, so walking down the tree never loads a folder at each key press.
+- **Selection tree:** single selection by default: the selection follows the focus, as in a list. Multiple selection makes it a pick list with levels (8.6): a check square after the triangle, always shown; click or Space adds or removes, Shift+click and Shift+arrows choose a range, Ctrl+A (⌘A) chooses every shown item.
 - Up and Down move; Home and End go to the first and last shown item; Page Up and Page Down jump one visible page. Right opens a folder, or enters an open one; Left closes it, or goes to the parent. Disabled and hidden items are skipped.
-- A folder opens and closes with a click on its triangle (on touch, the area around it counts), a double-click, or Enter. A click on a folder that is already selected does nothing more, so nothing opens by accident.
+- A folder opens and closes with a click on its triangle (on touch, the area around it counts), or a double-click. In a selection tree Enter opens and closes it too. A click on a folder that is already selected does nothing more, so nothing opens by accident.
 - A double-click or Enter on a leaf opens it: the tree tells the page (`ayni:open`).
 - Type-ahead as in the lists (8.3). `*` opens every folder at the same level.
+- Beside an item list, Tab and Left (from the list's first column) move between the tree and the list.
 
 ### 16.5 Moving items
 
-- **Mouse and pen: drag and drop.** Drag an item, or all the selected items when the dragged one is selected. While dragging, an Accent **line between rows** shows that the items will go before or after a row (the upper and lower quarter of the row; half and half on a leaf), and a row **outlined in Accent** shows that they will go inside it (its middle half). Over an open folder, the lower part means "first inside it". Holding over a closed folder for 0.7 s opens it. Near the top or bottom edge the tree scrolls by itself. Items cannot be dropped inside themselves; no marker shows there. Esc cancels the drag. Dragging always moves; to copy, use Copy and Paste. Dragging between two trees is not supported.
+- **Mouse and pen: drag and drop.** Drag an item, or all the selected items when the dragged one is selected. While dragging, an Accent **line between rows** shows that the items will go before or after a row (the upper and lower quarter of the row; half and half on a leaf), and a row **outlined in Accent** shows that they will go inside it (its middle half). Over an open folder, the lower part means "first inside it". Holding over a closed folder for 0.7 s opens it. Near the top or bottom edge the tree scrolls by itself. Items cannot be dropped inside themselves; no marker shows there, and dropping there says why. Esc cancels the drag. Dragging always moves; to copy, use Copy and Paste.
+- Items dragged from the item list beside the tree drop on its folders with the same markers (8.8). Dragging between two trees is not supported.
 - **Keyboard.** Ctrl+Shift+Up and Ctrl+Shift+Down (⌘⇧ on Mac) move the item one place among its siblings. Ctrl+Shift+Left moves it out, right after its parent; Ctrl+Shift+Right moves it into the folder just above it, as its last child. Alt+arrows are not used, because Alt+Left is "back" in browsers.
 - **Cut, Copy and Paste.** Ctrl+X or Ctrl+C, then Ctrl+V: the items go inside the focused folder, at its end, or right after the focused leaf. Cut items look muted until they are pasted; Esc cancels the cut.
-- **Touch.** Hold an item: the ring fills as for any long tap. Lift the finger and the pop-up menu opens; move the finger once the ring is full and the item is dragged, with the same markers. Moving before the ring is full scrolls the tree as usual. The item's menu also has Move up, Move down, Cut and Paste, so every move is possible without dragging.
+- **Touch.** In a tree that allows moving, hold an item: the ring fills as for any long tap. Lift the finger and the pop-up menu opens; move the finger once the ring is full and the item is dragged, with the same markers. Moving before the ring is full scrolls the tree as usual. The item's menu also has Move up, Move down, Cut and Paste, so every move is possible without dragging. A navigation tree has no dragging on touch: Move to… (16.10) does the job.
 
 ### 16.6 Insert, delete and rename
 
-- **Insert:** New in the pop-up menu, the Insert key, or the toolbar. The new item goes inside the focused folder, at its end, and the folder opens; on a leaf it goes right after it. It starts in rename mode with its default name selected ("New folder"); Esc removes it again.
+- **Insert:** New in the pop-up menu, Alt+N, or the toolbar. The new item goes inside the focused folder, at its end, and the folder opens; on a leaf it goes right after it. It starts in rename mode with its default name selected ("New folder"); Esc removes it again.
 - **Delete:** the Delete key, the menu or the toolbar. It removes the item with all its children. There is no confirmation dialog: a notification with Undo stays 6 s (Ctrl+Z also undoes while it shows), as for every undoable action (11.2). The focus goes to the next item, or the previous one, or the parent.
-- **Rename:** F2, the menu or the toolbar. The name becomes a text field in place, with the text selected. Enter or leaving the field saves; Esc cancels. An empty name, or a name a sibling already has when the tree asks for unique names (`data-unique`), shows the usual red "!" with its popup (4.6), and the field stays open. There is no "slow second click" to rename, so nothing is renamed by accident.
+- **Rename:** F2, the menu or the toolbar. The name becomes a text field in place, with the text selected. Enter or leaving the field saves; Esc cancels. An empty name, or a name a sibling already has when the tree asks for unique names (`data-unique`), shows the usual red "!" with its popup (4.7), and the field stays open. There is no "slow second click" to rename, so nothing is renamed by accident.
+- A tree that uses its item list's actions (16.1) renames and creates through the page's own dialogs, with the same keys (F2, Alt+N, Delete).
 
 ### 16.7 Pop-up menu and toolbar
 
 - An editable tree has its own pop-up menu with what it allows: New, Rename, Hide or Show; Cut, Copy, Paste; Move up, Move down; Show hidden items; Delete. Each item shows its shortcut. Items that cannot act on the chosen item are disabled. The menu acts on the item it was opened on: that item joins the selection, or becomes it. A page can give its own menu instead (`data-menu`).
+- A tree beside an item list can share the list's actions (8.5): a folder's pop-up menu is the list's menu for that folder, and the list's keys (F2, Delete, Ctrl+C…) act on the focused folder. A row can have no menu (a heading, the root of a mail account).
+- On touch, a long tap on a tree item opens its pop-up menu (it does not start picking).
 - A page can put a small toolbar above the tree (optional) with round icon-only buttons and tooltips: New (the default button), Rename, Hide/Show and Delete (danger icon colour, never the default). A button that cannot act on the current item is disabled, and its tooltip says why ("Delete: the top item stays in place").
 
 ### 16.8 Loading on demand
 
 A folder can load its children the first time it opens (`data-lazy`): a "Loading…" row with a spinner shows inside the folder until the page delivers them. If loading fails, the row says so, and closing and opening the folder tries again.
 
-### 16.9 States
+### 16.9 On phones
 
-The tree uses the shared states (2.4 and 8.6): disabled items are faded and skipped, a read-only tree has the soft tint and allows no change, a loading tree shows the spinner row, an empty tree says so in the middle, and an error colours its border and puts the red "!" next to its label.
+A tree in a side pane does not take room on a phone (below 640 px): a button in the title row slides it in from the left over a dimmed page. Going to a place closes it again, and so do Esc and a tap on the dimmed page. Its rows are 44 px tall.
 
-### 16.10 For developers
+### 16.10 Picking a place: Move to…
+
+Move to…, Copy to… and Save in… open a dialog with the same tree in a box, opened down to where the items are now, with that place lit. A click lights a folder; a double-click, Enter or the dialog's default button picks it. Places that cannot take the items (a folder into itself) are faded and skipped. A short line under the title can say what will happen, and change with the lit folder. On touch this replaces dragging.
+
+### 16.11 States and look
+
+The tree uses the shared states (2.4 and 8.9): disabled items are faded and skipped, a read-only tree has the soft tint and allows no change, a loading tree shows the spinner row, an empty tree says so in the middle, and an error colours its border and puts the red "!" next to its label.
+
+Inside a side pane the tree sits plain on the pane and fills it; in a form or a dialog it is boxed (border and Panel colour). Rows are 30 px tall with a mouse and 44 px on touch. A long name ends in "…" in a pane of fixed width.
+
+### 16.12 For developers
 
 - Every change the user makes is announced to the page before it happens (`ayni:move`, `ayni:insert`, `ayni:delete`, `ayni:rename`, `ayni:hide`), and the page can refuse it, for example when the server says no. The tree also tells the page about selection (`ayni:select`), opening a leaf (`ayni:open`), loading (`ayni:load`) and showing hidden items (`ayni:showhidden`).
-- A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it.
+- A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it. An item from data: `{ id, name, icon, leaf, hidden, lock, disabled, open, lazy, root, children, count, tail: { icon, tip, on }, heading, noMenu, noDrag, tip }`.
+- A navigation tree drawn by the page from its own data: `Ayni.tree(element, { nav: true, items, current, go, isOpen, setOpen, menu, keys, drag, drop, tail, sheet })`. `current()` names where you are, `go(id)` goes there, `isOpen`/`setOpen` keep the open folders in the page, `menu(id, x, y)` opens a row's menu, `keys: true` lets the item list's keys act on the focused folder (the list names the tree with its own `tree` option), `drag(id)` gives the ids a row drags, `drop` is a `dropZone` setting (8.10), `sheet` is the side pane that slides in on phones. The page calls `build()` after its data changes.
+- `Ayni.pickNode({ title, items, current, lit, disabled, okLabel, note, extra })` opens Move to… and resolves with the picked id, or `null`.
 
 ## 17. Desktop mode
 
@@ -849,7 +957,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 
 - A round, filled button at the start of the taskbar (the launcher is the taskbar's default button). Like every button that opens a popup, it shows the small triangle.
 - It opens a popup with a search field at the top and the apps below it, as a list with icon and name. The most used apps come first.
-- Typing filters the list (accents and case don't matter). Down and Up move between the field and the apps, Enter in the field opens the first match, and typing a letter while on the list goes back to the field.
+- Typing filters the list, by the search rule (4.5). Down and Up move between the field and the apps, Enter in the field opens the first match, and typing a letter while on the list goes back to the field.
 - Picking an app closes the popup and opens the app. Esc or a click outside closes it, like any popup.
 
 ### 17.3 Window
@@ -884,7 +992,7 @@ The low-priority items of the gap review have not been reviewed. They will be ta
 
 To be done after the full design is closed:
 
-- **Screen readers:** announcing errors, search result counts, notifications and status; calendar roles; reaching disabled menu items; naming shortcuts; linking long tooltips; reaching tab pages with nothing to focus.
+- **Screen readers:** announcing errors, notifications and status; calendar roles; reaching disabled menu items; naming shortcuts; linking long tooltips; reaching tab pages with nothing to focus.
 - **Deaf users:** captions and visual alternatives once sound or video is added (none is used today).
 - **Right-to-left languages** (Arabic, Hebrew): logical CSS properties, mirrored icons and markers, swapped Left and Right keys.
 - **Windows High Contrast mode:** redraw selection, check squares, switches, the triangle and the dot with borders and system colours.
@@ -899,7 +1007,15 @@ These were considered and turned down; they are listed so they are not proposed 
 | --- | --- |
 | Alt+letter hot keys (underlined mnemonics) | Dropped for good |
 | Submenus inside submenus | Not taken: one level (9.3) |
-| A long tap on a list item opening its pop-up menu | Replaced: it starts picking, and the actions are in the toolbar (8.4); right-click still opens the menu |
+| A long tap on a list item opening its pop-up menu | Replaced: it starts picking, and the actions are in the title row (8.4, 8.5); right-click still opens the menu |
+| A click on an item in an item list adding it to the picks | Not taken: a click picks that item alone, Ctrl+click adds or removes (8.4); only pick lists add on a click (8.6) |
+| Tick squares on every row of an item list, all the time | Not taken: on hover and on picked rows with a mouse, only while picking on touch; always shown only in pick lists |
+| A full Accent fill on picked rows | Replaced: a soft Accent tint; full Accent marks where you are and a list picker's choice (8.9) |
+| Type-ahead in a list whose actions use plain letters | Not taken: there the letters run the actions (8.3) |
+| The Insert key for a new item | Replaced: Alt+N (Mac keyboards have no Insert key) |
+| Arrows in a navigation tree going to each folder they reach | Not taken: the arrows move, a click, Enter or Space goes (16.4) |
+| Dragging list items on touch | Not taken: it fights the scroll; Move to… does the job (8.8) |
+| An "Everybody" row at the top of a pick list | Replaced: a switch above the list, which greys the list while on (8.6) |
 | An Accent fill on the menu row under the pointer | Dropped: a grey tint, as on buttons |
 | Big 44 px menu rows with a mouse | Not taken: compact rows; 44 px on touch |
 | A tick drawn in place of the item's icon | Dropped: the tick has its own column, and the icon stays |
@@ -920,7 +1036,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | Errors that leave on their own | Dropped: an error stays until closed |
 | Overflow ▾ button listing all tabs | Removed: not needed; the row scrolls and the wheel scrolls it |
 | Tooltips the pointer can move onto | Dropped |
-| Filter name as a chip in the search field | Dropped: the filter icon turns Accent instead |
+| Filter name as a chip in the search field, in place of the text | Dropped: the filter icon turns Accent, its tooltip says how many, and the field stays usable |
+| A magnifier inside a search field that filters as you type | Dropped: it does nothing typing doesn't do; only a field that searches on Enter has a Go button |
+| One Esc clearing and folding a search at once | Not taken: the first Esc clears, the next folds; the × does both in one press |
+| A modeless Find dialog for finding in a document | Replaced: the find bar above the document (4.6) |
+| Tools vanishing while an open search needs their room | Replaced: they go into More by rank (9.9) |
+| Ctrl+/ to reach the search | Dropped: Ctrl+F in every view |
 | Ring with a dot, or a second ring, to mark a second action | Rejected: a single small dot |
 | Hold-to-peek or notifications to show tooltips on touch | Rejected: the Help dialog |
 | Native select, datalist or date wheels | Rejected: the Ayni list picker and calendar |

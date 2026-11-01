@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="../ayni-toasts.css">
 <link rel="stylesheet" href="../ayni-dialogs.css">
 <link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-search.css">
+<link rel="stylesheet" href="../ayni-lists.css">
 <link rel="stylesheet" href="../ayni.css">
 <style>
 /* Demo page only: the note on the desktop background and the sample window contents */
@@ -32,6 +34,8 @@
 <script src="../ayni-toasts.js" defer></script>
 <script src="../ayni-dialogs.js" defer></script>
 <script src="../ayni-menus.js" defer></script>
+<script src="../ayni-search.js" defer></script>
+<script src="../ayni-lists.js" defer></script>
 <script src="../ayni.js" defer></script>
 </head>
 <body>
@@ -109,7 +113,7 @@
 </dialog>
 
 <div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
-  <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn" type="button" tabindex="-1" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div>
+  <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button></div>
   <div class="apps" role="group" aria-label="Apps">
     <button data-app="calendar"><span class="icon" data-icon="calendar"></span>Calendar</button>
     <button data-app="files"><span class="icon" data-icon="folder"></span>Files</button>

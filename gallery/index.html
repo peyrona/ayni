@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="../ayni-toasts.css">
 <link rel="stylesheet" href="../ayni-dialogs.css">
 <link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-search.css">
+<link rel="stylesheet" href="../ayni-lists.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -20,6 +22,8 @@
 <script src="../ayni-toasts.js" defer></script>
 <script src="../ayni-dialogs.js" defer></script>
 <script src="../ayni-menus.js" defer></script>
+<script src="../ayni-search.js" defer></script>
+<script src="../ayni-lists.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -67,8 +71,8 @@
         <p class="rule">A big dialog (a long form, a list, an editor) fills the screen below 1024 px wide, with its title and bottom rows as tinted strips; from 1024 px it floats with its shadow. A small dialog always floats, as wide as its content needs (300 to 460 px).</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-big" aria-label="Preferences…" data-tip="Preferences…"><span class="icon" data-icon="settings"></span></button></div></div>
       <div class="spec"><h3>Modeless dialog</h3>
-        <p class="rule">Stays open while you keep working, with no backdrop. It has more than Close, so its buttons go in the bottom row: Close and Find next at the right, the extra action (List all matches) at the left.</p>
-        <div class="row"><button class="btn" id="open-modeless" aria-label="Find…" data-tip="Find…"><span class="icon" data-icon="search"></span></button></div></div>
+        <p class="rule">Stays open while you keep working, with no backdrop, like Find in files. It has more than Close, so its buttons go in the bottom row: Close and Search at the right, the extra action (Clear the list) at the left. Finding inside one document is a find bar instead (Texts tab).</p>
+        <div class="row"><button class="btn" id="open-modeless" aria-label="Find in files…" data-tip="Find in files…"><span class="icon" data-icon="search"></span></button></div></div>
       <div class="spec"><h3>Built in code</h3>
         <p class="rule">A confirmation, a question and a message are one call each: <code>Ayni.confirm</code>, <code>Ayni.ask</code> and <code>Ayni.alert</code>. The question's Accept stays faded until there is text.</p>
         <div class="row"><button class="btn danger" id="code-confirm" aria-label="Delete with Ayni.confirm…" data-tip="Delete with Ayni.confirm…"><span class="icon" data-icon="trash"></span></button><button class="btn" id="code-ask" aria-label="New folder with Ayni.ask…" data-tip="New folder with Ayni.ask…"><span class="icon" data-icon="plus"></span></button><button class="btn" id="code-alert" aria-label="Message with Ayni.alert…" data-tip="Message with Ayni.alert…"><span class="icon" data-icon="info"></span></button></div></div>
@@ -181,7 +185,7 @@
         </ul>
         <p class="out" id="lb-single-out"></p></div>
       <div class="spec"><h3>Multiple-selection list</h3>
-        <p class="rule">A check square on each item shows that several can be chosen. Click or Space toggles an item. Shift+click or Shift+arrows select a range, Ctrl+A (⌘A on Mac) selects all, and Page Up and Page Down jump a page.</p>
+        <p class="rule">A pick list where several can be chosen: a check square on each item, always shown. Click or Space toggles an item. Shift+click or Shift+arrows select a range, Ctrl+A (⌘A on Mac) selects all, and Page Up and Page Down jump a page.</p>
         <ul role="listbox" tabindex="0" aria-label="Files" aria-multiselectable="true" class="lb" id="lb-multi">
           <li role="option"><span class="icon" data-icon="folder"></span>Invoices</li>
           <li role="option" aria-selected="true"><span class="icon" data-icon="file"></span>budget-2026.xlsx</li>
@@ -195,6 +199,13 @@
           <li role="option"><span class="icon" data-icon="file"></span>summary.txt</li>
         </ul>
         <p class="out" id="lb-multi-out"></p></div>
+      <div class="spec"><h3>Pick list with Everybody</h3>
+        <p class="rule">A pick list in a form: click or Space adds or removes a person. A choice that covers everyone is a switch above the list; while it is on, the list greys out.</p>
+        <label class="switch end">Everybody, also people who join later<input type="checkbox" role="switch" id="pl-all"></label>
+        <ul role="listbox" tabindex="0" aria-label="People to share with" aria-multiselectable="true" class="lb" id="pl-people">
+          <li role="option">Ana Morales</li><li role="option" aria-selected="true">Bruno Díaz</li><li role="option">Carmen Ruiz</li><li role="option">Diego Pérez</li><li role="option">Elena Torres</li>
+        </ul>
+        <p class="out" id="pl-people-out"></p></div>
       <div class="spec"><h3>Drop-down list</h3>
         <p class="rule">Our list picker with typing off: one choice from a fixed set. The triangle marks the list. Click or tap the field, or press Alt+Down or F4. The list opens below the field, above it when there is no room, and as a sheet at the bottom on phones. Arrows move, Enter picks, Esc closes. Typing a letter jumps to the first match, even while closed.</p>
         <div class="field"><label for="dd" id="dd-l">Priority</label>
@@ -240,10 +251,10 @@
         </ul>
         <p class="out" id="tree-out"></p></div>
       <div class="spec"><h3>Editable tree</h3>
-        <p class="rule">Built from data, with a top item (the root) that stays in place. Drag items to move them: a line means before or after, an outlined row means inside, and holding over a closed folder opens it. Ctrl+Shift+arrows (⌘⇧ on Mac) move the item one step; Ctrl+X, Ctrl+C and Ctrl+V cut, copy and paste. Insert adds a folder, F2 renames, Delete removes (with Undo). On touch, hold an item: lift for its menu, or move to drag it. Contracts is locked. Archive loads its folders the first time it opens.</p>
+        <p class="rule">Built from data, with a top item (the root) that stays in place. Drag items to move them: a line means before or after, an outlined row means inside, and holding over a closed folder opens it. Ctrl+Shift+arrows (⌘⇧ on Mac) move the item one step; Ctrl+X, Ctrl+C and Ctrl+V cut, copy and paste. Alt+N adds a folder, F2 renames, Delete removes (with Undo). On touch, hold an item: lift for its menu, or move to drag it. Contracts is locked. Archive loads its folders the first time it opens.</p>
         <label for="tree-ed" id="tree-ed-l" class="list-label">Project files</label>
         <div role="toolbar" aria-label="Project files tools" data-tree="tree-ed">
-          <div class="tb-group"><button class="btn primary" aria-label="New" data-tip="New folder (Insert)" data-tree-act="new"><span class="icon" data-icon="plus"></span></button>
+          <div class="tb-group"><button class="btn primary" aria-label="New" data-tip="New folder (Alt+N)" data-tree-act="new"><span class="icon" data-icon="plus"></span></button>
           <button class="btn icon-btn" aria-label="Rename" data-tip="Rename (F2)" data-tree-act="rename"><span class="icon" data-icon="edit"></span></button>
           <button class="btn icon-btn" aria-label="Hide" data-tip="Hide" data-tree-act="hide"><span class="icon" data-icon="eye-off"></span></button></div>
           <div class="tb-group"><button class="btn icon-btn danger" aria-label="Delete" data-tip="Delete (Del)" data-tree-act="delete"><span class="icon" data-icon="trash"></span></button></div>
@@ -263,6 +274,22 @@
           <li role="treeitem"><div class="ti">Index</div></li>
         </ul>
         <p class="out" id="tree-ol-out"></p></div>
+      <div class="spec" style="grid-column: 1 / -1"><h3>Item list beside a folder tree</h3>
+        <p class="rule">The main list of a view picks like a file manager: a click picks one file, Ctrl+click (⌘ on Mac) adds or removes one, Shift+click picks a range, and the square at the start of a row (shown on hover) adds or removes it. Double-click or Enter opens. While files are picked, the title row shows how many (× clears, the number goes to the next one), Select all, and every action; what does not fit goes into More. Right-click opens the same actions; on empty space it offers New and Select all. Typing jumps to a file by name. Drag files onto a folder of the tree to move them. The tree goes where you click; the arrows only move. On a phone the folders slide in from the Folders button. Move to… picks a folder in a dialog.</p>
+        <div class="files-demo">
+          <header id="il-head">
+            <button class="btn il-treebtn" id="il-treebtn" aria-label="Folders" data-tip="Folders"><span class="icon" data-icon="folder"></span></button>
+            <h2 id="il-title">My files</h2>
+            <div role="toolbar" aria-label="File tools">
+              <div class="tb-group" id="il-bar" hidden></div>
+              <div class="tb-group"><button class="btn primary" id="il-new" aria-label="New file" data-tip="New file (Alt+N)" data-rank="21"><span class="icon" data-icon="plus"></span></button></div>
+              <div class="tb-group tb-sys"><button class="btn" id="il-help" aria-label="Help" data-tip="Help" data-rank="31"><span class="icon" data-icon="help"></span></button></div>
+            </div></header>
+          <div class="files-body">
+            <div class="files-pane" id="il-pane"><ul id="il-tree" aria-label="Folders" data-fit></ul></div>
+            <div class="files-list" id="il-rows" aria-label="Files"></div>
+          </div></div>
+        <p class="out" id="il-out"></p></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">Disabled lists and items are faded and ignore the pointer. A read-only list shows its choices with a soft tint and no border. While a list loads it shows a spinner row; when it has nothing it says so in the middle. An error colours the border and puts a red "!" next to the label, which shows the message; a list with no visible label (the last one) shows the "!" inside its top-right corner. In the folder tree above, backup.zip is a disabled item.</p>
         <div class="state-grid">
@@ -316,13 +343,35 @@
           <div class="ta-wrap"><textarea id="ta" class="input" maxlength="200" placeholder="Anything the driver should know" aria-describedby="ta-count">Delivery to the back door, please.</textarea>
           <span class="ta-count" id="ta-count"></span></div></div></div>
       <div class="spec"><h3>Search field</h3>
-        <p class="rule">Filters as you type. The magnifier sits at the right edge. An optional filter button sits just before it, and a clear button appears once there is text. The first Esc clears the field; a second Esc closes the popup or dialog it sits in, like View options in the Menus tab.</p>
+        <p class="rule">Filters as you type, so there is no magnifier inside: words in any order, "an exact phrase", -word to leave out; accents and case don't matter (hover the field). Inside, at the right end: the count (shown / all), the filter button (grey with no filter, Accent while one is on) and Clear, once there is text. The first Esc clears the field; a second Esc closes the popup or dialog it sits in, like View options in the Menus tab. Ctrl+F (⌘F) reaches the view's search from anywhere.</p>
         <div class="field"><label for="sf">Search fruits</label>
           <div class="input-group search-field"><input id="sf" class="input" type="search" placeholder="Type a fruit, like mango">
-            <button class="btn" type="button" id="sf-clear" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button>
-            <button class="btn filter-btn" type="button" id="sf-filter" popovertarget="m-filter" aria-haspopup="menu" aria-label="Filter" data-tip="Filter: all fruits"><span class="icon" data-icon="filter"></span></button>
-            <button class="btn" type="button" id="sf-go" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
+            <button class="btn filter-btn" type="button" id="sf-filter" popovertarget="m-filter" aria-haspopup="menu" aria-label="Filter" data-tip="Filter"><span class="icon" data-icon="filter"></span></button>
+            <button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button></div></div>
         <p class="out" id="sf-out"></p></div>
+      <div class="spec" style="grid-column: 1 / -1"><h3>Folded search</h3>
+        <p class="rule">In a title row only the Search button shows. Pressing it, or Ctrl+F, opens the field in its place; Close (×) clears and folds it in one press. Esc with text only clears; Esc on the empty field folds it. Drag the corner to make the row narrow: an open search never gets under 180 px, the tools leave into More instead.</p>
+        <div class="fit-demo"><header id="fold-head">
+          <h2>Mail</h2>
+          <div role="toolbar" aria-label="Mail tools">
+            <div class="tb-group"><button class="btn" data-search aria-label="Search mail" data-tip="Search mail" data-rank="20"><span class="icon" data-icon="search"></span></button><div class="input-group search-field fold"><input id="fold-q" class="input" type="search" aria-label="Search mail" placeholder="Search mail"></div></div>
+            <div class="tb-group"><button class="btn primary" aria-label="New message" data-tip="New message" data-rank="21"><span class="icon" data-icon="plus"></span></button><button class="btn" aria-label="Refresh" data-tip="Refresh" data-rank="22"><span class="icon" data-icon="refresh"></span></button></div>
+          </div></header>
+          <ul class="mail-demo" id="fold-list"></ul></div></div>
+      <div class="spec"><h3>Hits in place</h3>
+        <p class="rule">A view that marks its hits instead of hiding the rest (a calendar, a conversation) steps through them: the count reads "this hit / all hits", Enter goes to the next one and Shift+Enter back; the up / down pair is faded while there is nothing to step to.</p>
+        <div class="field"><label for="step-q">Find in the conversation</label>
+          <div class="input-group search-field" id="step-f"><input id="step-q" class="input" type="search" placeholder="Try: train"></div></div>
+        <ol class="chat-demo" id="step-list"></ol></div>
+      <div class="spec"><h3>Search on Enter</h3>
+        <p class="rule">Only a field whose words go to a server that answers on request (a dictionary) waits for Enter, and only that field has a Go button (magnifier) inside.</p>
+        <div class="field"><label for="dict-q">Dictionary</label>
+          <div class="input-group search-field" data-enter><input id="dict-q" class="input" type="search" placeholder="A word, like casa"></div></div>
+        <p class="out" id="dict-out"></p></div>
+      <div class="spec" style="grid-column: 1 / -1"><h3>Find bar</h3>
+        <p class="rule">Finding inside a document is a strip above it, not a dialog: the text stays in view. Click the text and press Ctrl+F (Ctrl+H for replace), or use the button. The count, the up / down pair, Match case (Aa) and the replace row (▾) sit in the bar; Enter goes to the next match and the cursor stays in the bar. Esc clears, then closes; closing puts the cursor back in the text.</p>
+        <div class="row"><button class="btn" id="fb-open" aria-label="Find in the letter" data-tip="Find in the letter"><span class="icon" data-icon="search"></span></button></div>
+        <div class="doc-demo"><div id="fb-bar"></div><div class="doc-text" id="fb-doc" tabindex="0" aria-label="Letter"></div></div></div>
       <div class="spec"><h3>Spin button</h3>
         <p class="rule">A number in a range. Arrow keys or the buttons inside the field step it; holding a button repeats, slowly then faster. Page Up and Page Down step 10 times, Home and End go to the limits. A value out of range shows an error (red border and "!") instead of being corrected. Both "," and "." work as the decimal mark.</p>
         <div class="field"><div class="label-row"><label for="spin">Copies (1–99)</label><button type="button" class="info-tip" popovertarget="ayni-help" aria-label="About Copies" data-tip="What is this?" data-help="Each copy prints the whole document. Pages are collated: 1, 2, 3, then 1, 2, 3 again.">i</button></div>
@@ -599,7 +648,7 @@
 <div class="panel popup controls" popover id="pp-ctrl" role="dialog" aria-label="View options">
   <h4>View options</h4>
   <div class="field"><label for="pp-name">Filter by name</label>
-    <div class="input-group search-field"><input id="pp-name" class="input" type="search" placeholder="Type part of a name"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn" type="button" aria-label="Search" data-tip="Search"><span class="icon" data-icon="search"></span></button></div></div>
+    <div class="input-group search-field"><input id="pp-name" class="input" type="search" placeholder="Type part of a name"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button></div></div>
   <fieldset><legend>Sort by</legend>
     <label class="choice"><input type="radio" name="pp-sort" value="Name" checked>Name</label>
     <label class="choice"><input type="radio" name="pp-sort" value="Date modified">Date modified</label>
@@ -719,12 +768,13 @@
 </dialog>
 <dialog class="panel" id="dlg-find" aria-labelledby="dfi-t">
   <form method="dialog" style="display:contents">
-    <header><h2 id="dfi-t">Find</h2></header>
+    <header><h2 id="dfi-t">Find in files</h2></header>
     <div class="body">
-      <div class="field"><label for="dfi-q">Find what</label><input id="dfi-q" class="input" value="invoice"></div>
-      <label class="choice"><input type="checkbox">Match case</label>
+      <div class="field"><label for="dfi-q">Containing</label><input id="dfi-q" class="input" value="invoice"></div>
+      <div class="field"><label for="dfi-in">In folder</label><input id="dfi-in" class="input" value="Documents"></div>
+      <label class="choice"><input type="checkbox" checked>Include subfolders</label>
     </div>
-    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="List all matches" data-tip="List all matches"><span class="icon" data-icon="list"></span></button></div><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Find next" data-tip="Find next (Enter)"><span class="icon" data-icon="chev-right"></span></button></footer>
+    <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="Clear the list" data-tip="Clear the list"><span class="icon" data-icon="trash"></span></button></div><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Search" data-tip="Search (Enter)"><span class="icon" data-icon="search"></span></button></footer>
   </form>
 </dialog>
 </body>

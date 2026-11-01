@@ -148,6 +148,110 @@ const Ayni = {
   fitBar(row, options) {},
 
   /**
+   * Adds what the markup cannot say to a search field (ayni-search.js). A `.fold` field unfolds from its Search
+   * button (`[data-search]`, next to it; one is made when the page has none).
+   * @param {HTMLElement} field  The `.input-group.search-field`.
+   * @param {object} [options]  { filter(): the filter button was pressed (one is made if the field has none),
+   *   filterTip, step(d): go to the previous (-1) or next (+1) hit, also Enter / Shift+Enter (adds the up / down pair),
+   *   onClose(): a folded field was emptied and folded, tip: false drops the how-to-search tooltip, toggle }
+   * @returns {{open: (quiet?: boolean) => void, close: (quiet?: boolean) => void, isOpen: () => boolean,
+   *   count: (text: string) => void, canStep: (on: boolean) => void, clear: () => void,
+   *   filtered: (what?: number | string | false) => void}}  filtered: which filter is on (nothing = none, a number
+   *   = how many, "Filters: 2", a text = its name, "Filter: fruits"); the filter icon turns Accent while one is.
+   *   The field fires ayni:search { text, test } after each change (only on Enter or its Go button for a field
+   *   marked data-enter) and ayni:searchclose once folded. Ctrl+F (⌘F) opens the view's search from anywhere.
+   */
+  searchField(field, options) {},
+
+  /**
+   * A find bar above a document (ayni-search.js): Ayni fills the empty element with the find row (field, "3 / 12",
+   * up / down, Match case, ▾, Close) and the replace row (replacement, Replace, Replace all), and keeps its keys:
+   * Ctrl+F / Ctrl+H open it, Enter / Shift+Enter step, Enter in the replacement replaces, Esc clears then closes.
+   * The page finds, marks, steps and replaces.
+   * @param {HTMLElement} bar  An empty element above the document.
+   * @param {object} options  { find(text, { matchCase }): the words or Match case changed ('' = drop the marks),
+   *   step(d): -1 / +1, replace(text, all): once or every match, as one undoable action (no replace = no replace
+   *   row), selected(): the document's selected words, put in the field on opening, onClose(): drop the marks and
+   *   put the cursor back in the document }
+   * @returns {{open: (withReplace?: boolean, text?: string) => void, close: () => void, isOpen: () => boolean,
+   *   count: (at: number, total: number) => void}}  count: at = the current match (1-based, 0 = none picked).
+   */
+  findBar(bar, options) {},
+
+  /**
+   * The search rule as a test (ayni-base.js): words in any order, "an exact phrase", -word to leave out; accents,
+   * case, ß, œ, æ, ’ and German umlauts folded.
+   * @param {string} text  What was typed.
+   * @returns {((itemText: string) => boolean) & {terms: string[], not: string[]} | null}  null when nothing is asked.
+   */
+  matcher(text) {},
+
+  /**
+   * A text folded for searching (ayni-base.js): accents and case gone, ß -> ss, œ -> oe, æ -> ae, ’ -> '.
+   * @param {string} text
+   * @returns {string}
+   */
+  fold(text) {},
+
+  /**
+   * An item list, the main list of a view (ayni-lists.js): picks like a file manager, shows the picked items' group
+   * in the title row, opens the menu, runs the actions' keys. Rows carry their id (data-id); the page draws them and
+   * may draw them again at any time: the picks, ticks and states come back on their own.
+   * @param {HTMLElement|string} element  The container of the rows.
+   * @param {object} options  { row, idOf, bar, actions, area, open, preview, clickOpens, openMiddle, pickable, count,
+   *   ticks, grid, drag: { text, can }, tree, main, active, onSelect, contextmenu }. An action:
+   *   { id, label, icon, key, rank, group, danger, noBar, hideOff, where, when, why, run(ids, event) }.
+   * @returns {{ids: Function, has: Function, set: Function, clear: Function, selectAll: Function, toggle: Function,
+   *   refresh: Function, redraw: Function, focus: Function, menu: Function, picking: Function, actions: Function,
+   *   setActions: Function, run: Function, key: Function, items: Function, element: HTMLElement}}
+   */
+  list(element, options) {},
+
+  /**
+   * Rows that take dropped items (ayni-lists.js), from a list, a tree or the computer (the browser's own drag).
+   * @param {HTMLElement} host
+   * @param {object} options  { sel, target(row) -> id, can(ids, id, row, event) -> 'inside' | 'before' | 'after' |
+   *   false | { zone, ok: false }, drop(ids, id, zone, event, ok), copy }
+   */
+  dropZone(host, options) {},
+
+  /** The ids being dragged from an Ayni list or tree, or null (a drag from the computer). */
+  dragIds() {},
+
+  /**
+   * A tree (ayni-lists.js). With { root, items } it builds a tree from data (or wires a markup tree) and returns its
+   * controller. With { nav: true, items, isOpen, setOpen, current, go, menu, drag, drop, tail, keys, sheet, pick,
+   * confirm, disabled } it makes a navigation tree drawn from the page's data; build() draws it again.
+   * @param {HTMLElement} element  The ul (or any container) of the tree.
+   * @param {object} [options]
+   * @returns {object} The controller.
+   */
+  tree(element, options) {},
+
+  /**
+   * Move to… (ayni-lists.js): a dialog with the tree, opened down to `current`.
+   * @param {object} options  { title, items, current, lit, disabled(id), okLabel, note (text or fn(lit id)),
+   *   extra(sync) -> element, openRoots }
+   * @returns {Promise<string|null>} The picked id, or null.
+   */
+  pickNode(options) {},
+
+  /**
+   * Does a keydown match a shortcut (ayni-lists.js)? The spelling of Ayni.keyLabel: 'Ctrl+C', 'Del', 'F2', 'S', or
+   * an array of them. Ctrl means ⌘ on a Mac; with Ctrl or Alt held the key's place counts on non-Latin layouts.
+   * @param {string|string[]} spec
+   * @param {KeyboardEvent} event
+   * @returns {boolean}
+   */
+  keyMatches(spec, event) {},
+
+  /**
+   * Type-ahead for a list (ayni-lists.js): find(key, items, current) returns the item to jump to, or null.
+   * @param {(item: HTMLElement) => string} [textOf]
+   */
+  makeTypeAhead(textOf) {},
+
+  /**
    * Markup of one icon, `<span class="icon" data-icon="name">`, drawn from the icon set in use.
    * @param {string} name  An Ayni icon name, or the app's own (a symbol with id "i-<name>", or a name in the set's map).
    * @returns {string}

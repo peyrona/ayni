@@ -35,23 +35,23 @@
 .menu [role^="menuitem"][aria-disabled="true"]:hover { background: none; }
 .menu [role="separator"] { height: 1px; border: 0; background: var(--line); margin: 4px 6px; flex: none; }
 /* A caption heads a group of items ("Sort by") */
-.menu .caption { padding: 6px 10px 2px; font-size: .75rem; font-weight: 600; color: var(--text-dim); flex: none; }
+.menu .caption { padding: 6px 10px 2px; font-size: .75rem; font-weight: 600; color: var(--text-dim); flex: none; max-width: 18rem; }
 
 /* ---------- Toolbar ---------- */
 [role="toolbar"] { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px; background: var(--panel-head-bg); border: var(--panel-border); border-radius: var(--ctl-radius); }
-[role="toolbar"] .btn { --btn: 30px; }
-[role="toolbar"].tall .btn { --btn: 36px; }   /* an app's title row: 36 px buttons */
-/* RULE: in a title row (a header) the toolbar sits plain on the row and keeps one line; tools that do not fit leave
+[role="toolbar"] .btn:not(.sm) { --btn: 30px; }
+[role="toolbar"].tall .btn:not(.sm) { --btn: 36px; }   /* an app's title row: 36 px buttons; a small one stays small */
+/* RULE: in a title row (a header, or a toolbar marked .tall) the toolbar sits plain on the row and keeps one line; tools that do not fit leave
    by rank (Ayni.fitBar). A toolbar on its own (above a tree) is a tinted strip with a border */
-header [role="toolbar"] { background: none; border: 0; border-radius: 0; padding: 0; flex-wrap: nowrap; min-width: 0; }
+header [role="toolbar"], [role="toolbar"].tall { background: none; border: 0; border-radius: 0; padding: 0; flex-wrap: nowrap; min-width: 0; }
 /* A tool that did not fit its row (Ayni.fitBar): it is listed in the More menu instead */
 .fit-out { display: none !important; }
 /* RULE: tools come in groups (.tb-group). A group with nothing showing takes no room, and the line between two groups
    is drawn only when a group before it shows. A folded search (display none, never [hidden]) is nothing showing */
 .tb-group { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
-.tb-group[hidden], .tb-group:not(:has(> :not([hidden]):not(.fit-out):not(.search-fold:not(.is-open))))  { display: none; }
-[role="toolbar"] > .tb-group:not([hidden]):has(> :not([hidden]):not(.fit-out):not(.search-fold:not(.is-open))) ~ .tb-group::before {
-  content: ""; align-self: stretch; width: 1px; margin: 6px 4px; background: var(--line); }
+.tb-group[hidden], .tb-group:not(:has(> :not([hidden]):not(.fit-out):not(.search-field.fold:not(.is-open))))  { display: none; }
+[role="toolbar"] > .tb-group:not([hidden]):has(> :not([hidden]):not(.fit-out):not(.search-field.fold:not(.is-open))) ~ .tb-group::before {
+  content: ""; flex: none; align-self: stretch; width: 1px; margin: 6px 4px; background: var(--line); }
 
 /* ---------- Popups ---------- */
 .panel.popup { position: fixed; inset: auto; }

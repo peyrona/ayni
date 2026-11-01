@@ -13,6 +13,8 @@ const { fire, once, each, tx, iconName, layer, isTouch, HOLD_MS, retip } = Ayni.
 
 const PAD_SLACK = 8;            // the most a touch hit area sticks out past a 30 px tool: (44 - 30) / 2, rounded up
 const MOVE_SLOP = 10;           // px a finger may move before a long tap is cancelled
+/* A short buzz when a long tap takes; the browser refuses it (and says so) before the user has interacted with the page */
+const buzz = () => { if (navigator.userActivation?.hasBeenActive !== false) navigator.vibrate?.(15); };
 
 /* ---------- Who opened what ---------- */
 /* invoker is the button that opened the current popup (any [popovertarget]); ctxPoint is set for pop-up menus.
@@ -61,7 +63,7 @@ const host = (pop) => {
 
 /* ---------- Menus ---------- */
 const inBar = (b) => b?.parentElement?.getAttribute('role') === 'menubar';
-const barItemsOf = (b) => $$('button', b.parentElement);
+const barItemsOf = (b) => $$(':scope > button', b.parentElement).filter((x) => x.getClientRects().length);
 const openMenu = (btn) => { invoker = btn; ctxPoint = null; host($('#' + btn.getAttribute('popovertarget'))).showPopover(); };
 const ownItems = (menu) => $$('[role^="menuitem"]', menu).filter((x) => x.closest('.panel.menu') === menu);
 const subOf = (it) => it?.dataset.submenu && document.getElementById(it.dataset.submenu);
@@ -97,7 +99,8 @@ const shapeRows = (menu) => {
 /* A menu fires ayni:action with { item, menu, act } when an item is chosen (menu is the menu's name, or the name of
    the thing a pop-up menu was opened on), and ayni:choose with the item when a menuitemradio is picked */
 const initMenu = (menu) => {
-  const items = () => ownItems(menu).filter((x) => x.getAttribute('aria-disabled') !== 'true');
+  /* The rows the keys move through: not disabled, and showing (a page may hide a row) */
+  const items = () => ownItems(menu).filter((x) => x.getAttribute('aria-disabled') !== 'true' && x.getClientRects().length);
   /* One level of submenus: an item with data-submenu="id" opens that menu, which moves inside this one, so that the
      browser keeps this one open while it shows */
   ownItems(menu).forEach((it) => { const s = subOf(it); if (s) { it.setAttribute('aria-haspopup', 'menu'); it.setAttribute('aria-expanded', 'false'); if (s.parentElement !== menu) menu.append(s); } });
@@ -150,40 +153,62 @@ const initMenu = (menu) => {
       fire(menu, 'ayni:choose', it);
     }
     if (it.getAttribute('role') === 'menuitemcheckbox') it.setAttribute('aria-checked', it.getAttribute('aria-checked') !== 'true');
-    const top = rootOf(menu);
-    fire(menu, 'ayni:action', { item: it, menu: top === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
+    /* The menu closes first; then the page hears of the pick and the row runs, at once (code that clicks a row and
+       goes on finds it done). The focus goes back to the opener only if nothing the row did took it */
+    const top = rootOf(menu), row = it.ayniRow;
+    it.ayniRect = it.getBoundingClientRect();
     top.hidePopover();
+    fire(menu, 'ayni:action', { item: it, menu: top === ctxMenu && ctxName ? ctxName : menu.getAttribute('aria-label'), act: it.dataset.act });
+    row?.run?.(e);
   });
 };
 
 /* Menu bar: arrows move, Down opens, hovering switches while a menu is open; F10 focuses the visible menu bar */
 const initMenubar = (bar) => {
-  const barItems = $$('button', bar);
-  barItems.forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
+  /* Read each time: a page may build its bar again (another language, another set of menus) */
+  const items = () => $$(':scope > button', bar).filter((b) => b.getClientRects().length);
+  items().forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
+  new MutationObserver(() => { const l = items(); if (!l.some((b) => b.tabIndex === 0)) l.forEach((b, i) => { b.tabIndex = i ? -1 : 0; }); }).observe(bar, { childList: true });
   bar.addEventListener('keydown', (e) => {
-    const i = barItems.indexOf(document.activeElement);
+    const barItems = items(), i = barItems.indexOf(document.activeElement);
     const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: barItems.length - 1 }[e.key];
     if (n !== undefined) { e.preventDefault(); barItems.forEach((b) => (b.tabIndex = -1)); const t = barItems[(n + barItems.length) % barItems.length]; t.tabIndex = 0; t.focus(); }
     if (e.key === 'ArrowDown') { e.preventDefault(); openMenu(barItems[i]); }
   });
-  barItems.forEach((b) => b.addEventListener('pointerenter', () => {
-    const open = barItems.find((x) => x.getAttribute('aria-expanded') === 'true');
+  bar.addEventListener('pointerover', (e) => {
+    const b = e.target.closest('button'); if (!b || b.parentElement !== bar) return;
+    const open = items().find((x) => x.getAttribute('aria-expanded') === 'true');
     if (open && open !== b) { const m = $('#' + open.getAttribute('popovertarget')); m.dataset.switching = '1'; m.hidePopover(); delete m.dataset.switching; open.setAttribute('aria-expanded', 'false'); openMenu(b); }
-  }));
+  });
 };
 
 /* ---------- Menus built in code ---------- */
-/* Ayni.menuAt(items, { anchor, x, y, keyboard, onClose }): one shared menu, filled from a list. Under anchor (its
-   button), or at x, y. Items: { id, label, icon, key, danger, disabled, why, checked, sub, run }, { sep: true },
-   { caption }; icon is an icon name or SVG markup; checked true / false makes a check item; sub is a list of items, or
-   a function that returns one when the submenu opens; run(event) runs after the menu has closed. Returns { close() } */
-let codeMenu = null, codeSub = null, codeState = null, closed = { anchor: null, at: 0 }, lastDown = { el: null, at: 0 };
-const iconHtml = (ic) => ic.trim().startsWith('<') ? `<span class="icon" aria-hidden="true">${ic}</span>` : icon(ic);
-const fillMenu = (menu, list, state) => {
+/* Rows from a list: { id, label, icon, key, danger, disabled, why, checked, sub, run }, { sep: true }, { caption }.
+   icon is an icon name or markup (an <svg>, or an icon span); checked true / false makes a check item; why is the
+   tooltip (a disabled item says why); sub is a list of items, or a function that returns one when the submenu opens
+   (one level); run(event) runs as soon as the menu has closed (the row's place is kept in row.ayniRect for a popup that
+   must hang from it) */
+let codeMenu = null, codeState = null, closed = { anchor: null, at: 0 }, lastDown = { el: null, at: 0 }, subN = 0, down = false;
+const iconHtml = (ic) => !ic.trim().startsWith('<') ? icon(ic) : /^<span[^>]*\bclass="[^"]*\bicon\b/.test(ic.trim()) ? ic : `<span class="icon" aria-hidden="true">${ic}</span>`;
+/* A menu's own submenu, made the first time one of its rows has one, and filled from that row when it opens */
+const subFor = (menu) => {
+  if (menu.ayniSub) return menu.ayniSub;
+  const sub = document.createElement('div');
+  sub.className = 'panel menu'; sub.id = (menu.id || 'ayni-menu') + '-sub' + (menu.id ? '' : ++subN);
+  sub.setAttribute('popover', ''); sub.setAttribute('role', 'menu');
+  sub.addEventListener('beforetoggle', (e) => {
+    if (e.target !== sub || e.newState !== 'open') return;
+    const row = sub.ayniItem?.ayniRow, list = typeof row?.sub === 'function' ? row.sub() : row?.sub;
+    fillMenu(sub, list, false); sub.setAttribute('aria-label', row?.label || '');
+  });
+  menu.append(sub); once('menu', sub); initMenu(sub);
+  return (menu.ayniSub = sub);
+};
+const fillMenu = (menu, list, subs = true) => {
   const rows = (list || []).filter((it) => it && !it.hidden);
   menu.replaceChildren();
   let lastSep = true;
-  rows.forEach((it, i) => {
+  rows.forEach((it) => {
     if (it.sep) { if (!lastSep) menu.insertAdjacentHTML('beforeend', '<div role="separator"></div>'); lastSep = true; return; }
     lastSep = false;
     if (it.caption) { const c = document.createElement('div'); c.className = 'caption'; c.textContent = it.caption; menu.append(c); return; }
@@ -197,61 +222,56 @@ const fillMenu = (menu, list, state) => {
     b.innerHTML = (it.icon ? iconHtml(it.icon) : '') + '<span class="label"></span>' + (it.key ? '<kbd></kbd>' : '');
     $('.label', b).textContent = it.label;
     if (it.key) $('kbd', b).textContent = keyLabel(it.key);
-    if (it.sub && state.sub) { b.dataset.submenu = state.sub.id; b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false'); }
+    if (it.sub && subs) { b.dataset.submenu = subFor(menu).id; b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false'); }
     b.ayniRow = it;
     menu.append(b);
   });
-  $$('[role="separator"]:last-child', menu).forEach((s) => s.remove());
+  $$(':scope > [role="separator"]:last-child', menu).forEach((x) => x.remove());
+  if (menu.ayniSub) menu.append(menu.ayniSub);           // the submenu stays last, after the rows
   shapeRows(menu);
-  return menu.firstChild;
+  return ownItems(menu).length > 0;
 };
+/* Ayni.fillMenu(menu, items): fills a .panel.menu of the page from a list (as Ayni.menuAt), for a menu that is built
+   when it opens (a menu bar's menu: listen for its beforetoggle) */
+const fillPage = (menu, list) => { if (once('menu', menu)) initMenu(menu); return fillMenu(menu, list); };
 const ensureCodeMenu = () => {
   if (codeMenu) return;
   codeMenu = layer('ayni-menu', '<div class="panel menu" popover id="ayni-menu" role="menu"></div>');
-  codeSub = document.createElement('div');
-  Object.assign(codeSub, { className: 'panel menu', id: 'ayni-menu-sub' }); codeSub.setAttribute('popover', ''); codeSub.setAttribute('role', 'menu');
-  codeMenu.append(codeSub);
-  /* The submenu is filled from its item when it opens (a function is called then) */
-  codeSub.addEventListener('beforetoggle', (e) => {
-    if (e.newState !== 'open') return;
-    const row = codeSub.ayniItem?.ayniRow;
-    const list = typeof row?.sub === 'function' ? row.sub() : row?.sub;
-    fillMenu(codeSub, list, {}); codeSub.ayniRows = list;
-  });
-  once('menu', codeSub); initMenu(codeSub);
   once('menu', codeMenu); initMenu(codeMenu);
-  /* After the menu has closed (and given the focus back), the item runs */
-  const pick = (e) => {
-    const b = e.target.closest('[role^="menuitem"]'); const row = b?.ayniRow;
-    if (!row || b.dataset.submenu || b.getAttribute('aria-disabled') === 'true' || !codeState) return;
-    if (row.run) codeMenu.addEventListener('toggle', () => row.run(e), { once: true });
-  };
-  codeMenu.addEventListener('click', pick);
-  codeMenu.addEventListener('toggle', (e) => {
+  /* Noted the moment it closes (beforetoggle comes at once, toggle a moment later): code that opens it again right after
+     a press outside closed it must find it closed */
+  codeMenu.addEventListener('beforetoggle', (e) => {
     if (e.target !== codeMenu || e.newState !== 'closed' || !codeState) return;
     const st = codeState; codeState = null;
     st.anchor?.setAttribute('aria-expanded', 'false');
     /* Closed by a press on its own button: that press's click must not open it again */
     if (!st.toggled && st.anchor?.contains(lastDown.el) && performance.now() - lastDown.at < 1000) closed = { anchor: st.anchor, at: performance.now() };
-    st.onClose?.();
+    if (st.onClose) codeMenu.addEventListener('toggle', () => st.onClose(), { once: true });
   });
 };
+/* Ayni.menuAt(items, { anchor, x, y, keyboard, onClose }): one shared menu, filled from a list (rows as above). Under
+   anchor (its button), or at x, y. Opened while a button or a finger is down (a right-click, a long tap), it shows when
+   that is lifted: the release would close it at once. Returns { close() }, or null when nothing was shown */
 const menuAt = (list, o = {}) => {
   ensureCodeMenu();
   /* A press on the button of the open menu closed it (outside the menu): it must not open it again */
   if (o.anchor && o.anchor === closed.anchor && performance.now() - closed.at < 400) { closed.anchor = null; return null; }
-  /* ...or its menu is still open, or the press closed it a moment ago and the browser has not said so yet: it closes */
+  /* ...or its menu is still open: it closes */
   if (o.anchor && codeState?.anchor === o.anchor) { codeState.toggled = true; if (codeMenu.matches(':popover-open')) codeMenu.hidePopover(); return null; }
   if (codeMenu.matches(':popover-open')) codeMenu.hidePopover();
-  if (!fillMenu(codeMenu, list, { sub: codeSub })) return null;
-  codeMenu.append(codeSub);
-  codeState = { anchor: o.anchor || null, onClose: o.onClose || null };
-  if (o.keyboard != null) byKeys = !!o.keyboard;
-  if (o.anchor) { invoker = o.anchor; ctxPoint = null; ctxReturn = o.anchor; o.anchor.setAttribute('aria-expanded', 'true'); }
-  else { ctxPoint = { x: o.x || 0, y: o.y || 0 }; ctxReturn = document.activeElement; invoker = ctxReturn; }
-  ctxName = null; ctxMenu = codeMenu;
-  host(codeMenu).showPopover();
-  return { close: () => { if (codeMenu.matches(':popover-open')) codeMenu.hidePopover(); } };
+  if (!fillMenu(codeMenu, list)) return null;
+  const st = codeState = { anchor: o.anchor || null, onClose: o.onClose || null };
+  const back = document.activeElement;
+  const show = () => {
+    if (codeState !== st) return;
+    if (o.keyboard != null) byKeys = !!o.keyboard;
+    if (o.anchor) { invoker = o.anchor; ctxPoint = null; ctxReturn = o.anchor; o.anchor.setAttribute('aria-expanded', 'true'); }
+    else { ctxPoint = { x: o.x || 0, y: o.y || 0 }; ctxReturn = back; invoker = back; }
+    ctxName = null; ctxMenu = codeMenu;
+    host(codeMenu).showPopover();
+  };
+  if (down) addEventListener('pointerup', () => setTimeout(show), { once: true, capture: true }); else show();
+  return { close: () => { if (codeMenu.matches(':popover-open')) codeMenu.hidePopover(); else if (codeState === st) codeState = null; } };
 };
 
 /* Ayni.keyLabel('Ctrl+C'): a shortcut as menus and tooltips show it: "Ctrl+C", or "⌘C" on Mac, in the page's language.
@@ -269,7 +289,7 @@ const keyLabel = (spec) => {
    item it opens that element's pop-up menu, on a list item it starts picking. iOS Safari sends no contextmenu, so the
    hold is timed here, with the same ring as the buttons. */
 const openCtx = (menu, x, y, name, back) => { ctxPoint = { x, y }; invoker = back; ctxReturn = back; ctxName = name; ctxMenu = menu; host(menu).showPopover(); };
-let swallowUntil = 0, swallowIn = []; // after a long tap, ignore the click / mousedown its release may produce on the held element, or on the menu that opened under the finger
+let swallowUntil = 0, swallowIn = [], swallowOne = false; // after a long tap, ignore the click / mousedown its release may produce on the held element, or on the menu that opened under the finger
 const holdRing = (x, y) => {
   const r = document.createElement('div'); r.className = 'hold-ring'; r.style.left = x + 'px'; r.style.top = y + 'px';
   r.style.setProperty('--hold-ms', HOLD_MS + 'ms'); document.body.append(r); return r;
@@ -285,7 +305,7 @@ const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
     if (e.pointerType === 'mouse' && !isTouch()) return;
     const t = target(e); if (!t || e.button !== 0) return;
     fired = null; start = { x: e.clientX, y: e.clientY }; ring = holdRing(e.clientX, e.clientY);
-    timer = setTimeout(() => { ring?.remove(); ring = null; fired = { ...t, ...start }; navigator.vibrate?.(15); }, HOLD_MS);
+    timer = setTimeout(() => { ring?.remove(); ring = null; fired = { ...t, ...start }; buzz(); }, HOLD_MS);
   });
   root.addEventListener('pointermove', (e) => {
     const far = Math.hypot(e.clientX - start?.x, e.clientY - start?.y) > MOVE_SLOP;
@@ -298,7 +318,7 @@ const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
   /* The menu opens on release, otherwise that release would close it as an outside click */
   root.addEventListener('pointerup', () => {
     stop(); if (!fired) return;
-    const f = fired; fired = null; swallowUntil = performance.now() + 600; swallowIn = [root, menu];
+    const f = fired; fired = null; swallowUntil = performance.now() + 600; swallowIn = [root, menu]; swallowOne = false;
     setTimeout(() => openCtx(menu, f.x, f.y, f.name, f.back));
   });
   root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') stop(); });
@@ -318,26 +338,35 @@ const contextMenu = (root, { menu, target, keyTarget = target, onDrag }) => {
 };
 /* Ayni.longTap(area, selector, fn(el, x, y)): a finger held still on an element matching selector inside area for the
    hold time (the ring fills) runs fn while the finger is still down, as picking in a list does. The click and the
-   contextmenu the finger leaves behind are swallowed */
+   contextmenu the finger leaves behind are swallowed. A finger is read from touch events: a phone's own long-press
+   gesture may cancel the pointer at about the same time. A pen, or a mouse in touch mode, is read from pointer events */
 const longTap = (root, sel, fn) => {
-  let timer, ring, start, el = null, held = false;
-  const stop = () => { clearTimeout(timer); ring?.remove(); ring = null; };
-  root.addEventListener('pointerdown', (e) => {
+  let timer = null, ring, start, el = null, held = false;
+  const stop = () => { clearTimeout(timer); timer = null; ring?.remove(); ring = null; };
+  const begin = (target, x, y) => {
     stop(); held = false;
-    if ((e.pointerType === 'mouse' && !isTouch()) || e.button !== 0 || !e.isPrimary) return;
-    el = e.target.closest(sel);
-    if (!el || !root.contains(el) || e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-    start = { x: e.clientX, y: e.clientY }; ring = holdRing(e.clientX, e.clientY);
+    el = target.closest?.(sel);
+    if (!el || !root.contains(el) || target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    start = { x, y }; ring = holdRing(x, y);
     timer = setTimeout(() => {
-      ring?.remove(); ring = null; held = true;
-      swallowUntil = Infinity; swallowIn = [root];            // until the finger lifts
-      navigator.vibrate?.(15); fn(el, start.x, start.y);
+      timer = null; ring?.remove(); ring = null; held = true;
+      swallowUntil = Infinity; swallowIn = [root]; swallowOne = false;   // until the finger lifts
+      buzz(); fn(el, start.x, start.y);
     }, HOLD_MS);
+  };
+  const move = (x, y) => { if (timer && Math.hypot(x - start.x, y - start.y) > MOVE_SLOP) stop(); };
+  /* Lifted after the hold: its one click is swallowed, the next tap counts */
+  const lift = () => { stop(); if (held) { held = false; swallowUntil = performance.now() + 350; swallowOne = true; } };
+  root.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) { stop(); return; } const t = e.touches[0]; begin(e.target, t.clientX, t.clientY); }, { passive: true });
+  root.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY); }, { passive: true });
+  root.addEventListener('touchend', lift);
+  root.addEventListener('touchcancel', lift);
+  root.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' || (e.pointerType === 'mouse' && !isTouch()) || e.button !== 0 || !e.isPrimary) return;
+    begin(e.target, e.clientX, e.clientY);
   });
-  root.addEventListener('pointermove', (e) => { if (ring && Math.hypot(e.clientX - start.x, e.clientY - start.y) > MOVE_SLOP) stop(); });
-  const lift = () => { stop(); if (held) { held = false; swallowUntil = performance.now() + 350; } };
-  root.addEventListener('pointerup', lift);
-  root.addEventListener('pointercancel', lift);
+  root.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') move(e.clientX, e.clientY); });
+  ['pointerup', 'pointercancel'].forEach((t) => root.addEventListener(t, (e) => { if (e.pointerType !== 'touch') lift(); }));
 };
 
 /* ---------- Toolbars ---------- */
@@ -369,7 +398,7 @@ const initToolbar = (bar) => {
    ranks the later one first) and ONE More button at the start of the system group (.tb-group.tb-sys) lists the hidden
    ones, in toolbar order, then the app's own items (more: () => menu items). Nothing to list: no More. The order never
    changes; the rest close up. btn: the app's own More button to use. A tool the app hides itself is not ours: it never
-   goes into More. Search never leaves while nothing is picked (.has-selection on the row or inside it); while picking,
+   goes into More. Search (a .search-field, or a button marked data-search) never leaves while nothing is picked (.has-selection on the row or inside it); while picking,
    the actions get the room. A group can give the menu item for one of its tools itself: group.ayniMenuRow(button).
    Calling it again on the same row updates the options */
 const fitBar = (header, opts = {}) => {
@@ -406,8 +435,10 @@ const fitBar = (header, opts = {}) => {
   /* Shown, were it not for us: the app has not hidden it or a box around it */
   const shown = (el) => !el.classList.contains('fit-out') && el.getClientRects().length > 0;
   const picking = () => header.classList.contains('has-selection') || !!$('.has-selection', header);
-  const isSearch = (el) => el.matches('.search-field, .search-fold') || !!$('.search-field, .search-fold', el);
-  const pinned = (el) => (isSearch(el) && !picking()) || !!(el.ayniFitPin || el.matches('.search-fold.is-open') || $('.search-fold.is-open', el));
+  const SEARCH = '.search-field, [data-search]';   // a search field, or the button that opens a folded one
+  const isSearch = (el) => el.matches(SEARCH) || !!$(SEARCH, el);
+  const OPEN = '.search-field.fold.is-open';
+  const pinned = (el) => (isSearch(el) && !picking()) || !!(el.ayniFitPin || el.matches(OPEN) || $(OPEN, el));
   const ownItems = () => (opts.more ? opts.more() || [] : []).filter((it) => it && !it.hidden);
 
   /* Wider than its box. Not scrollWidth alone: on touch the invisible 44 px hit areas reach a few px past the last
@@ -478,7 +509,7 @@ const fitBar = (header, opts = {}) => {
     ranked().forEach((el) => {
       if (!el.classList.contains('fit-out')) return;
       el.classList.remove('fit-out');
-      const ok = el.getClientRects().length > 0 || !!el.closest('.has-selection');
+      const ok = el.getClientRects().length > 0 || !!el.closest('.tb-group')?.ayniMenuRow;
       el.classList.add('fit-out');
       if (!ok) return;
       const it = itemFor(el); if (!it) return;
@@ -520,7 +551,7 @@ const initControlsPopup = (pop) => pop.addEventListener('toggle', (e) => {
   if (e.newState === 'open') { place(pop); $('input:not([type="hidden"]), select, textarea, [tabindex="0"]', pop)?.focus(); } else invoker?.focus();
 });
 /* Tool group (.panel.popup.tools): the real tools of a group, under the one button that stands for them. Pressing a
-   tool runs it and closes the popup; a press inside never takes the page's focus. The button names, in data-lit-by,
+   tool (a button, or a link) runs it and closes the popup; a press inside never takes the page's focus. The button names, in data-lit-by,
    the toggles inside that light it while one of them is on */
 const initToolsPopup = (pop) => {
   pop.addEventListener('toggle', (e) => {
@@ -529,7 +560,7 @@ const initToolsPopup = (pop) => {
     else if (pop.contains(document.activeElement)) invoker?.focus();
   });
   pop.addEventListener('mousedown', (e) => { if (!e.target.closest('input, select, textarea')) e.preventDefault(); });
-  pop.addEventListener('click', (e) => { if (e.target.closest('button')) pop.hidePopover(); });
+  pop.addEventListener('click', (e) => { if (e.target.closest('button, a[href]')) pop.hidePopover(); });
 };
 const initLitBy = (btn) => {
   const watch = btn.dataset.litBy.split(/\s+/).map((id) => document.getElementById(id)).filter(Boolean);
@@ -553,7 +584,10 @@ const dismissPopups = (src) => {
 /* ---------- Page-wide behaviour, set up once ---------- */
 const setup = () => {
   addEventListener('keydown', () => { byKeys = true; }, true);
-  addEventListener('pointerdown', (e) => { byKeys = false; lastDown = { el: e.target, at: performance.now() }; }, true);
+  /* down: a real button or finger is pressed now (a pointer event made by a script never holds a menu back) */
+  addEventListener('pointerdown', (e) => { byKeys = false; down = e.isTrusted; lastDown = { el: e.target, at: performance.now() }; }, true);
+  ['pointerup', 'pointercancel', 'click'].forEach((t) => addEventListener(t, () => { down = false; }, true));
+  addEventListener('blur', () => { down = false; });
   document.addEventListener('click', (e) => { const b = e.target.closest('[popovertarget]'); if (b) { invoker = b; ctxPoint = null; ctxName = null; host(document.getElementById(b.getAttribute('popovertarget'))); } }, true);
   /* A press on a button that opens a menu or a tool group does not take the page's focus either */
   document.addEventListener('mousedown', (e) => {
@@ -564,7 +598,7 @@ const setup = () => {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     const m = $$('.panel.menu:popover-open').at(-1); if (!m || m.contains(document.activeElement)) return;
-    const list = ownItems(m).filter((x) => x.getAttribute('aria-disabled') !== 'true'); if (!list.length) return;
+    const list = ownItems(m).filter((x) => x.getAttribute('aria-disabled') !== 'true' && x.getClientRects().length); if (!list.length) return;
     e.preventDefault(); (e.key === 'ArrowDown' ? list[0] : list.at(-1)).focus();
   }, true);
   document.addEventListener('keydown', (e) => {
@@ -572,7 +606,11 @@ const setup = () => {
     const bar = $$('[role="menubar"]').find((m) => m.getClientRects().length); if (!bar) return;
     e.preventDefault(); $('button', bar).focus();
   });
-  ['click', 'mousedown', 'contextmenu'].forEach((t) => addEventListener(t, (e) => { if (performance.now() < swallowUntil && swallowIn.some((el) => el.contains(e.target))) { e.stopPropagation(); e.preventDefault(); } }, true));
+  ['click', 'mousedown', 'contextmenu'].forEach((t) => addEventListener(t, (e) => {
+    if (performance.now() >= swallowUntil || !swallowIn.some((el) => el.contains(e.target))) return;
+    e.stopPropagation(); e.preventDefault();
+    if (swallowOne && t === 'click') { swallowUntil = 0; swallowOne = false; }   // after a long tap: only its own click
+  }, true));
 
   document.addEventListener('toggle', (e) => { if (e.newState === 'open') poppedAt = performance.now(); }, true);
   addEventListener('scroll', (e) => dismissPopups(e.target instanceof Element ? e.target : null), true);
@@ -598,7 +636,7 @@ const init = (root) => {
 
 Ayni.core.menus = { initMenu, initToolbar, contextMenu, place, invoker: () => invoker };
 Object.assign(Ayni, {
-  place, menuAt, keyLabel, contextMenu, longTap, fitBar,
+  place, menuAt, fillMenu: fillPage, keyLabel, contextMenu, longTap, fitBar,
   toolbar: (el) => { if (once('toolbar', el)) initToolbar(el); },
 });
 Ayni.core.family({ setup, init });
