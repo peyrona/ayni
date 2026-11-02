@@ -1761,6 +1761,251 @@ try {
     await t.send('Emulation.setEmulatedMedia', { features: [] });
   }
 
+  section('Fields family (base + buttons + notifications + dialogs + menus + fields)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await t.evaluate(`(() => { try { localStorage.removeItem('ayni-lang'); } catch { /* about:blank */ } return true; })()`);
+    await t.open(BASE + '/tests/fields-only.html');
+    check('a page with the fields family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const KEYS = { Escape: 27, Enter: 13, Tab: 9, F4: 115, ArrowUp: 38, ArrowDown: 40, ArrowRight: 39, ArrowLeft: 37, PageUp: 33, PageDown: 34, Home: 36, End: 35 };
+    const key = async (k, mods = 0) => {
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: KEYS[k] || 0, modifiers: mods, ...(k === 'Enter' ? { text: '\r' } : {}) });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: KEYS[k] || 0, modifiers: mods });
+      await wait(60);
+    };
+    const ALT = 1;
+    const type = async (s) => { await t.send('Input.insertText', { text: s }); await wait(40); };
+    const mouse = (kind, x, y) => t.send('Input.dispatchMouseEvent', { type: kind, x, y, button: kind === 'mouseMoved' ? 'none' : 'left', buttons: kind === 'mousePressed' ? 1 : 0, clickCount: 1 });
+    /* The page is scrolled to the element first, and waits: a scroll closes open popups, so it must be over */
+    const into = async (sel) => { await ev(`(document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center' }), true)`); await wait(120); };
+    const mid = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+    const click = async (sel) => { await into(sel); const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseReleased', x, y); await wait(100); };
+    const focus = async (sel) => { await into(sel); await ev(`(document.querySelector(${JSON.stringify(sel)}).focus(), true)`); };
+    const val = (sel) => ev(`document.querySelector(${JSON.stringify(sel)}).value`);
+    const attr = (sel, a) => ev(`document.querySelector(${JSON.stringify(sel)}).getAttribute(${JSON.stringify(a)})`);
+    const height = (sel) => ev(`Math.round(document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect().height)`);
+    const css = (sel, p) => ev(`getComputedStyle(document.querySelector(${JSON.stringify(sel)})).${p}`);
+    const btnOf = (id) => `#${id} ~ button:not(.err-mark)`;
+    const popOf = (id) => ev(`document.querySelector('${btnOf(id)}').getAttribute('popovertarget')`);
+    const openPop = () => ev(`[...document.querySelectorAll('.panel.popup:popover-open')].map((p) => p.id).join()`);
+    const errText = (id) => ev(`(() => { const i = document.getElementById('${id}'); return i.getAttribute('aria-describedby').split(' ').map((x) => document.getElementById(x)).find((e) => e?.classList.contains('error'))?.textContent; })()`);
+    const blur = async (sel, text) => { await focus(sel); await ev(`(document.querySelector(${JSON.stringify(sel)}).value = '', true)`); await type(text); await ev(`(document.querySelector(${JSON.stringify(sel)}).blur(), true)`); await wait(40); };
+    const log = () => ev(`L.join('|')`);
+    const reset = () => ev(`(document.querySelectorAll(':popover-open').forEach((p) => p.id !== 'ayni-toasts' && p.id !== 'ayni-tip' && p.hidePopover()), document.querySelectorAll('dialog[open]').forEach((d) => d.close()), L.length = 0, document.activeElement?.blur?.(), true)`);
+
+    check('the family works without ayni.css and ayni.js', await ev(`!document.querySelector('link[href$="/ayni.css"], script[src$="/ayni.js"]') && typeof Ayni.status === 'undefined' && ['dateField', 'timeField', 'dateTimeField', 'calendar', 'focusFirstError'].every((k) => typeof Ayni[k] === 'function') && typeof Ayni.dates.iso === 'function'`));
+
+    /* Look */
+    check('a text field is 32 px tall and border-box', (await height('#name')) === 32 && (await css('#name', 'boxSizing')) === 'border-box');
+    check('a field group (password) is 32 px too', (await height('#pw-eye')) <= 26 && (await height('#pw')) <= 32 && (await ev(`Math.round(document.querySelector('#pw').closest('.input-group').getBoundingClientRect().height)`)) === 32);
+    check('.fields stacks its fields 12 px apart', await ev(`(() => { const a = document.querySelector('#name').closest('.field').getBoundingClientRect(), b = document.querySelector('#nick').closest('.field').getBoundingClientRect(); return Math.round(b.top - a.bottom); })()`) === 12);
+    check('a label sits 4 px over its field', await ev(`(() => { const l = document.querySelector('label[for="name"]').getBoundingClientRect(), f = document.querySelector('#name').getBoundingClientRect(); return Math.round(f.top - l.bottom); })()`) === 4);
+    check('the required mark is Danger', (await css('.req', 'color')) === (await ev(`(() => { const p = document.createElement('i'); p.style.color = 'var(--danger)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`)));
+    check('autofill keeps the field colours (rule present)', await ev(`[...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => /\\.input:autofill|\\.input:-webkit-autofill/.test(r.selectorText || '')); } catch { return false; } })`));
+    check('read-only: no border, tint; disabled: faded', (await css('#ro', 'borderTopColor')) === 'rgba(0, 0, 0, 0)' && (await css('#dis', 'opacity')) === '0.45');
+    await click('label[for="name"]');
+    check('a click on a label focuses its field', await ev(`document.activeElement.id`) === 'name');
+
+    /* Errors */
+    check('a field with aria-invalid shows the red "!"', await ev(`(() => { const m = document.querySelector('#email').parentElement.querySelector('.err-mark'); return !!m && !m.hidden; })()`));
+    await focus('#email'); await wait(60);
+    check('…and its message pops up while it has focus', await ev(`document.getElementById('ayni-err').matches(':popover-open') && document.getElementById('ayni-err').textContent.includes('full address')`));
+    await ev(`(document.getElementById('email').setAttribute('aria-invalid', 'false'), true)`); await wait(60);
+    check('fixed: the "!" and the popup go', await ev(`document.querySelector('#email').parentElement.querySelector('.err-mark').hidden && !document.getElementById('ayni-err').matches(':popover-open')`));
+    check('a group with an error: "!" next to its legend', await ev(`!!document.querySelector('#ship > legend > .err-mark:not([hidden])')`));
+    await reset(); await ev(`(document.getElementById('email').setAttribute('aria-invalid', 'true'), true)`);
+    check('focusFirstError checks a typed date that never left its field', await ev(`(() => { const i = document.querySelector('#day'); i.value = '2026-13-01'; const r = Ayni.focusFirstError(i.closest('.col')) && document.activeElement === i && i.getAttribute('aria-invalid') === 'true'; day.set('2026-11-02'); return r; })()`));
+    check('…and a good one is no error', await ev(`(() => { const i = document.querySelector('#time'); i.value = '8:15'; const r = !Ayni.focusFirstError(i.closest('.col')) && i.value === '08:15'; time.set('09:30'); return r; })()`));
+    check('focusFirstError goes to the first wrong field', await ev(`Ayni.focusFirstError(document.querySelector('.cols')) && document.activeElement.id === 'email'`));
+    await ev(`(document.getElementById('email').setAttribute('aria-invalid', 'false'), true)`); await reset();
+
+    /* Password */
+    await click('#pw-eye');
+    check('show password: text shown, button pressed, its tooltip says Hide', (await attr('#pw', 'type')) === 'text' && (await attr('#pw-eye', 'aria-pressed')) === 'true' && (await attr('#pw-eye', 'data-tip')) === 'Hide password');
+    check('…and the cursor is in the field', await ev(`document.activeElement.id`) === 'pw');
+    await click('#pw-eye');
+    check('hide again: back to dots, eye icon', (await attr('#pw', 'type')) === 'password' && await ev(`!!document.querySelector('#pw-eye [data-icon="eye"], #pw-eye .icon')`));
+    await reset();
+
+    check('a bare show-password button gets its eye, tooltip and pressed state', await ev(`(() => { const b = document.querySelector('#dlg-eye'); return !!b.querySelector('svg') && b.dataset.tip === 'Show password' && b.getAttribute('aria-label') === 'Show password' && b.getAttribute('aria-pressed') === 'false' && b.type === 'button'; })()`));
+
+    /* Text areas */
+    check('a text area is at least 80 px high', (await height('#ta')) >= 80);
+    check('the count shows on a text area with a limit', await ev(`document.querySelector('.ta-count').textContent`) === '5 / 50');
+    await focus('#ta'); await ev(`(document.querySelector('#ta').setSelectionRange(5, 5), true)`); await type('!!');
+    check('…and follows the typing', await ev(`document.querySelector('.ta-count').textContent`) === '7 / 50');
+    const g0 = await height('#grow'); await focus('#grow'); await type('a\nb\nc\nd\ne\nf\ng');
+    check('auto-grow: the field grows with its text', (await height('#grow')) > g0);
+    await reset();
+
+    /* Number field */
+    check('no ayni:change on load', (await log()) === '');
+    await focus('#copies'); await key('ArrowUp');
+    check('Up steps by one, and ayni:change gives the number', (await val('#copies')) === '3' && (await log()).startsWith('change copies-g:3'), await log());
+    await key('PageUp'); check('Page Up steps by 10', (await val('#copies')) === '13');
+    await key('End'); check('End goes to the maximum, and + is disabled there', (await val('#copies')) === '99' && (await attr('#copies-inc', 'aria-disabled')) === 'true');
+    await key('Home'); check('Home goes to the minimum, and − is disabled there', (await val('#copies')) === '1' && (await attr('#copies-dec', 'aria-disabled')) === 'true');
+    await ev(`(L.length = 0, true)`);
+    await click('#copies-inc');
+    check('a press on + steps once', (await val('#copies')) === '2' && (await log()) === 'change copies-g:2|native change copies:2', await log());
+    await focus('#copies'); await ev(`(document.querySelector('#copies').select(), true)`); await type('500');
+    check('out of range is not corrected: error "Between 1 and 99."', (await val('#copies')) === '500' && (await attr('#copies', 'aria-invalid')) === 'true' && (await errText('copies')) === 'Between 1 and 99.');
+    await ev(`(L.length = 0, true)`);
+    await focus('#kg'); await ev(`(document.querySelector('#kg').select(), true)`); await type('3,5');
+    check('a comma decimal works, and the page gets the number', (await log()).includes('change kg-g:3.5'), await log());
+    await key('ArrowUp'); check('…the comma is kept for display', (await val('#kg')) === '4');
+    await ev(`(document.querySelector('#kg').value = '4,5', document.querySelector('#kg').dispatchEvent(new Event('input')), true)`);
+    check('a number field with no .error gets one from Ayni', await ev(`(() => { const i = document.querySelector('#kg'); i.value = '99'; i.dispatchEvent(new Event('input')); return i.getAttribute('aria-invalid') === 'true' && !!document.getElementById(i.getAttribute('aria-describedby'))?.classList.contains('error'); })()`));
+    await reset();
+
+    check('a bare number group: Ayni made − and + (tooltips), a text box, spinbutton role', await ev(`(() => { const g = document.querySelector('#bare-g'), [a, b] = g.querySelectorAll('button[data-step]'); const i = document.querySelector('#bare'); return a?.dataset.tip === 'Decrease' && b?.dataset.tip === 'Increase' && !!a.querySelector('svg') && i.type === 'text' && i.getAttribute('role') === 'spinbutton' && i.inputMode === 'numeric'; })()`));
+    check('…empty is a value when data-optional; the page gets null', await ev(`new Promise((r) => { const i = document.querySelector('#bare'); i.value = '5'; i.dispatchEvent(new Event('input')); document.querySelector('#bare-g').addEventListener('ayni:change', (e) => r(e.detail.value === null && i.getAttribute('aria-invalid') === 'false'), { once: true }); i.value = ''; i.dispatchEvent(new Event('input')); })`));
+    check('…only a minimum: "At least 0."', await ev(`(() => { const i = document.querySelector('#bare'); i.value = '-1'; i.dispatchEvent(new Event('input')); const t = document.getElementById(i.getAttribute('aria-describedby')).textContent; i.value = '3'; i.dispatchEvent(new Event('input')); return t; })()`) === 'At least 0.');
+    check('no limits: "Type a number." for letters; Home does nothing', await ev(`(() => { const i = document.querySelector('#free'); i.value = 'abc'; i.dispatchEvent(new Event('input')); const t = document.getElementById(i.getAttribute('aria-describedby')).textContent; i.value = '7'; i.dispatchEvent(new Event('input')); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); return t + '|' + i.value; })()`) === 'Type a number.|7');
+    await ev(`(L.length = 0, true)`);
+    await focus('#bare'); await key('ArrowUp');
+    check('a step fires the native change event too', (await log()).includes('native change bare:4'));
+    await ev(`(L.length = 0, true)`);
+    { await into('#bare-g button[data-step="1"]'); const [x, y] = await mid('#bare-g button[data-step="1"]'); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await wait(900); await mouse('mouseReleased', x, y); await wait(60); }
+    check('holding + repeats, and change fires once, when it is let go', (await ev(`+document.querySelector('#bare').value`)) >= 7 && (await ev(`L.filter((x) => x.startsWith('native change')).length`)) === 1, await log());
+    await reset();
+
+    /* Date field made by Ayni from a bare group */
+    check('date: Ayni made its button (calendar icon, tooltip), popup, error and placeholder', await ev(`(() => { const i = document.querySelector('#day'), b = document.querySelector('${btnOf('day')}'), p = document.getElementById(b?.getAttribute('popovertarget') || ''); return !!b.querySelector('svg') && b.dataset.tip === 'Choose date' && b.getAttribute('aria-label') === 'Choose date' && !!p?.querySelector('.cal') && p.previousElementSibling?.classList.contains('error') && i.placeholder === 'YYYY-MM-DD' && i.closest('.input-group').classList.contains('date-field'); })()`));
+    check('…the "!" sits before the button', await ev(`(() => { const g = document.querySelector('#day').closest('.input-group'); const kids = [...g.children]; return kids.indexOf(g.querySelector('.err-mark')) < kids.indexOf(document.querySelector('${btnOf('day')}')); })()`));
+    await focus('#day'); await key('F4'); await wait(150);
+    check('F4 opens the calendar, the focus on the field\'s day', (await openPop()) === (await popOf('day')) && (await ev(`document.activeElement.dataset.d`)) === '2026-11-02');
+    await key('ArrowRight'); await key('Enter'); await wait(60);
+    check('Right then Enter picks the next day, closes, and tells the page', (await val('#day')) === '2026-11-03' && (await openPop()) === '' && (await log()) === 'day 2026-11-03');
+    check('…the focus goes back to the button', await ev(`document.activeElement === document.querySelector('${btnOf('day')}')`));
+    await focus('#day'); await key('ArrowDown', ALT); await wait(150);
+    check('Alt+Down opens it too', (await openPop()) === (await popOf('day')));
+    await key('Escape'); await wait(60);
+    check('Esc closes it', (await openPop()) === '');
+    await blur('#day', '2026-02-30');
+    check('a wrong date shows the error, in the page\'s language', (await attr('#day', 'aria-invalid')) === 'true' && (await errText('day')) === 'Use the form YYYY-MM-DD, like 2026-10-20.');
+    await ev(`(L.length = 0, true)`); await blur('#day', '2026-12-24');
+    check('fixed: no error, controller value, and the typed date is told to the page', (await attr('#day', 'aria-invalid')) === 'false' && (await ev(`day.value`)) === '2026-12-24' && (await log()) === 'day 2026-12-24');
+    check('set() puts a date in, without telling the page', await ev(`(L.length = 0, day.set('2027-01-05'), document.querySelector('#day').value === '2027-01-05' && L.length === 0)`));
+    check('read-only date: the button goes; disabled: faded', (await css('#ro-day ~ button', 'display')) === 'none' && (await ev(`getComputedStyle(document.querySelector('#dis-day').closest('.input-group')).opacity`)) === '0.45');
+    await focus('#dis-day'); check('a disabled date field cannot be focused', await ev(`document.activeElement.id !== 'dis-day'`));
+    await reset();
+
+    check('a date the page put in itself is seen: picking the old value again is still told', await ev(`new Promise((r) => { L.length = 0; const i = document.querySelector('#day'); i.value = '2026-11-02'; i.dispatchEvent(new Event('blur')); L.length = 0; i.value = '2026-11-05'; const b = document.querySelector('${btnOf('day')}'); b.click(); setTimeout(() => { document.querySelector('#' + b.getAttribute('popovertarget') + ' .cal td button[data-d="2026-11-02"]').click(); r(L.join('|')); }, 150); })`) === 'day 2026-11-02', await log());
+    await reset();
+    check('a number field emptied from code is not marked wrong; a wrong one put right from code loses its "!"', await ev(`(() => { const i = document.querySelector('#copies'); i.value = ''; const a = i.getAttribute('aria-invalid') !== 'true'; i.value = '500'; const b = i.getAttribute('aria-invalid') === 'true'; i.value = '5'; const c = i.getAttribute('aria-invalid') === 'false' && !document.querySelector('#copies-dec').hasAttribute('aria-disabled'); return a && b && c; })()`));
+    check('…but sent empty it is wrong', await ev(`(() => { const i = document.querySelector('#copies'); i.value = ''; const r = Ayni.focusFirstError(i.closest('.col')) && i.getAttribute('aria-invalid') === 'true'; i.value = '2'; return r; })()`));
+    check('a date or time with a "!" put right from code loses it', await ev(`(() => { const d = document.querySelector('#day'), t = document.querySelector('#time'); d.value = 'x'; d.dispatchEvent(new Event('blur')); t.value = '99'; t.dispatchEvent(new Event('blur')); const bad = d.getAttribute('aria-invalid') === 'true' && t.getAttribute('aria-invalid') === 'true'; d.value = '2026-11-02'; t.value = '10:15'; return bad && d.getAttribute('aria-invalid') === 'false' && t.getAttribute('aria-invalid') === 'false' && time.value === '10:15'; })()`));
+    await ev(`(time.set('09:30'), L.length = 0, true)`);
+    /* Time field */
+    check('time: Ayni made its clock button, popup with two boxes, error and placeholder', await ev(`(() => { const i = document.querySelector('#time'), b = document.querySelector('${btnOf('time')}'), p = document.getElementById(b.getAttribute('popovertarget')); return !!b.querySelector('svg') && b.dataset.tip === 'Choose time' && p.querySelectorAll('.time-row .input').length === 2 && !p.querySelector('input[type="number"]') && i.placeholder === 'HH:MM' && i.closest('.input-group').classList.contains('time-field'); })()`));
+    check('…a typed 9:30 on load shows as 09:30', (await val('#time')) === '09:30');
+    await blur('#time', '7.05');
+    check('typed 7.05 becomes 07:05 and tells the page', (await val('#time')) === '07:05' && (await log()) === 'time 07:05');
+    await blur('#time', '25:00');
+    check('25:00 shows the error', (await attr('#time', 'aria-invalid')) === 'true' && (await errText('time')) === 'Use the form HH:MM, like 09:30.');
+    await blur('#time', '09:55'); await ev(`(L.length = 0, true)`);
+    await focus('#time'); await key('F4'); await wait(150);
+    check('F4 opens the popup with the cursor in the hours', (await openPop()) === (await popOf('time')) && await ev(`document.activeElement.matches('.time-row .input') && document.activeElement.value === '09'`));
+    await click(`#${await popOf('time')} [data-tstep="m,5"]`);
+    check('+5 minutes carries over the hour, live', (await val('#time')) === '10:00' && (await log()) === 'time 10:00');
+    await ev(`(document.querySelectorAll('#${await popOf('time')} .time-row .input')[1].focus(), true)`); await key('ArrowUp');
+    check('Up in the minutes box steps 5', (await val('#time')) === '10:05');
+    await key('Escape'); await wait(60);
+    check('Esc closes it, the focus back on its button', (await openPop()) === '' && await ev(`document.activeElement === document.querySelector('${btnOf('time')}')`));
+    await ev(`(time.set('23:30'), true)`); await focus('#time'); await key('F4'); await wait(150);
+    await click(`#${await popOf('time')} [data-tstep="h,1"]`);
+    check('23:30 + 1 hour is 00:30', (await val('#time')) === '00:30');
+    await reset();
+    check('controller: value and a quiet set()', await ev(`(time.set('6:00'), time.value === '06:00' && L.length === 0)`));
+    check('an empty time is no error, and its value is empty', await ev(`(() => { const i = document.querySelector('#time'); i.value = ''; i.dispatchEvent(new Event('blur')); return i.getAttribute('aria-invalid') !== 'true' && time.value === ''; })()`));
+
+    /* A date without a year */
+    check('birthday: 05-14 is kept, the page gets --05-14', (await val('#bday')) === '05-14' && (await ev(`bday.value`)) === '--05-14');
+    check('…its placeholder says both forms', (await attr('#bday', 'placeholder')) === 'YYYY-MM-DD or MM-DD');
+    await blur('#bday', '--07-02');
+    check('typed --07-02 shows 07-02', (await val('#bday')) === '07-02' && (await attr('#bday', 'aria-invalid')) === 'false');
+    await blur('#bday', '02-29'); check('02-29 is a day', (await attr('#bday', 'aria-invalid')) === 'false');
+    await blur('#bday', '13-01');
+    check('13-01 is wrong, with its own message', (await attr('#bday', 'aria-invalid')) === 'true' && (await errText('bday')).includes('MM-DD'));
+    await blur('#bday', '05-14'); await ev(`(L.length = 0, true)`);
+    await click(btnOf('bday')); await wait(100);
+    const ny = `#${await popOf('bday')} .no-year input`;
+    check('opened on 05-14: the No year switch is on, the calendar on May 14', await ev(`document.querySelector('${ny}').checked && document.activeElement.dataset.d?.endsWith('-05-14')`));
+    await click(ny);
+    const Y = new Date().getFullYear();
+    check('No year off: the date takes this year', (await val('#bday')) === `${Y}-05-14` && (await log()) === `bday ${Y}-05-14`);
+    await click(ny);
+    check('…on again: MM-DD', (await val('#bday')) === '05-14');
+    await click(`#${await popOf('bday')} .cal td button[data-d$="-05-20"]`);
+    check('picking a day with No year on gives --MM-DD', (await val('#bday')) === '05-20' && (await ev(`bday.value`)) === '--05-20');
+    check('a field without noYear refuses MM-DD', await ev(`(() => { const i = document.querySelector('#day'); i.value = '05-14'; i.dispatchEvent(new Event('blur')); const r = i.getAttribute('aria-invalid') === 'true'; day.set('2026-11-02'); return r; })()`));
+    await reset();
+
+    /* Date and time made by Ayni */
+    check('date and time: Ayni made its popup with the calendar and two time boxes', await ev(`(() => { const p = document.getElementById(document.querySelector('${btnOf('dt')}').getAttribute('popovertarget')); return !!p.querySelector('.cal') && p.querySelectorAll('.time-row .input').length === 2; })()`) && (await val('#dt')) === '2026-11-01 23:55');
+    await click(btnOf('dt')); await wait(100);
+    await click(`#${await popOf('dt')} [data-tstep="m,5"]`);
+    check('…23:55 + 5 minutes moves to the next day', (await val('#dt')) === '2026-11-02 00:00');
+    await reset();
+
+    /* Sliders */
+    check('a slider is drawn by Ayni: a thin line and a dot', (await css('#vol', 'appearance')) === 'none' && (await css('#vol', 'backgroundColor')) === 'rgba(0, 0, 0, 0)');
+    await focus('#vol'); await key('ArrowRight');
+    check('a keyboard focus ring goes round the dot, not the whole line', (await css('#vol', 'outlineStyle')) === 'none' && await ev(`[...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => (r.selectorText || '').includes('range"]:focus-visible::-webkit-slider-thumb')); } catch { return false; } })`));
+    check('arrow keys step it', (await val('#vol')) === '61');
+    await focus('#ro-vol'); await key('ArrowRight');
+    check('a read-only slider does not move', (await val('#ro-vol')) === '70');
+    check('a disabled slider is faded', (await css('#dis-vol', 'opacity')) === '0.45');
+    await reset();
+
+    /* Toolbar fields and editing in place */
+    check('fields in a toolbar take its 30 px; their inside buttons stay 26', (await height('#tb-cell')) === 30 && (await height('#tb-spin')) === 30 && (await ev(`Math.round(document.querySelector('#tb-spin .btn').getBoundingClientRect().height)`)) === 26);
+    check('a toolbar button next to them keeps 30 px', (await height('#tb-bold')) === 30);
+    const ieH = await height('#ie');
+    await click('#ie');
+    check('editing in place: the field has the same height as the text, with an Accent border', (await height('#ie-f')) === ieH && (await css('#ie-f', 'borderTopColor')) === (await ev(`(() => { const p = document.createElement('i'); p.style.color = 'var(--accent)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`)));
+    await reset();
+    check('text that cannot be renamed has no text cursor', (await css('#ie-done', 'cursor')) === 'default' && (await css('#ie', 'cursor')) === 'text');
+
+    /* In a dialog */
+    await click('#open-dlg'); await wait(100);
+    check('a dialog: its lead paragraph sits above the fields', await ev(`(() => { const h = document.querySelector('#dlg-lead').getBoundingClientRect(), r = document.querySelector('#dlg-row').getBoundingClientRect(); return h.bottom <= r.top; })()`));
+    check('fields in a .field-row sit side by side', await ev(`(() => { const [a, b] = document.querySelectorAll('#dlg-row > .field'); return Math.abs(a.getBoundingClientRect().top - b.getBoundingClientRect().top) < 1 && a.getBoundingClientRect().right < b.getBoundingClientRect().left; })()`));
+    check('a date field\'s popup lives inside the dialog', await ev(`document.getElementById(document.querySelector('${btnOf('dlg-day')}').getAttribute('popovertarget')).closest('dialog')?.id === 'dlg'`));
+    await click(btnOf('dlg-day')); await wait(100);
+    await click(`#${await popOf('dlg-day')} .cal td button[data-d="2026-11-10"]`);
+    check('…and takes a pick while the dialog is modal', (await val('#dlg-day')) === '2026-11-10' && (await log()).includes('dlg-day 2026-11-10') && await ev(`document.getElementById('dlg').open`));
+    await click('#dlg-go');
+    check('a message about no single field: a Danger line at the bottom', await ev(`(() => { const e = document.querySelector('#dlg-err'), r = document.querySelector('#dlg-row'); return !e.hidden && e.getBoundingClientRect().top > r.getBoundingClientRect().bottom && getComputedStyle(e).color === getComputedStyle(document.querySelector('.req')).color; })()`));
+    await focus('#srv'); await type('x');
+    check('…it goes as soon as something changes', await ev(`document.querySelector('#dlg-err').hidden`));
+    await reset();
+
+    /* Touch */
+    await ev(`(Ayni.setTouchPreview(true), true)`); await wait(100);
+    check('touch: fields 44 px, sliders 44 px', (await height('#name')) === 44 && (await height('#vol')) === 44);
+    check('touch: a toolbar field stays 30 px', (await height('#tb-cell')) === 30);
+    await click(btnOf('day')); await wait(100);
+    check('touch: calendar days are 44 px', (await ev(`Math.round(document.querySelector('#${await popOf('day')} .cal td button').getBoundingClientRect().height)`)) === 44);
+    await reset();
+    check('touch: the slider dot is drawn 20 px (rule present)', await ev(`[...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => (r.selectorText || '').includes('html.touch input[type="range"]::-webkit-slider-thumb') && r.style.width === '20px'); } catch { return false; } })`));
+    await ev(`(Ayni.setTouchPreview(false), true)`);
+
+    check('no untranslated keys in the fields family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('no errors or warnings in the fields family', t.logs.length === 0, t.logs.slice());
+
+    /* In another language */
+    await ev(`(localStorage.setItem('ayni-lang', 'es'), true)`);
+    await t.open(BASE + '/tests/fields-only.html');
+    check('es: placeholders, tooltips and messages follow the page\'s language', await ev(`(() => { const i = document.querySelector('#copies'); i.value = '500'; i.dispatchEvent(new Event('input')); return [document.querySelector('#day').placeholder, document.querySelector('${btnOf('time')}').dataset.tip, document.getElementById('copies-err').textContent, document.querySelector('#bday').placeholder].join('|'); })()`) === 'AAAA-MM-DD|Elegir hora|Entre 1 y 99.|AAAA-MM-DD o MM-DD', await ev(`[document.querySelector('#day').placeholder, document.querySelector('${btnOf('time')}').dataset.tip, document.getElementById('copies-err').textContent]`));
+    check('es: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    await ev(`(localStorage.removeItem('ayni-lang'), true)`);
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

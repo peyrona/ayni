@@ -377,7 +377,7 @@ document.addEventListener('ayni:split', (e) => status(e.detail.message));
 /* ---------- Icons ---------- */
 /* The icons the controls use, with where each one appears */
 const iconUse = {
-  'arrow-down': 'Tree menu', 'arrow-up': 'Tree menu', calendar: 'Date field', check: 'Menus', 'chev-down': 'Calendar',
+  'arrow-down': 'Tree menu', 'arrow-up': 'Tree menu', calendar: 'Date field', clock: 'Time field', check: 'Menus', 'chev-down': 'Calendar',
   'chev-right': 'Tree, calendar', close: 'Notifications, search, tabs', copy: 'Tree menu', cut: 'Tree menu', edit: 'Tree menu',
   error: 'Notifications', eye: 'Password, tree', 'eye-off': 'Password, tree', file: 'Tree', filter: 'Search field', folder: 'Tree',
   help: 'Help button, Help menu', info: 'Notifications', minus: 'Number field', ok: 'Notifications', paste: 'Tree menu', play: 'Help card, tour',
@@ -414,6 +414,33 @@ Ayni.dateField($('#date-f'), { popup: $('#cal-pop'), onChange: (d) => status('De
 { const n = new Date();
   Ayni.dateTimeField($('#dt-f'), { popup: $('#dt-pop'), value: new Date(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours() + 1, 0),
     onChange: (d) => status('Appointment: ' + formatDateTime(d)) }); }
+
+/* Only the field and its group are written in the page: Ayni makes the buttons, popups, errors and placeholders */
+Ayni.dateField($('#ev-day'), { onChange: (d) => status('Starts: ' + iso(d)) });
+$('#ev-day').value = iso(new Date());
+Ayni.timeField($('#ev-time'), { onChange: (v) => status('At: ' + v) });
+{ const b = Ayni.dateField($('#bday'), { noYear: true, onChange: (d, v) => say('bday-out', 'The page gets ' + v) }); say('bday-out', 'The page gets ' + b.value); }
+
+/* A message about no single field: shown on Connect, gone as soon as something changes */
+$('#dml-go').addEventListener('click', () => { $('#dml-err').hidden = false; });
+$('#dlg-mail').addEventListener('input', () => { $('#dml-err').hidden = true; });
+$('#dlg-mail').addEventListener('ayni:change', () => { $('#dml-err').hidden = true; });
+$('#dlg-mail').addEventListener('close', () => { $('#dml-err').hidden = true; });
+
+/* Editing in place: the same box as text and as field */
+const inlineEdit = (span) => {
+  const start = () => {
+    const f = document.createElement('input'); f.className = 'input inline'; f.value = span.textContent; f.setAttribute('aria-label', 'Name');
+    f.style.width = span.offsetWidth + 'px'; span.replaceWith(f); f.focus(); f.select();
+    let done = false;
+    const end = (keep) => { if (done) return; done = true; const v = f.value.trim(); if (keep && v) span.textContent = v; f.replaceWith(span); span.focus(); if (keep && v) status('Renamed: ' + v); };
+    f.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); end(true); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(false); } });
+    f.addEventListener('blur', () => end(true));
+  };
+  span.addEventListener('click', start);
+  span.addEventListener('keydown', (e) => { if (e.key === 'F2' || e.key === 'Enter') { e.preventDefault(); start(); } });
+};
+inlineEdit($('#ie-doc'));
 
 /* ---------- Help: the page's card (the ? at the top), and the Help tab's demos ---------- */
 Ayni.help({

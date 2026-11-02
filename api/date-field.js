@@ -13,8 +13,14 @@ class DateField extends TextField {
    * @param {HTMLElement} [options.popup]  The popup holding the .cal; found through the button when left out.
    * @param {Date} [options.min]
    * @param {Date} [options.max]
+   * @param {boolean} [options.noYear=false]  MM-DD is accepted too, and the popup has a "No year" switch; the value is then
+   *   '--MM-DD' (a birthday).
    */
   constructor(element, options) {}
+
+  /** @type {string} 'YYYY-MM-DD', '--MM-DD' (no year) or '' when empty or not valid. */
+  get value() {}
+  set value(text) {}
 
   /** @type {Date|null} Current date, or null when empty or not valid. */
   get date() {}

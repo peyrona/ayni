@@ -25,43 +25,8 @@ body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sa
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .stack { display: flex; flex-direction: column; gap: 8px; }
 
-/* ---------- Text inputs ---------- */
-.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.field > label, .label-row > label, .list-label { font-size: .8rem; font-weight: 500; color: var(--text-dim); }
-.req { color: var(--danger); }
-.hint { font-size: .8rem; color: var(--text-dim); }
-.error { font-size: .8rem; color: var(--danger); }
-textarea.input { resize: vertical; min-height: 80px; }
-textarea.input[data-autogrow] { resize: none; overflow-y: auto; max-height: var(--autogrow-max, 240px); }
-/* Text area count: a small rounded tag on the bottom border, on a fully opaque background so neither the border
-   nor the text shows through it. Its border follows the field's (accent on focus, Danger on error). Kept clear of the resize grip at the bottom-right corner. */
-.ta-wrap { position: relative; }
-.ta-wrap textarea { display: block; }
-.ta-count { position: absolute; right: 22px; bottom: 0; transform: translateY(50%); padding: 2px 7px; font: .72rem/1 var(--font-mono);
-  color: var(--text-dim); background: var(--panel-bg); border: 1px solid var(--field-line); border-radius: 999px; pointer-events: none; }
-.ta-wrap:has(textarea:focus-visible) .ta-count { border-color: var(--accent); }
-.ta-wrap:has(textarea[aria-invalid="true"]) .ta-count { border-color: var(--danger); }
-.label-row { display: flex; align-items: center; gap: 6px; }
-/* RULE: field errors (Frasquito, 2026-10-22). Space is precious, so nothing is added below the field: the border takes the
-   Danger colour and a small red "!" (the size of the info "i") sits inside the field at its end, before any end buttons,
-   taking no layout space. For groups (radios, check boxes, lists) the "!" sits next to the group label; a list with no visible label shows it inside its top-right corner. The message floats
-   in a small popup: by itself while the field has focus, otherwise on hovering or clicking the "!". Fixed = all of it goes. */
-.error[data-err-src] { display: none !important; }
-.err-mark { position: relative; flex: none; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; background: var(--danger);
-  color: var(--panel-bg); font: 700 9px/1 var(--font-sans); display: inline-grid; place-items: center; cursor: pointer; }
-.err-mark::after { content: ""; position: absolute; inset: -8px; }
-.err-mark[hidden] { display: none; }
-.err-wrap { position: relative; display: block; }
-.err-wrap > .err-mark { position: absolute; right: 9px; top: 50%; translate: 0 -50%; }
-.err-wrap > .input[aria-invalid="true"] { padding-right: 30px; }
-.err-wrap.err-corner > .err-mark { top: 9px; right: 9px; translate: none; }
-.input-group > .err-mark { margin-inline: 4px; }
-legend > .err-mark, .static-label > .err-mark { margin-left: 6px; vertical-align: -1px; }
-.panel.popup.err-pop { position: fixed; inset: auto; margin: 0; padding: 6px 10px; max-width: min(280px, calc(100vw - 16px));
-  font-size: .8rem; color: var(--text); border-color: var(--danger); }
-.spin { width: 150px; }
-.spin .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
-.spin .input::-webkit-inner-spin-button { -webkit-appearance: none; }
+/* ---------- Labels of lists (field labels: ayni-fields.css) ---------- */
+.list-label { font-size: .8rem; font-weight: 500; color: var(--text-dim); }
 
 progress { width: 100%; height: 8px; appearance: none; border: 0; border-radius: 4px; background: var(--card-head); overflow: hidden; }
 progress::-webkit-progress-bar { background: var(--card-head); }
@@ -87,38 +52,6 @@ html.touch .ctx-area { -webkit-touch-callout: none; -webkit-user-select: none; u
 .statusbar > span { padding: 4px 12px; border-left: var(--panel-border); white-space: nowrap; }
 .statusbar > span:first-child { border-left: 0; flex: 1; }
 
-/* ---------- Slider & calendar ---------- */
-input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); }
-.slider-row { display: flex; align-items: center; gap: 12px; }
-.slider-row output { font: 500 .85rem var(--font-mono); min-width: 4ch; text-align: right; white-space: nowrap; }
-.slider-row input { min-width: 0; }
-.ticks { display: flex; justify-content: space-between; font: .72rem var(--font-mono); color: var(--text-dim); padding: 0 2px; }
-.date-field .input { font-variant-numeric: tabular-nums; }
-.time-row { display: flex; align-items: center; gap: 6px; padding: 10px 8px; border-top: var(--panel-border); }
-.time-row label { font-size: .8rem; font-weight: 500; color: var(--text-dim); margin-right: auto; }
-.time-row .input-group { width: 100px; }
-.time-row .input { text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
-.time-row .input::-webkit-inner-spin-button { -webkit-appearance: none; }
-.cal { display: inline-flex; flex-direction: column; gap: 6px; padding: 8px; }
-.cal.inline { border: var(--panel-border); border-radius: var(--ctl-radius); align-self: flex-start; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
-.cal table { border-collapse: collapse; }
-.cal th { font-size: .72rem; font-weight: 500; color: var(--text-dim); width: 34px; height: 22px; }
-.cal td { padding: 1px; }
-.cal td button { width: 32px; height: 32px; border: 0; border-radius: 4px; background: none; color: var(--text); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
-.cal td button:hover { background: var(--card-head); }
-.cal td button.out { color: var(--text-dim); opacity: .55; }
-.cal td button.today { box-shadow: inset 0 0 0 1px var(--accent); }
-.cal td button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); opacity: 1; }
-.cal-title { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; padding: 4px 8px; border-radius: 4px; }
-button.cal-title { cursor: pointer; } button.cal-title:hover { background: var(--card-head); } .cal-title .icon { --icon: 14px; }
-.cal-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; width: calc(7 * 34px); height: 226px; }
-.cal-grid button { border: 0; border-radius: 4px; background: none; color: var(--text); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
-.cal-grid button:hover { background: var(--card-head); }
-.cal-grid button.today { box-shadow: inset 0 0 0 1px var(--accent); }
-.cal-grid button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
-.cal td button[aria-disabled="true"], .cal-grid button[aria-disabled="true"] { opacity: .45; cursor: default; background: none; color: var(--text); }
-.cal-foot { display: flex; }
 
 /* ---------- Layout: nested tabs, group boxes, splitter ---------- */
 .subtabs { border: var(--panel-border); border-radius: var(--ctl-radius); overflow: hidden; }
@@ -157,16 +90,13 @@ fieldset.group legend { padding: 0 4px; margin: 0; }
    has a hit area of at least 44 × 44 px (Apple HIG 44 pt, WCAG 2.5.5), and separate targets keep at least 8 px apart.
    Controls that look small (the "i", a tab's close, the splitter) keep their look and get an invisible larger hit area.
    Targets that tile edge to edge (list rows, menu items, calendar days) need no gap: each one is its own full 44 px cell. */
-html.touch { --ctl-h: 44px; }
-html.touch .row, html.touch .input-group, html.touch .cal-head, html.touch .time-row,
+html.touch .row,
 html.touch .panel > footer, html.touch .panel > form > footer, html.touch .panel footer > .extra, html.touch .panel > header,
 html.touch .panel > form > header { gap: 8px; }
 html.touch [role="tab"] { min-height: var(--touch); }
 html.touch [role="tab"] .tab-close { position: relative; margin-left: 6px; }
 html.touch [role="tab"] .tab-close::before { content: ""; position: absolute; inset: -13px; }
-html.touch .choice, html.touch .input-group > .input { min-width: var(--touch); }
-html.touch .err-mark::after { inset: -16px; }
-html.touch input[type="range"] { height: var(--touch); }
+html.touch .choice { min-width: var(--touch); }
 html.touch .splitter { position: relative; }
 html.touch .splitter::before { content: ""; position: absolute; inset: 0 -19px; z-index: 1; }
 html.touch .split.rows .splitter::before { inset: -19px 0; }
@@ -175,21 +105,10 @@ html.touch .split-ctl button::before { content: ""; position: absolute; inset: 0
 html.touch .split-ctl button:first-child::before { top: -34px; } html.touch .split-ctl button:last-child::before { bottom: -34px; }
 html.touch .split.rows .split-ctl button::before { inset: -19px 0; }
 html.touch .split.rows .split-ctl button:first-child::before { left: -34px; } html.touch .split.rows .split-ctl button:last-child::before { right: -34px; }
-html.touch .cal { padding: 4px; } html.touch .cal td { padding: 0; }
-html.touch .cal th, html.touch .cal td button { width: var(--touch); }
-html.touch .cal td button { height: var(--touch); }
-html.touch .cal-grid { width: calc(7 * var(--touch)); height: calc(6 * var(--touch) + 22px); }
-html.touch .cal-title { min-height: var(--touch); }
-/* Very narrow phones: the date popup takes 4 px margins and each day is drawn 6 px smaller inside its full 44 px touch cell */
+/* Very narrow phones: popups take 4 px margins (the calendar inside: ayni-fields.css) */
 @media (max-width: 359px) {
   html.touch .panel.popup { max-width: calc(100vw - 8px); }
-  html.touch .cal { padding: 4px 0; }
-  html.touch .cal td button { padding: 3px; background-clip: content-box; border-radius: 7px; }
-  html.touch .cal td button.today { box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--accent); }
-  html.touch .cal td button:focus-visible { outline-offset: -3px; }
 }
-html.touch .time-row { flex-wrap: wrap; justify-content: space-between; padding: 10px 4px; gap: 6px 4px; } html.touch .time-row label { flex-basis: 100%; }
-html.touch .time-row .input-group { width: auto; } html.touch .time-row .input { width: 44px; flex: none; }
 
 
 /* RULE: one list picker serves every drop-down list and combo box, on every device: no native select, datalist or
@@ -214,24 +133,19 @@ html.touch .time-row .input-group { width: auto; } html.touch .time-row .input {
    Disabled: faded to 45% and not interactive. Read-only: no border, soft tint (--readonly-bg); the value can be read but
    not changed. Loading / empty: a short centred message in the control. Error: Danger colour on the group border, and
    the message under it. */
-.input:disabled, .choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled), input[type="range"]:disabled, fieldset:disabled,
-.input-group:has(.input:disabled),
+.choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled), fieldset:disabled,
 [role="tab"][aria-disabled="true"], .picker:has(> .input[aria-disabled="true"]) { opacity: .45; cursor: default; }
-:is(fieldset:disabled, .input-group) :is(.input, .choice, .switch, input):disabled, fieldset:disabled :is(.choice, .switch, .switch-pair) { opacity: 1; }
+fieldset:disabled :is(.input, .choice, .switch, input):disabled, fieldset:disabled :is(.choice, .switch, .switch-pair) { opacity: 1; }
 .choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled),
 .picker:has(> .input[aria-disabled="true"]) { pointer-events: none; }
-:is(fieldset, .picker > .input, .input-group)[aria-readonly="true"], .input-group:has(> .input[readonly]),
+:is(fieldset, .picker > .input)[aria-readonly="true"],
 fieldset:has(input[aria-readonly="true"]) { border-color: transparent; background: var(--readonly-bg); }
-:not(fieldset) > :is(.switch, .switch-pair):has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]),
-.slider-row:has(input[aria-readonly="true"]) { background: var(--readonly-bg); border-radius: var(--ctl-radius); padding: 4px 8px; width: fit-content; }
-.slider-row:has(input[aria-readonly="true"]) { width: auto; }
+:not(fieldset) > :is(.switch, .switch-pair):has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]) { background: var(--readonly-bg); border-radius: var(--ctl-radius); padding: 4px 8px; width: fit-content; }
 [aria-readonly="true"], :has(> input[aria-readonly="true"]), .switch-pair:has(input[aria-readonly="true"]) :is(label, .track) { cursor: default; }
-.input-group:has(> .input[readonly]) > .input { background: transparent; }
-.date-field:has(> .input[readonly]) > .btn, .picker:has(> .input[aria-readonly="true"])::after { display: none; }
+.picker:has(> .input[aria-readonly="true"])::after { display: none; }
 .state-msg { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 14px 8px; color: var(--text-dim); font-size: .85rem; text-align: center; list-style: none; }
 .state-msg .busy { width: 16px; height: 16px; }
 .state-box { border: var(--panel-border); border-radius: var(--ctl-radius); }
-fieldset[aria-invalid="true"] { border: 1px solid var(--danger); border-radius: var(--ctl-radius); }
 .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .list-label { display: block; margin-bottom: 4px; }
 .static-label { font-size: .85rem; font-weight: 500; color: var(--text); }

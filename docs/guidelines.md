@@ -135,6 +135,7 @@ A round button in the title row (a toggle, `data-theme-toggle`) switches between
 | Item | Mouse and keyboard | Touch |
 | --- | --- | --- |
 | Control height (fields, list picker) | 32 px | 44 px |
+| Fields in a toolbar | 30 px | Hit area 44 px |
 | Push button (circle) | 36 px, icon 18 px | Drawn 36 px, hit area 44 px |
 | Small button (`.sm`, in rows and cards) | 30 px, icon 15 px | Drawn 30 px, hit area 44 px |
 | Toolbar and notification buttons | 30 px (36 px in a tall toolbar, `[role="toolbar"].tall`, for an app's title row) | Drawn the same, hit area 44 px |
@@ -304,36 +305,40 @@ A text button carries a short label, with an optional icon before it. It is only
 
 ## 4. Text, number and search fields
 
-A text field shows its hint in the placeholder, can hold round buttons inside its border, and never adds a message below it.
+A text field shows a short hint in its placeholder, a longer one in the info "i" next to its label, can hold round buttons inside its border, and never adds a line below it.
 
 ### 4.1 Text field
 
-- **Label:** every field has a visible label above it, linked to it; clicking the label focuses the field. A required field shows a red mark (Danger) after its label.
-- **Hint:** goes in the placeholder ("As it appears on your ID", "name@example.com"), never in a message below the field.
+- **Look:** one look for every text, password, number, date and time field: the Field colour, a 1 px Field line border, the small corner, 32 px high (44 px on touch, 2.3). The pointer over it darkens the border to Text dim; the focus turns it Accent with the focus ring (2.4). Browser autofill keeps the field's own colours: no white box in the dark scheme.
+- **Label:** every field has a visible label above it, 4 px over the field, linked to it; clicking the label focuses the field. A required field shows a red mark (Danger) after its label.
+- **In a form:** fields stack 12 px apart. Two or more short fields that belong together (Port and Security, From and To) can share a row; the row wraps on a narrow screen, and no field in it gets narrower than 120 px.
+- **Hint:** a short one goes in the placeholder ("As it appears on your ID", "name@example.com"). A longer one goes in the info "i" next to the label (14.2). Never a line below the field. A dialog may open with one short paragraph above its fields, saying what it is for.
 - **Buttons inside the field:** one or more round, quiet buttons can sit inside the border, at the start and/or the end (show password, clear, calendar, filter, the up / down pair of a search). They follow every button rule: icon only, tooltip, 44 px on touch.
 - **Error:** a Danger border and a red "!" inside the field, whose popup says how to fix it (4.7). Nothing is added below the field.
 - **Read-only:** no border, soft tint, text at full contrast, normal text cursor. It can be focused (with the focus ring), and its text can be selected and copied. The label does not say "read only".
 - **Disabled:** faded to 45%, cannot be focused.
+- **In a toolbar** (a cell's name box, a formula bar, a margin width): the same field, at the toolbar's 30 px height, with no label above it; its tooltip names it.
 
 ### 4.2 Password field
 
-A text field with a show/hide button at its end. The button is a toggle (pressed while the password is shown).
+A text field with a show/hide button at its end. The button is a toggle, pressed while the password is shown; its icon is an eye, crossed out while shown, and its tooltip says what a press does ("Show password", "Hide password"). Pressing it keeps the cursor in the field.
 
 ### 4.3 Text area
 
-Multi-line text, same rules as the text field. The character count is optional, per text area: show it when the user benefits from seeing how much room is left, and leave it out otherwise (a length limit can exist without a count). When shown, it sits on the bottom border of the field, near the right end, as a small tag with a rounded border. Its background is fully opaque, so neither the border nor the text shows through it.
+Multi-line text, same rules as the text field, at least 80 px high. The character count is optional, per text area: show it when the user benefits from seeing how much room is left, and leave it out otherwise (a length limit can exist without a count). When shown, it sits on the bottom border of the field, near the right end, as a small tag with a rounded border. Its background is fully opaque, so neither the border nor the text shows through it.
 
 Auto-grow is optional, per text area. With it the field starts at its normal height and grows with its text up to a maximum (240 px by default), then scrolls. It has no resize grip, since the height follows the text. Without it, the user can resize the field vertically with the grip at its bottom-right corner. Both options can be combined.
 
 ### 4.4 Number field (spin button)
 
-A number in a range, laid out as − field +.
+A number in a range, laid out as − field +. Every number field is one, in forms and in toolbars alike; the browser's own small arrows are never used.
 
 - **Keys:** Up and Down step by 1 step; Page Up and Page Down by 10 steps; Home and End jump to the minimum and maximum.
-- **Buttons:** − and + step by 1. Holding one repeats: the first step at once, then every 150 ms after 400 ms, then every 50 ms after 1.5 s. − is disabled at the minimum, + at the maximum.
-- **Out of range or invalid input is not corrected.** It shows the usual field error: "Between 1 and 99."
-- **Decimal mark:** both comma and point are accepted; the one the user typed is kept for display.
+- **Buttons:** − and + step by 1. Holding one repeats: the first step at once, then every 150 ms after 400 ms, then every 50 ms after 1.5 s. − is disabled at the minimum, + at the maximum. On touch each has a 44 px hit area.
+- **Out of range or invalid input is not corrected.** It shows the usual field error, in the page's language: "Between 1 and 99."
+- **Decimal mark:** both comma and point are accepted; the one the user typed is kept for display. The page always gets the number itself, never the typed text.
 - **Label:** say the range and step when they matter: "Weight in kg (0–50, steps of 0.5)".
+- **Empty:** a number that may stay empty says what empty means in its label ("Quota in GB, empty = no limit"); empty is then a value, never an error.
 
 ### 4.5 Search field
 
@@ -377,11 +382,28 @@ Space is precious, so an error never adds a line below the field: it shows as a 
 - **Groups** (radio and check groups, lists): the "!" sits next to the group's title or label, and the group border turns Danger. A list without a label shows its "!" inside its top-right corner, as inside a text field.
 - **Touch:** the "!" keeps its small look with a 44 px invisible hit area.
 - **Info and error together:** the "i" (help) stays next to the label; the "!" (error) sits inside the field. Each keeps one meaning.
+- **A message about no single field** ("Wrong user or password.", "The server did not answer. Try again.") is a Danger line at the bottom of the dialog or form, above its buttons. It goes as soon as the user changes something or tries again. A wrong value is never reported this way: it belongs to its field.
 
-### 4.8 For developers
+### 4.8 Editing in place
+
+A line of text that can be renamed where it stands (a document's name in its title row, a task in a list). At rest it is plain text; the pointer over it shows a soft tint and the text cursor. A click, or F2, turns it into a field in exactly the same box, so nothing on the screen moves; the field has an Accent border while it is being edited. Enter or leaving the field keeps the new text; Esc puts the old one back. An empty or invalid text is not kept, and the field shows the error (4.7). A line that cannot be renamed now (a finished task) keeps the box but loses the tint and the cursor.
+
+### 4.9 For developers
 
 | Need | Markup or code |
 | --- | --- |
+| A field | `input.input` or `textarea.input`: the class gives the look; Ayni never styles a bare `input` |
+| Label and field | `.field` with a `label[for]` and the field; a Panel's body spaces its `.field`s 12 px apart (its gap) |
+| Fields side by side | `.field-row` around two or more `.field`s |
+| Fields stacked outside a Panel body | `.fields` around them (a part of a form, a page's own form): the same 12 px |
+| Required | `span.req` after the label's text |
+| Lead paragraph of a dialog | `p.hint` at the top of the dialog's `.body`, before its fields |
+| A message about no single field | `p.form-error` at the bottom of the body (`hidden` while there is nothing to say) |
+| Field error | `aria-invalid="true"` plus `aria-describedby` pointing at a `.error` element with the message; `if (Ayni.focusFirstError(root)) return;` before sending: it checks the typed date, time and number fields again (a value sent with Enter never left its field) and puts the focus on the first wrong one |
+| Password with show/hide | `.input-group` with the `input.input[type="password"]` and a `.btn[data-reveal]`; Ayni sets its icon, tooltip and pressed state |
+| Number field | `.input-group.spin` around its `input.input` with `data-min`, `data-max`, `data-step` (or `type="number"` with `min`, `max`, `step`: Ayni turns it into a text box); Ayni makes the − and + buttons and the message when the page leaves them out; `data-optional` makes empty a value; a step fires the native `input` and `change` (once a held button is let go); `ayni:change { value }` gives the number (`null` when empty) |
+| Editing in place | `span.inline-text` at rest, swapped for `input.input.inline` while editing (`.is-editable` on the span when it can be renamed) |
+| A field in a toolbar | an `.input` or `.spin` inside `[role="toolbar"]` takes the toolbar's height by itself |
 | Search field | `.input-group.search-field` with an `input.input[type="search"]` and a `[data-clear]` button; Ayni wires it |
 | Folded search in a title row | `.input-group.search-field.fold` right after its Search button (`.btn[data-search]`) |
 | Filter button | `.btn.filter-btn` inside the field: `popovertarget` for a menu, or the page opens its dialog on `click`; `.is-active` while a filter is on |
@@ -420,6 +442,11 @@ A switch is its own control, not a restyled radio button or check box, and it ta
 
 A value in a range where the exact number matters less than its position. The current value shows next to it ("60%"). Arrow keys step it, Page Up and Page Down jump. A slider can have named stops shown under it (Draft, Low, Medium, High, Best). Use a number field (4.4) when the exact number matters.
 
+- **Look:** a thin 4 px line in the Track colour with a 12 px Accent dot; on touch the dot is drawn 20 px and the slider has a 44 px hit area. The browser's own drawing is never used.
+- **Focus:** the focus ring (2.4) goes round the dot.
+- **Players** (a song's position, the volume) use the same slider; a position that is not known yet is disabled.
+- **Markup:** `.slider-row` with the `input[type="range"]` and an `output` for the value.
+
 ### 5.5 States
 
 - **Disabled:** faded, cannot be changed.
@@ -428,7 +455,7 @@ A value in a range where the exact number matters less than its position. The cu
 
 ## 6. Date, time and calendar
 
-Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni calendar; weeks start on Monday.
+Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni calendar and time popup, the same on every device; weeks start on Monday. The device's own date and time pickers are never used. The page always gets the value in that same form, whatever the language.
 
 ### 6.1 Date field
 
@@ -436,14 +463,23 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 - The calendar opens with the button, or with Alt+Down or F4 while in the field (the same keys as the list picker). When it closes, focus returns to the field.
 - A wrongly typed date shows the field error: "Use the form YYYY-MM-DD, like 2026-10-20."
 - Read-only: tint, no border, and the calendar button is hidden. Disabled: faded, and the calendar button is disabled with the tooltip "Choose date: not available".
+- **Year optional** (a birthday): MM-DD is accepted too, and the calendar's foot has a "No year" switch. A date without a year is shown as MM-DD and given to the page as --MM-DD.
 
-### 6.2 Date and time field
+### 6.2 Time field
+
+- A text field with the placeholder "HH:MM" (24 hours) and a clock button inside, at the end.
+- The button, or Alt+Down or F4 in the field, opens a popup with an hour spinner and a minute spinner, as in 6.3. Minutes step by 5. The time applies as soon as it changes; Esc or a click outside closes the popup, and the focus returns to the field.
+- A wrongly typed time shows the field error: "Use the form HH:MM, like 09:30."
+- A date field and a time field can sit side by side (a start and an end); each keeps its own popup.
+- Read-only and disabled: as the date field.
+
+### 6.3 Date and time field
 
 - Typed as "YYYY-MM-DD HH:MM" (24 hours).
 - The popup holds the calendar plus an hour spinner and a minute spinner. Minutes step by 5; steps carry over midnight (23:55 + 5 minutes moves to 00:00 of the next day).
 - The day and the time apply as soon as they change. There is no Accept button. Esc or a click outside closes the popup.
 
-### 6.3 Calendar
+### 6.4 Calendar
 
 | Action | Mouse or touch | Keyboard |
 | --- | --- | --- |
@@ -459,6 +495,17 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 **Limits.** A calendar can have a minimum and maximum date. Days, months, years and arrows outside the range look disabled and cannot be picked (for example "only the next 60 days").
 
 **On touch** each day has a 44 px cell. Below 360 px wide the days are drawn 6 px smaller inside that cell so the calendar fits a 320 px screen.
+
+### 6.5 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| Date field | `.input-group.date-field` with an `input.input` and its calendar `.btn`; `Ayni.dateField(input, { popup, onChange, noYear })`; `noYear: true` allows a date without a year (`--MM-DD`) |
+| Time field | `.input-group.time-field` with an `input.input` and its clock `.btn`; `Ayni.timeField(input, { popup, onChange })` gives `HH:MM` |
+| Date and time | `Ayni.dateTimeField(input, { popup, value, onChange })` |
+| Inline calendar | `Ayni.calendar(element, onPick)` |
+| The value | each call returns a controller whose `value` is `YYYY-MM-DD`, `--MM-DD` (no year), `HH:MM` or `''`, and whose `set(value)` puts one in; `onChange` gets the same, on a pick and when a typed value is taken (the field is left, or `Ayni.focusFirstError` checks it); the date helpers are in `Ayni.dates` |
+| What the page writes | only the `.input-group` and its `input.input`: Ayni makes the button, the popup (right after the field, so it lives in the field's dialog), the error message and the placeholder, in the page's language, when the page leaves them out |
 
 ## 7. List picker: drop-down list and combo box
 
@@ -664,7 +711,7 @@ A dialog applies its changes as they are made or when it closes, closes with Esc
 
 1. **Esc always closes a dialog**, as if its Close button were pressed. Closing is not cancelling: changes are kept.
 2. **Only the dialog's own buttons and Esc close it.** A click on the dimmed page around it does nothing: one stray tap must not lose what was typed.
-3. **Avoid Accept and Cancel wherever possible.** Apply each change as it is made, or when the dialog closes. Invalid input is not applied, and a line inside the dialog, under the field, says why. A change that could not be saved goes back to what it was, with the same line.
+3. **Avoid Accept and Cancel wherever possible.** Apply each change as it is made, or when the dialog closes. Invalid input is not applied, and its field shows why (4.7). A change that could not be saved goes back to what it was, and a line at the bottom of the dialog says why.
 4. **No Cancel means none is needed.** No Undo notification follows the closing of a dialog. If the user needs a way back, the dialog gets a Cancel button. The one exception is a delete pressed inside the dialog: it acts at once, with no second "Are you sure?", and its Undo shows after the dialog closes (11.2).
 5. **The title row** holds the title, then any small tools (a switch, a step counter, icon buttons), then Close at the right when Close is the only button. A long title wraps; it never runs under the buttons.
 6. **Otherwise all buttons go in a bottom row**, Close included: the usual ones (Close, Accept, Cancel, the main action) aligned right, any extra actions in the same row aligned left.
@@ -833,8 +880,9 @@ Every control has a visible label, and any control can have a small "i" that ope
 ### 14.1 Labels
 
 - Every control has a visible label, above it for fields, at the right of the box for radio buttons and check boxes, at the left of a switch (a two-sided switch has one on each side). The label is linked to the control, and clicking it moves focus to the control.
-- Exceptions: list boxes may go without a visible label (8.1); buttons have no visible label and use their tooltip instead.
+- Exceptions: list boxes may go without a visible label (8.1); buttons have no visible label and use their tooltip instead, and so does a field in a toolbar (4.1).
 - A required field shows a red mark after its label.
+- Extra words about a control never go on a line under it: a short hint is the field's placeholder, a longer one is the info label (14.2).
 - A static label shows a fixed value that is not a control ("Account 0042-1187").
 
 ### 14.2 Info label
@@ -1076,7 +1124,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | Dragging a dialog from any free spot | Not taken: by its title row only |
 | Tinted title and button strips on floating dialogs | Not taken: plain on the dialog; strips only on full-screen dialogs |
 | Moving a lone Close button into the title row when the page loads | Dropped: it is written there in the page |
-| The status bar saying why a dialog's input was not applied | Replaced: a line inside the dialog, under the field (a dialog has no status bar) |
+| The status bar saying why a dialog's input was not applied | Replaced: the field's error (4.7), or a line at the bottom of the dialog when no single field is wrong (a dialog has no status bar) |
+| A line under a field for its error | Replaced: a Danger border and a "!" inside the field, with a popup (4.7) |
+| A grey hint line under a field | Replaced: the placeholder for a short hint, the info "i" for a longer one (4.1) |
+| Field look given to every bare input by its tag | Not taken: a field is `.input`, so check boxes, editors and table cells keep their own look |
+| The browser's own number arrows | Replaced: the − field + number field (4.4) |
+| The browser's own slider drawing | Replaced: a thin line with a dot (5.4) |
 | Undo notification after a dialog closes | Rejected: a dialog that needs a way back gets a Cancel button (a delete inside it is the one exception, 10.1) |
 | Ctrl+Z after the Undo notification has gone | Dropped: by then the action is final (11.2) |
 | One notification at a time, the newest replacing the last | Dropped: they stack, at most 3, so news never ends an Undo |
@@ -1101,7 +1154,7 @@ These were considered and turned down; they are listed so they are not proposed 
 | First-visit marks with a × that works at once | Not taken: it counts down 9 s first (15.4) |
 | An info label that opens only on a click | Replaced: with a mouse it opens on hover, a click pins it (14.2) |
 | A letter "i" drawn in an Accent circle | Replaced: an "i" icon in the link colour (14.2) |
-| Native select, datalist or date wheels | Rejected: the Ayni list picker and calendar |
+| Native select, datalist, or the device's own date and time pickers and wheels | Rejected: the Ayni list picker, calendar and time popup (6) |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |
 | Text labels on every button | Not used: icon-only round buttons with tooltips; text buttons only for wide calls to action (3.9) |

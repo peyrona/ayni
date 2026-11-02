@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../ayni-search.css">
 <link rel="stylesheet" href="../ayni-lists.css">
 <link rel="stylesheet" href="../ayni-help.css">
+<link rel="stylesheet" href="../ayni-fields.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -26,6 +27,7 @@
 <script src="../ayni-search.js" defer></script>
 <script src="../ayni-lists.js" defer></script>
 <script src="../ayni-help.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -65,8 +67,11 @@
         <p class="rule">No Accept or Cancel. Each change takes effect as soon as it is made, here on this gallery.</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-settings" aria-label="Gallery settings…" data-tip="Gallery settings…"><span class="icon" data-icon="settings"></span></button></div></div>
       <div class="spec"><h3>Applied on close</h3>
-        <p class="rule">The new name is applied when the dialog closes, by the Close button or Esc. An invalid name is not applied, and a line under the field says why.</p>
+        <p class="rule">The new name is applied when the dialog closes, by the Close button or Esc. An invalid name is not applied, and the field says why (red border and "!").</p>
         <div class="row"><button class="btn" data-open-dialog="dlg-form" aria-label="Rename…" data-tip="Rename…"><span class="icon" data-icon="edit"></span></button></div></div>
+      <div class="spec"><h3>Form with a message</h3>
+        <p class="rule">A short lead paragraph sits above the fields. Fields that belong together share a row and wrap on a narrow screen. A message about no single field ("the server did not answer") is a red line at the bottom, above the buttons; it goes as soon as something changes. A wrong value is shown on its own field.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-mail" aria-label="Mail account…" data-tip="Mail account…"><span class="icon" data-icon="edit"></span></button></div></div>
       <div class="spec"><h3>Confirmation</h3>
         <p class="rule">Used only when a change can't be applied live, like a deletion. It needs more than Close, so its buttons go in a bottom row. Cancel (the close icon, also Esc) starts focused; Delete is danger and never the default.</p>
         <div class="row"><button class="btn danger" data-open-dialog="dlg-confirm" aria-label="Delete file…" data-tip="Delete file…"><span class="icon" data-icon="trash"></span></button></div></div>
@@ -389,6 +394,19 @@
             <input id="spin-kg" class="input" role="spinbutton" inputmode="decimal" data-min="0" data-max="50" data-step="0.5" value="2,5" aria-describedby="spin-kg-err">
             <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button>
           </div><span class="error" id="spin-kg-err" hidden></span></div></div>
+      <div class="spec"><h3>Editing in place</h3>
+        <p class="rule">A name that can be renamed where it stands. A click, or F2, turns it into a field in the same box, so nothing moves; the Accent border says you are editing. Enter or leaving keeps the new name, Esc puts the old one back, an empty name is not kept.</p>
+        <div class="row"><span class="inline-text is-editable" id="ie-doc" tabindex="0" data-tip="Rename">Quarterly report</span><span class="hint">.docx</span></div>
+        <div class="row"><span class="inline-text" id="ie-done">Finished task (cannot be renamed)</span></div></div>
+      <div class="spec"><h3>Fields in a toolbar</h3>
+        <p class="rule">The same fields, at the toolbar's height and without a label above them: the tooltip names them. A number in a toolbar is a number field too.</p>
+        <div role="toolbar" aria-label="Sheet" class="row">
+          <input class="input" id="tb-cell" value="B4" style="width:88px" aria-label="Cell" data-tip="Cell">
+          <div class="input-group spin" style="width:120px" data-tip="Right margin (mm)">
+            <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+            <input class="input" role="spinbutton" inputmode="numeric" data-min="0" data-max="50" data-step="1" value="20" aria-label="Right margin (mm)">
+            <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+          <button class="btn" aria-label="Bold" data-tip="Bold" aria-pressed="false"><span class="icon" data-icon="edit"></span></button></div></div>
       <div class="spec"><h3>Progress</h3>
         <p class="rule">A bar when the amount is known, a spinner when it is not.</p>
         <div class="field"><label for="pg">Uploading photo.jpg</label><progress id="pg" max="100" value="35"></progress>
@@ -420,6 +438,15 @@
           <div class="input-group date-field"><input id="date-f" class="input" inputmode="numeric" placeholder="YYYY-MM-DD" aria-describedby="date-err">
             <button class="btn" popovertarget="cal-pop" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div>
           <span class="error" id="date-err" hidden>Use the form YYYY-MM-DD, like 2026-10-20.</span></div></div>
+      <div class="spec"><h3>Time field</h3>
+        <p class="rule">Type the time as HH:MM (24 hours), or set it in the popup (the button, or Alt+Down or F4): hours step by 1, minutes by 5, and the time applies as it changes. A date and a time can sit side by side, each with its own popup.</p>
+        <div class="field-row">
+          <div class="field"><label for="ev-day">Starts</label><div class="input-group"><input id="ev-day" class="input"></div></div>
+          <div class="field"><label for="ev-time">At</label><div class="input-group"><input id="ev-time" class="input" value="09:30"></div></div></div></div>
+      <div class="spec"><h3>Date without a year</h3>
+        <p class="rule">A birthday may have no year: type MM-DD, or turn on "No year" under the calendar. The page gets <code>--MM-DD</code>.</p>
+        <div class="field"><label for="bday">Birthday</label><div class="input-group"><input id="bday" class="input" value="05-14"></div></div>
+        <p class="out" id="bday-out"></p></div>
       <div class="spec"><h3>Date and time</h3>
         <p class="rule">Type it as YYYY-MM-DD HH:MM, or pick it (the button, or Alt+Down or F4 in the field). In the popup the day and the time apply as soon as you change them. Esc or a click outside closes it.</p>
         <div class="field"><label for="dt-f">Appointment</label>
@@ -666,7 +693,7 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
   </div>
 </section>
 
-<!-- Shared layers used by ayni.js (it creates them when a page leaves them out): help popup for info labels, field error popup -->
+<!-- Shared layers used by Ayni (it creates them when a page leaves them out): help popup for info labels, field error popup -->
 <div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>
 <div class="panel menu" popover id="m-filter" role="menu" aria-label="Filter">
   <button role="menuitemradio" aria-checked="true" data-act="All fruits" data-f="all">All fruits</button>
@@ -680,9 +707,9 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
 <div class="panel popup" popover id="dt-pop" role="dialog" aria-label="Choose date and time">
   <div class="cal" id="dt-cal"></div>
   <div class="time-row"><label for="dt-h">Time</label>
-    <div class="input-group"><button class="btn" type="button" data-tstep="h,-1" aria-label="Hour earlier" data-tip="Hour earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-h" class="input" type="number" min="0" max="23" aria-label="Hours" inputmode="numeric"><button class="btn" type="button" data-tstep="h,1" aria-label="Hour later" data-tip="Hour later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+    <div class="input-group"><button class="btn" type="button" data-tstep="h,-1" aria-label="Hour earlier" data-tip="Hour earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-h" class="input" maxlength="2" aria-label="Hours" inputmode="numeric"><button class="btn" type="button" data-tstep="h,1" aria-label="Hour later" data-tip="Hour later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
     <span aria-hidden="true">:</span>
-    <div class="input-group"><button class="btn" type="button" data-tstep="m,-5" aria-label="5 minutes earlier" data-tip="5 minutes earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-m" class="input" type="number" min="0" max="59" step="5" aria-label="Minutes" inputmode="numeric"><button class="btn" type="button" data-tstep="m,5" aria-label="5 minutes later" data-tip="5 minutes later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+    <div class="input-group"><button class="btn" type="button" data-tstep="m,-5" aria-label="5 minutes earlier" data-tip="5 minutes earlier" tabindex="-1"><span class="icon" data-icon="minus"></span></button><input id="dt-m" class="input" maxlength="2" aria-label="Minutes" inputmode="numeric"><button class="btn" type="button" data-tstep="m,5" aria-label="5 minutes later" data-tip="5 minutes later" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
   </div>
 </div>
 <!-- Popup with mixed controls; it scrolls when the content does not fit -->
@@ -800,6 +827,25 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
         <span class="error" id="df-err" hidden>A name can't be empty or contain / or \.</span></div>
     </div>
   </form>
+</dialog>
+<dialog class="panel" id="dlg-mail" aria-labelledby="dml-t">
+  <header><h2 id="dml-t">Mail account</h2></header>
+  <div class="body">
+    <p class="hint">Your mail provider gives you these details.</p>
+    <div class="field-row">
+      <div class="field"><label for="dml-server">Server</label><input id="dml-server" class="input" value="mail.example.com" autocomplete="off"></div>
+      <div class="field"><label for="dml-port">Port (1–65535)</label>
+        <div class="input-group spin">
+          <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+          <input id="dml-port" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="65535" data-step="1" value="993">
+          <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div></div></div>
+    <div class="field"><label for="dml-pw">Password</label>
+      <div class="input-group"><input id="dml-pw" class="input" type="password" value="secret" autocomplete="off">
+        <button class="btn" type="button" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><span class="icon" data-icon="eye"></span></button></div></div>
+    <p class="form-error" id="dml-err" hidden>The server did not answer. Try again.</p>
+  </div>
+  <footer><button class="btn" data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button>
+    <button class="btn primary" id="dml-go" aria-label="Connect" data-tip="Connect"><span class="icon" data-icon="ok"></span></button></footer>
 </dialog>
 <dialog class="panel" id="dlg-find" aria-labelledby="dfi-t">
   <form method="dialog" style="display:contents">

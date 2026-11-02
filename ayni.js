@@ -11,7 +11,7 @@
 (() => {
 'use strict';
 const { $, $$, isMac, icon, setIcon } = Ayni;
-const { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip, fold } = Ayni.core;
+const { fire, wired, once, each, tx, iconName, drawIcons, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip, fold } = Ayni.core;
 /* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js, which loads before this file */
 const { initMenu, initToolbar, contextMenu, place } = Ayni.core.menus;
 const invoker = () => Ayni.core.menus.invoker();
@@ -25,8 +25,6 @@ const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detai
 const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
 
 /* Shared layers, created when the page does not have them yet */
-let errPop;
-
 
 /* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
 const initTabs = (list) => {
@@ -85,232 +83,6 @@ const initTabs = (list) => {
   select(start || tabs[0], false);
 };
 
-/* ---------- Text fields ---------- */
-/* Optional count for a text area with a limit (opt-in per field): the count sits on the field's bottom border (.ta-wrap > textarea[maxlength] + .ta-count) */
-const initCount = (w) => {
-  const t = $('textarea', w), c = $('.ta-count', w); if (!t || !c) return;
-  const count = () => { c.textContent = `${t.value.length} / ${t.maxLength}`; };
-  t.addEventListener('input', count); count();
-};
-/* Optional auto-grow (opt-in per field, textarea[data-autogrow]): the field grows with its text, from its normal minimum
-   height up to --autogrow-max, then scrolls. It has no resize grip, since the height follows the text. */
-const initGrow = (t) => {
-  const fit = () => { t.style.height = 'auto'; t.style.height = `${t.scrollHeight + t.offsetHeight - t.clientHeight}px`; };
-  t.addEventListener('input', fit); fit();
-};
-/* Password: a button with data-reveal inside the field shows and hides the text */
-const initReveal = (b) => b.addEventListener('click', () => {
-  const show = b.getAttribute('aria-pressed') !== 'true', pw = $('input', b.closest('.input-group'));
-  pw.type = show ? 'text' : 'password'; b.setAttribute('aria-pressed', show);
-  const label = tx(show ? 'password.hide' : 'password.show'); b.setAttribute('aria-label', label); b.dataset.tip = label;
-  setIcon(b, show ? 'eye-off' : 'eye'); retip(b);
-});
-
-/* ---------- Labels: clicking a label focuses its control; a list is focused through its current item ---------- */
-const focusCtl = (c) => (c.matches('[tabindex], input, select, textarea, button') ? c : $('[tabindex="0"]', c) || c).focus();
-
-/* RULE: number field (spin button). Arrows step, Page Up/Down step 10 times, Home/End go to min/max. Holding − or +
-   repeats, slowly and then faster. − is disabled at the minimum and + at the maximum. A typed value out of range shows the
-   usual field error instead of being corrected. Both "," and "." are accepted as the decimal separator. */
-const initSpin = (g) => {
-  const inp = $('.input', g), [dec, inc] = $$('button[data-step]', g), err = document.getElementById(inp.getAttribute('aria-describedby'));
-  const min = +inp.dataset.min, max = +inp.dataset.max, step = +inp.dataset.step, places = (inp.dataset.step.split('.')[1] || '').length;
-  let sep = inp.value.includes(',') ? ',' : '.';
-  const parse = () => { const t = inp.value.trim().replace(',', '.'); return t === '' || !/^-?\d*\.?\d+$|^-?\d+\.$/.test(t) ? NaN : +t; };
-  const show = (v) => String(+v.toFixed(places)).replace('.', sep);
-  const check = () => {
-    const v = parse(), bad = Number.isNaN(v) || v < min || v > max;
-    inp.setAttribute('aria-invalid', bad); err.hidden = !bad; err.textContent = `Between ${show(min)} and ${show(max)}.`;
-    if (!bad) inp.setAttribute('aria-valuenow', v);
-    inp.setAttribute('aria-valuemin', min); inp.setAttribute('aria-valuemax', max);
-    dec.toggleAttribute('aria-disabled', !bad && v <= min); inc.toggleAttribute('aria-disabled', !bad && v >= max);
-    if (dec.hasAttribute('aria-disabled')) dec.setAttribute('aria-disabled', 'true');
-    if (inc.hasAttribute('aria-disabled')) inc.setAttribute('aria-disabled', 'true');
-    return !bad;
-  };
-  const set = (v) => { inp.value = show(Math.min(max, Math.max(min, Math.round(v / step) * step))); check(); };
-  const by = (n) => { const v = parse(); set((Number.isNaN(v) ? min : Math.min(max, Math.max(min, v))) + n * step); };
-  inp.addEventListener('input', () => { if (inp.value.includes(',')) sep = ','; else if (inp.value.includes('.')) sep = '.'; check(); });
-  inp.addEventListener('keydown', (e) => {
-    const n = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key];
-    if (n) { e.preventDefault(); by(n); }
-    else if (e.key === 'Home') { e.preventDefault(); set(min); }
-    else if (e.key === 'End') { e.preventDefault(); set(max); }
-  });
-  /* Holding a button repeats: first after 400 ms, every 150 ms, then every 50 ms after 1.5 s */
-  [[dec, -1], [inc, 1]].forEach(([b, n]) => {
-    let t1, t2, start;
-    const stop = () => { clearTimeout(t1); clearInterval(t2); };
-    const tick = () => { if (b.getAttribute('aria-disabled') === 'true') return stop(); by(n); };
-    b.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || b.getAttribute('aria-disabled') === 'true') return;
-      e.preventDefault(); inp.focus(); tick(); start = performance.now();
-      t1 = setTimeout(() => { t2 = setInterval(() => { tick(); if (performance.now() - start > 1500) { clearInterval(t2); t2 = setInterval(tick, 50); } }, 150); }, 400);
-    });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
-    b.addEventListener('contextmenu', (e) => e.preventDefault());
-    b.addEventListener('click', (e) => { if (e.detail === 0) by(n); }); // assistive tech activation
-  });
-  check();
-};
-
-/* ---------- Calendar (shared by inline calendars and the date popups) ---------- */
-const pad = (n) => String(n).padStart(2, '0');
-const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const parseIso = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim()); if (!m) return null; const d = new Date(+m[1], m[2] - 1, +m[3]); return iso(d) === s.trim() ? d : null; };
-const sameDay = (a, b) => a && b && iso(a) === iso(b);
-const fmtLong = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-const fmtMonShort = new Intl.DateTimeFormat(LOCALE, { month: 'short' });
-const fmtMonLong = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
-/* Two-letter day names, Monday first: "Mo", "Lu"... */
-const dayHeads = () => Array.from({ length: 7 }, (_, i) => {
-  const n = window.Ayni?.i18n?.weekday(i + 1, 'short') || ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'][i];
-  return n.slice(0, 2);
-});
-const day0 = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-const fmtDT = (d) => `${iso(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const parseDT = (str) => {
-  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})$/.exec(str.trim()); if (!m) return null;
-  const d = parseIso(m[1]), h = +m[2], mi = +m[3]; if (!d || h > 23 || mi > 59) return null;
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi);
-};
-/* Ayni.calendar(root, onPick) draws a calendar in root and returns { set(date), focus() }.
-   Optional limits come from data-min / data-max (YYYY-MM-DD) on the calendar root.
-   The title switches days -> months -> years; picking a month or a year returns to the days. */
-const makeCalendar = (root, onPick) => {
-  const min = parseIso(root.dataset.min || ''), max = parseIso(root.dataset.max || '');
-  let sel = day0(new Date()), cur = day0(new Date()), view = 'days';
-  const dayOk = (d) => !(min && d < min) && !(max && d > max);
-  const monthOk = (y, m) => !(min && new Date(y, m + 1, 0) < min) && !(max && new Date(y, m, 1) > max);
-  const yearOk = (y) => !(min && y < min.getFullYear()) && !(max && y > max.getFullYear());
-  const clamp = (d) => (min && d < min ? new Date(min) : max && d > max ? new Date(max) : d);
-  const moveMonth = (n) => { const d = cur.getDate(); cur = new Date(cur.getFullYear(), cur.getMonth() + n, 1); cur.setDate(Math.min(d, new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate())); };
-  const off = (ok) => (ok ? '' : ' aria-disabled="true"');
-  const render = (focus) => {
-    const y = cur.getFullYear(), m = cur.getMonth(), today = day0(new Date()), base = y - (y % 12);
-    let title, body, prevOk, nextOk, unit;
-    if (view === 'days') {
-      const first = new Date(y, m, 1), start = new Date(y, m, 1 - ((first.getDay() + 6) % 7));
-      let rows = '';
-      for (let w = 0; w < 6; w++) {
-        rows += '<tr>';
-        for (let d = 0; d < 7; d++) {
-          const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d);
-          const cls = [day.getMonth() !== m ? 'out' : '', sameDay(day, today) ? 'today' : ''].join(' ').trim();
-          rows += `<td><button type="button" data-d="${iso(day)}" class="${cls}" tabindex="${sameDay(day, cur) ? 0 : -1}" aria-selected="${sameDay(day, sel)}" aria-label="${dayOk(day) ? fmtLong.format(day) : txf('cal.dayOff', { date: fmtLong.format(day) })}"${off(dayOk(day))}>${day.getDate()}</button></td>`;
-        }
-        rows += '</tr>';
-      }
-      title = fmtMonLong.format(cur); unit = 'month';
-      prevOk = monthOk(y, m - 1); nextOk = monthOk(y, m + 1);
-      body = `<table role="grid" aria-label="${title}"><thead><tr>${dayHeads().map((x) => `<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
-    } else if (view === 'months') {
-      title = String(y); unit = 'year';
-      prevOk = yearOk(y - 1); nextOk = yearOk(y + 1);
-      body = `<div class="cal-grid" role="grid" aria-label="${txf('cal.monthsOf', { year: y })}">${Array.from({ length: 12 }, (_, i) => {
-        const cls = y === today.getFullYear() && i === today.getMonth() ? 'today' : '';
-        return `<button type="button" data-mo="${i}" class="${cls}" tabindex="${i === m ? 0 : -1}" aria-selected="${y === sel.getFullYear() && i === sel.getMonth()}" aria-label="${fmtMonLong.format(new Date(y, i, 1))}"${off(monthOk(y, i))}>${fmtMonShort.format(new Date(y, i, 1))}</button>`;
-      }).join('')}</div>`;
-    } else {
-      title = txf('cal.yearSpan', { from: base, to: base + 11 }); unit = 'years';
-      prevOk = yearOk(base - 1); nextOk = yearOk(base + 12);
-      body = `<div class="cal-grid" role="grid" aria-label="${txf('cal.years', { span: title })}">${Array.from({ length: 12 }, (_, i) => {
-        const yy = base + i;
-        return `<button type="button" data-yr="${yy}" class="${yy === today.getFullYear() ? 'today' : ''}" tabindex="${yy === y ? 0 : -1}" aria-selected="${yy === sel.getFullYear()}"${off(yearOk(yy))}>${yy}</button>`;
-      }).join('')}</div>`;
-    }
-    const titleEl = view === 'years' ? `<span class="cal-title" aria-live="polite">${title}</span>`
-      : `<button type="button" class="cal-title" data-view aria-live="polite" data-tip="${tx(view === 'days' ? 'cal.chooseMonth' : 'cal.chooseYear')}">${title}${icon('chev-down')}</button>`;
-    root.innerHTML = `<div class="cal-head">
-      <button type="button" class="btn icon-btn" data-nav="-1" aria-label="${tx('cal.prev.' + unit)}" data-tip="${tx('cal.prev.' + unit)}"${off(prevOk)}>${icon('chev-right', 'flip')}</button>
-      ${titleEl}
-      <button type="button" class="btn icon-btn" data-nav="1" aria-label="${tx('cal.next.' + unit)}" data-tip="${tx('cal.next.' + unit)}"${off(nextOk)}>${icon('chev-right')}</button></div>
-      <div class="cal-body">${body}</div>
-      <div class="cal-foot"><button type="button" class="btn" data-today aria-label="${tx('cal.today')}" data-tip="${dayOk(today) ? txf('cal.todayIs', { date: fmtLong.format(today) }) : tx('cal.todayOff')}"${off(dayOk(today))}>${icon('today')}</button></div>`;
-    if (focus === 'title') $('.cal-title', root).focus?.();
-    else if (focus) $('.cal-body [tabindex="0"]', root).focus();
-  };
-  const pick = (d) => { sel = cur = d; view = 'days'; render(true); onPick(sel); };
-  root.addEventListener('click', (e) => {
-    const t = e.target.closest('button'); if (!t || t.getAttribute('aria-disabled') === 'true') return;
-    if (t.dataset.nav) { moveMonth(+t.dataset.nav * (view === 'days' ? 1 : view === 'months' ? 12 : 144)); render(false); }
-    else if ('view' in t.dataset) { view = view === 'days' ? 'months' : 'years'; render('title'); }
-    else if (t.dataset.mo) { moveMonth(+t.dataset.mo - cur.getMonth()); cur = clamp(cur); view = 'days'; render(true); }
-    else if (t.dataset.yr) { moveMonth((+t.dataset.yr - cur.getFullYear()) * 12); cur = clamp(cur); view = 'days'; render(true); }
-    else if (t.dataset.d) pick(parseIso(t.dataset.d));
-    else if ('today' in t.dataset) pick(day0(new Date()));
-  });
-  root.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && view !== 'days') { e.preventDefault(); e.stopPropagation(); view = 'days'; render(true); return; }
-    if (!e.target.closest('.cal-body button')) return;
-    if (view === 'days') {
-      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
-      if (step) cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + step);
-      else if (e.key === 'PageUp' || e.key === 'PageDown') moveMonth(e.key === 'PageUp' ? -1 : 1);
-      else if (e.key === 'Home') cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() - ((cur.getDay() + 6) % 7));
-      else if (e.key === 'End') cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 6 - ((cur.getDay() + 6) % 7));
-      else return;
-    } else {
-      const k = view === 'months' ? 1 : 12;
-      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3, PageUp: -12, PageDown: 12 }[e.key];
-      if (!step) return;
-      moveMonth(step * k);
-    }
-    e.preventDefault(); render(true);
-  });
-  render(false);
-  return { set: (d) => { sel = cur = d ? day0(d) : day0(new Date()); view = 'days'; render(false); }, focus: () => $('.cal-body [tabindex="0"]', root).focus() };
-};
-const errOf = (inp) => document.getElementById(inp.getAttribute('aria-describedby'));
-/* Ayni.dateField(input, { popup, onChange }): a YYYY-MM-DD field whose popup holds a .cal; onChange(date) runs on a pick */
-const dateField = (inp, { popup, onChange } = {}) => {
-  const err = errOf(inp);
-  const check = () => { const bad = inp.value !== '' && !parseIso(inp.value); inp.setAttribute('aria-invalid', bad); if (err) err.hidden = !bad; return !bad; };
-  inp.addEventListener('blur', check);
-  const cal = makeCalendar($('.cal', popup), (d) => { inp.value = iso(d); check(); popup.hidePopover(); onChange?.(d); });
-  popup.addEventListener('toggle', (e) => {
-    if (e.newState === 'open') { cal.set(parseIso(inp.value)); place(popup); cal.focus(); }
-    else invoker()?.focus();
-  });
-  return { check };
-};
-/* Ayni.dateTimeField(input, { popup, value, onChange }): one value, edited by typing (YYYY-MM-DD HH:MM) or in the
-   popup (a .cal plus hour and minute fields in a .time-row), applied live; onChange(date) runs on every change */
-const dateTimeField = (inp, { popup, value = new Date(), onChange } = {}) => {
-  const err = errOf(inp), [hIn, mIn] = $$('.time-row .input', popup);
-  let dt = value;
-  const show = () => { inp.value = fmtDT(dt); hIn.value = pad(dt.getHours()); mIn.value = pad(dt.getMinutes()); inp.removeAttribute('aria-invalid'); if (err) err.hidden = true; };
-  const cal = makeCalendar($('.cal', popup), (d) => { dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), dt.getHours(), dt.getMinutes()); show(); onChange?.(dt); });
-  const set = (d) => { dt = d; show(); cal.set(dt); onChange?.(dt); };
-  $$('[data-tstep]', popup).forEach((b) => b.addEventListener('click', () => {
-    const [unit, n] = b.dataset.tstep.split(','), y = dt.getFullYear(), mo = dt.getMonth(), da = dt.getDate();
-    set(unit === 'h' ? new Date(y, mo, da, dt.getHours() + +n, dt.getMinutes()) : new Date(y, mo, da, dt.getHours(), dt.getMinutes() + +n));
-  }));
-  [hIn, mIn].forEach((f) => f.addEventListener('change', () => {
-    const h = Math.min(23, Math.max(0, Math.round(+hIn.value || 0))), mi = Math.min(59, Math.max(0, Math.round(+mIn.value || 0)));
-    set(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), h, mi));
-  }));
-  inp.addEventListener('blur', () => {
-    if (inp.value.trim() === '') return;
-    const d = parseDT(inp.value);
-    if (d) set(d); else { inp.setAttribute('aria-invalid', 'true'); if (err) err.hidden = false; }
-  });
-  popup.addEventListener('toggle', (e) => {
-    if (e.newState === 'open') { const d = parseDT(inp.value); if (d) dt = d; show(); cal.set(dt); place(popup); cal.focus(); }
-    else invoker()?.focus();
-  });
-  show();
-  return { set, get: () => dt };
-};
-/* Alt+Down or F4 in a date field opens its calendar, like the list picker */
-const initDateKeys = (g) => {
-  const inp = $('.input', g), btn = $('button:not(.err-mark)', g);
-  inp.addEventListener('keydown', (ev) => {
-    if (!((ev.altKey && ev.key === 'ArrowDown') || ev.key === 'F4')) return;
-    ev.preventDefault();
-    if (!inp.disabled && btn.getAttribute('aria-disabled') !== 'true') btn.click();
-  });
-};
 
 /* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
 /* RULE: one list picker serves every drop-down list and combo box, on every device. Fires ayni:change on the .picker
@@ -457,86 +229,6 @@ const initSplit = (split) => {
   setSplit(def);
 };
 
-/* ---------- Field errors: Danger border + small red "!" inside the field; the message floats in a popup ----------
-   RULE (Frasquito, 2026-10-22): any control whose aria-describedby points at a .error gets this. The .error element
-   stays as the (hidden) message source, so code keeps setting aria-invalid, its text and its hidden flag as usual. */
-const errMarks = new Map();
-let errFor = null, errPinned = false;
-const errSrc = (c) => (c.getAttribute('aria-describedby') || '').split(/\s+/).map((id) => document.getElementById(id)).find((e) => e?.classList.contains('error'));
-const errGroup = (c) => c.matches('fieldset, [role="listbox"], [role="tree"], [role="radiogroup"]');
-const errBad = (c) => c.getAttribute('aria-invalid') === 'true';
-const hideErr = () => { errFor = null; errPinned = false; if (errPop.matches(':popover-open')) errPop.hidePopover(); };
-const showErr = (c, pin = false) => {
-  const src = errSrc(c), m = errMarks.get(c); if (!src || !errBad(c)) return;
-  errFor = c; errPinned = pin; errPop.textContent = src.textContent.trim();
-  if (!errPop.matches(':popover-open')) errPop.showPopover();
-  const box = (errGroup(c) ? m : c.closest('.input-group, .err-wrap') || c).getBoundingClientRect(), p = errPop.getBoundingClientRect();
-  let y = box.bottom + 4; if (y + p.height > innerHeight - 8) y = box.top - p.height - 4;
-  const x = errGroup(c) ? box.left - 8 : box.right - p.width;
-  errPop.style.left = Math.max(8, Math.min(x, innerWidth - p.width - 8)) + 'px'; errPop.style.top = Math.max(8, y) + 'px';
-};
-const errSync = (c) => {
-  const m = errMarks.get(c); if (!m) return; // the field has gone (a tree item's name editor)
-  const bad = errBad(c); m.hidden = !bad;
-  const focused = c === document.activeElement || (errGroup(c) && c.contains(document.activeElement));
-  if (bad && (focused || errFor === c)) showErr(c, errPinned && errFor === c); else if (errFor === c) hideErr();
-};
-const initError = (c) => {
-  const src = errSrc(c); if (!src) return;
-  src.dataset.errSrc = '';
-  const m = document.createElement('button');
-  Object.assign(m, { type: 'button', className: 'err-mark', tabIndex: -1, textContent: '!' }); m.setAttribute('aria-hidden', 'true');
-  if (errGroup(c)) {
-    const lab = c.matches('fieldset') ? $(':scope > legend', c) : document.getElementById(c.getAttribute('aria-labelledby'));
-    if (lab || c.matches('fieldset')) (lab || c).append(m);
-    /* A list with no visible label: the "!" sits inside its top-right corner, as inside a text field */
-    else { const w = document.createElement('span'); w.className = 'err-wrap err-corner'; c.before(w); w.append(c, m); }
-  } else if (c.parentElement.matches('.input-group, .spin')) c.after(m);
-  else { const w = document.createElement('span'); w.className = 'err-wrap'; c.before(w); w.append(c, m); }
-  errMarks.set(c, m);
-  m.addEventListener('pointerdown', (e) => e.preventDefault());
-  m.addEventListener('click', () => (errFor === c && errPinned ? hideErr() : showErr(c, true)));
-  m.addEventListener('mouseenter', () => { if (errFor !== c) showErr(c); });
-  m.addEventListener('mouseleave', () => { const f = c === document.activeElement || c.contains(document.activeElement); if (errFor === c && !errPinned && !f) hideErr(); });
-  new MutationObserver(() => errSync(c)).observe(c, { attributes: true, attributeFilter: ['aria-invalid'] });
-  new MutationObserver(() => { if (errFor === c) showErr(c, errPinned); }).observe(src, { childList: true, characterData: true, subtree: true });
-  errSync(c);
-};
-/* The tree's rename field (ayni-lists.js) uses the same "!" */
-Ayni.core.errors = { init: initError, forget: (c) => { errMarks.delete(c); if (errFor === c) hideErr(); } };
-/* Ayni.focusFirstError(root): on sending a form with errors, the focus goes to the first wrong field, so its message shows */
-const focusFirstError = (root = document) => {
-  const c = [...errMarks.keys()].find((k) => root.contains(k) && errBad(k)); if (!c) return false;
-  (errGroup(c) ? $('input:not([disabled]), [tabindex="0"], [role="option"]', c) || c : c).focus(); return true;
-};
-
-/* ---------- Page-wide behaviour, set up once ---------- */
-const setup = () => {
-  errPop = layer('ayni-err', '<div class="panel popup err-pop" popover="manual" id="ayni-err" aria-hidden="true"></div>');
-
-  /* Read-only radios and sliders show their value but cannot change (check boxes and switches: ayni-buttons.js) */
-  addEventListener('keydown', (e) => { if (isRO(e.target) && /radio|range/.test(e.target.type) && /^(Arrow|Page|Home|End)/.test(e.key)) e.preventDefault(); }, true);
-  addEventListener('pointerdown', (e) => { if (isRO(e.target) && e.target.type === 'range') e.preventDefault(); }, true);
-
-  addEventListener('click', (e) => { const l = e.target.closest('label[for]'); if (l && !l.control) { const c = document.getElementById(l.htmlFor); if (c) focusCtl(c); } });
-
-
-  /* Field errors */
-  document.addEventListener('focusin', (e) => {
-    const c = [...errMarks.keys()].find((k) => k === e.target || (errGroup(k) && k.contains(e.target)));
-    if (c && errBad(c)) showErr(c); else if (errFor && !errPinned) hideErr();
-  });
-  document.addEventListener('focusout', () => setTimeout(() => {
-    if (!errFor || errPinned) return;
-    const a = document.activeElement; if (a !== errFor && !(errGroup(errFor) && errFor.contains(a))) hideErr();
-  }));
-  document.addEventListener('pointerdown', (e) => { if (errPinned && !e.target.closest('.err-mark, #ayni-err')) hideErr(); }, true);
-  /* Page scroll or resize: a focused field's message follows the field; a hovered or clicked one closes */
-  errPop.addEventListener('ayni:dismiss', (e) => {
-    e.preventDefault(); const c = errFor, a = document.activeElement;
-    if (c && !errPinned && (a === c || (errGroup(c) && c.contains(a)))) showErr(c); else hideErr();
-  });
-};
 
 /* ---------- Desktop: taskbar and windows ---------- */
 /* <div class="desktop" data-edge="bottom"> holds <main class="area"> with the windows and <nav class="taskbar"> with
@@ -768,14 +460,8 @@ const initClock = (el) => {
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   each(root, '[role="tablist"]', 'tabs', initTabs);
-  each(root, '.ta-wrap', 'count', initCount);
-  each(root, 'textarea[data-autogrow]', 'grow', initGrow);
-  each(root, '[data-reveal]', 'reveal', initReveal);
-  each(root, '.spin', 'spin', initSpin);
-  each(root, '.date-field', 'datekeys', initDateKeys);
   each(root, '.picker', 'picker', initPicker);
   each(root, '.split', 'split', initSplit);
-  each(root, '[aria-describedby]', 'error', initError);
   each(root, '.desktop', 'desktop', initDesktop);
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);
   each(root, '.panel.popup.launcher', 'launcher', initLauncher);
@@ -784,12 +470,10 @@ const init = (root = document) => {
 };
 
 Object.assign(Ayni, {
-  status, focusFirstError,
-  calendar: makeCalendar, dateField, dateTimeField,
+  status,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },
   setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,
-  dates: { pad, iso, parseIso, formatLong: (d) => fmtLong.format(d), formatDateTime: fmtDT, parseDateTime: parseDT },
 });
-Ayni.core.family({ setup, init });
+Ayni.core.family({ init });
 })();

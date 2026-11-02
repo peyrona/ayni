@@ -6,6 +6,7 @@
  * range shows the red "!".
  * @extends Field
  * @fires change  Native, when the value changes.
+ * @fires ayni:change  detail `{ value }`: the number itself (whatever decimal mark was typed), on every valid change.
  */
 class NumberField extends Field {
   /**

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni fields family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus (they place the date popups) and fields
+     families, and nothing else (no ayni.css, no ayni.js). #demo opens the birthday's popup and shows a field error
+     (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  document.addEventListener('change', (e) => { if (e.target.closest('.spin')) L.push('native change ' + e.target.id + ':' + e.target.value); });
+  /* Everything the fields tell, in order */
+  document.addEventListener('ayni:change', (e) => L.push(`change ${e.target.id}:${e.detail.value}`));
+  window.day = Ayni.dateField($('#day'), { onChange: (d, v) => L.push('day ' + v) });
+  window.time = Ayni.timeField($('#time'), { onChange: (v) => L.push('time ' + v) });
+  window.bday = Ayni.dateField($('#bday'), { noYear: true, onChange: (d, v) => L.push('bday ' + v) });
+  window.dt = Ayni.dateTimeField($('#dt'), { value: new Date(2026, 10, 1, 23, 55), onChange: (d) => L.push('dt ' + Ayni.dates.formatDateTime(d)) });
+  window.dlgDay = Ayni.dateField($('#dlg-day'), { onChange: (d, v) => L.push('dlg-day ' + v) });
+  /* Editing in place: the page swaps the text for a field in the same box */
+  $('#ie').addEventListener('click', () => {
+    const s = $('#ie'), f = document.createElement('input'); f.className = 'input inline'; f.id = 'ie-f'; f.value = s.textContent;
+    f.style.width = s.offsetWidth + 'px'; s.replaceWith(f); f.focus();
+    f.addEventListener('blur', () => { s.textContent = f.value.trim() || s.textContent; f.replaceWith(s); });
+  });
+  $('#dlg-go').addEventListener('click', () => { $('#dlg-err').hidden = false; });
+  $('#dlg').addEventListener('input', () => { $('#dlg-err').hidden = true; });
+  if (location.hash === '#demo') {
+    $('#email').setAttribute('aria-invalid', 'true');
+    $('#bday-btn-host').scrollIntoView(); $('#bday').closest('.input-group').querySelector(':scope > button:not(.err-mark)').click();
+  }
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 150vh; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1000px; }
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  #tb { display: flex; align-items: center; gap: 4px; border: var(--panel-border); padding: 4px; }
+</style>
+</head>
+<body>
+<div class="cols">
+  <div class="col">
+    <div class="fields" id="stack"><div class="field"><label for="name">Full name <span class="req">*</span></label><input id="name" class="input" placeholder="As it appears on your ID"></div><div class="field"><label for="nick">Nickname</label><input id="nick" class="input"></div></div>
+    <div class="field"><label for="email">Email</label><input id="email" class="input" value="ana@" aria-invalid="true" aria-describedby="email-err"><span class="error" id="email-err">Enter a full address, like name@example.com.</span></div>
+    <div class="field"><label for="pw">Password</label>
+      <div class="input-group"><input id="pw" class="input" type="password" value="secret">
+        <button class="btn" type="button" id="pw-eye" data-reveal aria-pressed="false" aria-label="Show password" data-tip="Show password"><span class="icon" data-icon="eye"></span></button></div></div>
+    <div class="field"><label for="ro">Customer ID</label><input id="ro" class="input" value="C-20931" readonly></div>
+    <div class="field"><label for="dis">Promo code</label><input id="dis" class="input" value="NONE" disabled></div>
+    <div class="field"><label for="grow">Notes</label><textarea id="grow" class="input" data-autogrow></textarea></div>
+    <div class="field"><label for="ta">Comments</label><div class="ta-wrap"><textarea id="ta" class="input" maxlength="50">Hello</textarea><span class="ta-count"></span></div></div>
+    <fieldset class="group" id="ship" aria-invalid="true" aria-describedby="ship-err"><legend>Shipping</legend>
+      <label class="choice"><input type="radio" name="ship">Post</label><span class="error" id="ship-err">Choose how to ship.</span></fieldset>
+  </div>
+  <div class="col">
+    <div class="field"><label for="copies">Copies (1–99)</label>
+      <div class="input-group spin" id="copies-g">
+        <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1" id="copies-dec"><span class="icon" data-icon="minus"></span></button>
+        <input id="copies" class="input" role="spinbutton" inputmode="numeric" data-min="1" data-max="99" data-step="1" value="2" aria-describedby="copies-err">
+        <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1" id="copies-inc"><span class="icon" data-icon="plus"></span></button>
+      </div><span class="error" id="copies-err" hidden></span></div>
+    <div class="field"><label for="kg">Weight in kg (0–50, steps of 0.5)</label>
+      <div class="input-group spin" id="kg-g">
+        <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+        <input id="kg" class="input" role="spinbutton" inputmode="decimal" data-min="0" data-max="50" data-step="0.5" value="2,5">
+        <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div></div>
+    <div class="field"><label for="bare">Quota in GB (empty = no limit)</label><div class="input-group spin" id="bare-g"><input class="input" type="number" id="bare" min="0" step="1" data-optional></div></div>
+    <div class="field"><label for="free">Any number</label><div class="input-group spin" id="free-g"><input class="input" id="free" value="7"></div></div>
+    <div class="field"><label for="day">Starts</label><div class="input-group"><input id="day" class="input" value="2026-11-02"></div></div>
+    <div class="field"><label for="time">At</label><div class="input-group"><input id="time" class="input" value="9:30"></div></div>
+    <div class="field" id="bday-btn-host"><label for="bday">Birthday</label><div class="input-group"><input id="bday" class="input" value="05-14"></div></div>
+    <div class="field"><label for="dt">Appointment</label><div class="input-group"><input id="dt" class="input"></div></div>
+    <div class="field"><label for="ro-day">Date, read-only</label><div class="input-group date-field"><input id="ro-day" class="input" value="2026-09-14" readonly><button class="btn" aria-label="Choose date" data-tip="Choose date"><span class="icon" data-icon="calendar"></span></button></div></div>
+    <div class="field"><label for="dis-day">Date, disabled</label><div class="input-group date-field"><input id="dis-day" class="input" value="2026-11-02" disabled><button class="btn" aria-disabled="true" aria-label="Choose date" data-tip="Choose date: not available"><span class="icon" data-icon="calendar"></span></button></div></div>
+  </div>
+  <div class="col">
+    <div class="field"><label for="vol">Volume</label><div class="slider-row"><input id="vol" type="range" min="0" max="100" value="60"><output for="vol">60%</output></div></div>
+    <div class="field"><label for="ro-vol">Volume, read-only</label><div class="slider-row"><input id="ro-vol" type="range" min="0" max="100" value="70" aria-readonly="true"><output for="ro-vol">70%</output></div></div>
+    <div class="field"><label for="dis-vol">Volume, disabled</label><div class="slider-row"><input id="dis-vol" type="range" value="40" disabled><output for="dis-vol">40%</output></div></div>
+    <div role="toolbar" aria-label="Sheet" id="tb">
+      <input class="input" id="tb-cell" value="B4" style="width:88px" aria-label="Cell" data-tip="Cell">
+      <div class="input-group spin" id="tb-spin" style="width:120px">
+        <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
+        <input class="input" id="tb-num" role="spinbutton" inputmode="numeric" data-min="0" data-max="50" data-step="1" value="20" aria-label="Right margin">
+        <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>
+      <button class="btn" id="tb-bold" aria-label="Bold" data-tip="Bold" aria-pressed="false"><span class="icon" data-icon="edit"></span></button>
+    </div>
+    <div><span class="inline-text is-editable" id="ie" tabindex="0">Quarterly report</span></div>
+    <div><span class="inline-text" id="ie-done">Finished task</span></div>
+    <button class="btn" id="open-dlg" data-open-dialog="dlg" data-tip="Mail account…"><span class="icon" data-icon="edit"></span></button>
+  </div>
+</div>
+
+<dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+  <header><h2 id="dlg-t">Mail account</h2></header>
+  <div class="body">
+    <p class="hint" id="dlg-lead">Your mail provider gives you these details.</p>
+    <div class="field-row" id="dlg-row">
+      <div class="field"><label for="srv">Server</label><input id="srv" class="input" value="mail.example.com"></div>
+      <div class="field"><label for="dlg-day">Since</label><div class="input-group"><input id="dlg-day" class="input" value="2026-11-01"></div></div></div>
+    <div class="field"><label for="dlg-pw">Password</label><div class="input-group"><input class="input" type="password" id="dlg-pw" value="x"><button class="btn" id="dlg-eye" data-reveal></button></div></div>
+    <p class="form-error" id="dlg-err" hidden>The server did not answer. Try again.</p>
+  </div>
+  <footer><button class="btn" data-close id="dlg-x" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button>
+    <button class="btn primary" id="dlg-go" aria-label="Connect" data-tip="Connect"><span class="icon" data-icon="ok"></span></button></footer>
+</dialog>
+</body>
+</html>
