@@ -98,7 +98,22 @@ $$('.lb').forEach((lb) => { lb.addEventListener('ayni:change', () => reportList(
 document.addEventListener('ayni:change', (e) => {
   if (!e.target.matches('.picker')) return;
   const { value: v, name, field, input } = e.detail;
-  status(`${name}: ${v || '(empty)'}`); $('#' + field.id + '-out') && say(field.id + '-out', `Submits ${input.name}=${v}`);
+  status(`${name}: ${v || '(empty)'}`); $('#' + field.id + '-out') && say(field.id + '-out', input.name ? `Submits ${input.name}=${v}` : `Value: ${v}`);
+});
+/* List pickers built in code: a filtered list of every time zone, a currency list with headings and short texts, a
+   font and size in a toolbar (the size a combo box), a setting in a menu row */
+let zones = []; try { zones = Intl.supportedValuesOf('timeZone'); } catch {}
+Ayni.picker('#tz-pk', { options: zones.length ? zones : ['Europe/Madrid', 'Europe/Lisbon', 'America/New_York'], value: 'Europe/Madrid' });
+Ayni.picker('#cur-pk', { value: 'EUR', options: [{ heading: 'Frequent' }, { value: 'EUR', text: 'EUR · Euro', short: 'EUR' }, { value: 'USD', text: 'USD · US dollar', short: 'USD' },
+  { heading: 'All currencies' }, ...[['ARS', 'Argentine peso'], ['BRL', 'Brazilian real'], ['CHF', 'Swiss franc'], ['GBP', 'Pound sterling'], ['JPY', 'Japanese yen'], ['MXN', 'Mexican peso']]
+    .map(([c, n]) => ({ value: c, text: `${c} · ${n}`, short: c }))] });
+Ayni.picker('#font-pk', { options: ['Arial', 'Georgia', 'Courier New', 'Verdana'], value: 'Arial' });
+Ayni.picker('#size-pk', { mode: 'combo', options: ['8', '9', '10', '11', '12', '14', '16', '18', '24', '36', '72'], value: '11' });
+Ayni.picker('#dow-pk', { options: [{ value: '1', text: 'Monday' }, { value: '0', text: 'Sunday' }, { value: '6', text: 'Saturday' }], value: '1' });
+$('.pk-bar').addEventListener('ayni:change', (e) => {
+  const v = e.detail.value, doc = $('.pk-doc');
+  if (e.target.id === 'font-pk') doc.style.fontFamily = v; else if (/^\d+(\.\d+)?$/.test(v)) doc.style.fontSize = Math.min(72, +v) + 'px';
+  say('pk-bar-out', `${e.detail.name}: ${v}`);
 });
 /* Trees: every change is reported; the editable ones ask before each change, and the page could refuse it */
 const nm = (it) => it.querySelector(':scope > .ti > .tn').textContent;

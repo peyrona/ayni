@@ -2006,6 +2006,228 @@ try {
     await ev(`(localStorage.removeItem('ayni-lang'), true)`);
   }
 
+  section('Pickers family (base + buttons + notifications + dialogs + menus + lists + fields + pickers)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await t.evaluate(`(() => { try { localStorage.removeItem('ayni-lang'); } catch { /* about:blank */ } return true; })()`);
+    await t.open(BASE + '/tests/pickers-only.html');
+    check('a page with the pickers family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const KEYS = { Escape: 27, Enter: 13, Tab: 9, F4: 115, ArrowUp: 38, ArrowDown: 40, Home: 36, End: 35, ' ': 32 };
+    const key = async (k, mods = 0) => {
+      const code = k === ' ' ? 'Space' : k.length === 1 ? 'Key' + k.toUpperCase() : k, text = k === 'Enter' ? '\r' : k.length === 1 ? k : undefined;
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: KEYS[k] || (k.length === 1 ? k.toUpperCase().charCodeAt(0) : 0), modifiers: mods, ...(text ? { text } : {}) });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: KEYS[k] || 0, modifiers: mods });
+      await wait(60);
+    };
+    const ALT = 1;
+    const type = async (s) => { await t.send('Input.insertText', { text: s }); await wait(40); };
+    const mouse = (kind, x, y) => t.send('Input.dispatchMouseEvent', { type: kind, x, y, button: kind === 'mouseMoved' ? 'none' : 'left', buttons: kind === 'mousePressed' ? 1 : 0, clickCount: 1 });
+    /* The page is scrolled to the element first, and waits: a scroll moves open popups */
+    const into = async (sel) => { await ev(`(document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center' }), true)`); await wait(120); };
+    const mid = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + Math.min(r.width / 2, 20), r.top + r.height / 2]; })()`);
+    const click = async (sel, scroll = true) => { if (scroll) await into(sel); const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseReleased', x, y); await wait(100); };
+    const option = (id, text) => ev(`(() => { const o = [...document.querySelectorAll('#${id} [role="option"]')].find((x) => x.textContent === ${JSON.stringify(text)}); o.id ||= 'tmp-o'; return '#' + CSS.escape(o.id); })()`);
+    const pickByMouse = async (id, text) => click(await option(id, text), false);
+    const focus = async (sel) => { await into(sel); await ev(`(document.querySelector(${JSON.stringify(sel)}).focus(), true)`); };
+    const isOpen = (id) => ev(`document.querySelector('#${id} .picker-pop').matches(':popover-open')`);
+    const fieldText = (id) => ev(`(() => { const f = document.querySelector('#${id} > .input'); return f.tagName === 'INPUT' ? f.value : f.textContent; })()`);
+    const active = (id) => ev(`document.querySelector('#${id} [role="option"].active')?.textContent || ''`);
+    const height = (sel) => ev(`Math.round(document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect().height)`);
+    const css = (sel, p, pseudo) => ev(`getComputedStyle(document.querySelector(${JSON.stringify(sel)})${pseudo ? `, '${pseudo}'` : ''}).${p}`);
+    const color = (v) => ev(`(() => { const p = document.createElement('i'); p.style.color = '${v}'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`);
+    const bg = (v) => ev(`(() => { const p = document.createElement('i'); p.style.background = '${v}'; document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c; })()`);
+    const log = () => ev(`L.join('|')`);
+    const reset = () => ev(`(document.querySelectorAll(':popover-open').forEach((p) => p.id !== 'ayni-toasts' && p.id !== 'ayni-tip' && p.hidePopover()), document.querySelectorAll('dialog[open]').forEach((d) => d.close()), L.length = 0, document.activeElement?.blur?.(), true)`);
+
+    check('the family works without ayni.css and ayni.js', await ev(`!document.querySelector('link[href$="/ayni.css"], script[src$="/ayni.js"]') && typeof Ayni.status === 'undefined' && typeof Ayni.picker === 'function'`));
+
+    /* A picker written in the page, with the least markup */
+    check('written: Ayni adds the combobox role, the list link and the name', await ev(`(() => { const f = document.querySelector('#dd-f'); return f.getAttribute('role') === 'combobox' && f.getAttribute('aria-controls') === 'dd-list' && f.getAttribute('aria-expanded') === 'false' && f.getAttribute('aria-labelledby') && document.getElementById(f.getAttribute('aria-labelledby')).textContent === 'Priority'; })()`));
+    check('the field shows the item\'s text, the form gets its value', (await fieldText('dd')) === 'Normal' && await ev(`new FormData(document.getElementById('form')).get('priority')`) === 'n');
+    check('look: 32 px field, Accent triangle at its end', (await height('#dd-f')) === 32 && (await css('#dd', 'backgroundColor', '::after')) === (await bg('var(--accent)')) && (await css('#dd', 'right', '::after')) === '10px');
+    await click('#dd-f');
+    check('a click opens the list below the field', (await isOpen('dd')) && await ev(`document.querySelector('#dd .picker-pop').getBoundingClientRect().top >= document.querySelector('#dd-f').getBoundingClientRect().bottom`) && (await ev(`document.querySelector('#dd-f').getAttribute('aria-expanded')`)) === 'true');
+    check('the chosen item is full Accent and highlighted', (await css('#dd [aria-selected="true"]', 'backgroundColor')) === (await bg('var(--accent)')) && (await active('dd')) === 'Normal');
+    check('a click on the field closes it again', (await click('#dd-f', false), !(await isOpen('dd'))));
+    await click('#dd-f'); await pickByMouse('dd', 'High');
+    check('pick with the mouse: text, value, event with value, text and name', (await fieldText('dd')) === 'High' && (await ev(`document.querySelector('#dd input[type=hidden]').value`)) === 'h' && (await log()) === 'dd:h/High/Priority', await log());
+    check('…the list closes and the focus is in the field', !(await isOpen('dd')) && (await ev(`document.activeElement.id`)) === 'dd-f');
+    await reset(); await focus('#dd-f');
+    await key('u');
+    check('type-ahead while closed picks the match', (await fieldText('dd')) === 'Urgent' && (await log()) === 'dd:u/Urgent/Priority');
+    await key('ArrowDown');
+    check('Down on a closed list opens it (the value stays)', (await isOpen('dd')) && (await fieldText('dd')) === 'Urgent');
+    await key('Home'); check('Home goes to the first item', (await active('dd')) === 'Low');
+    await key('End'); check('End goes to the last', (await active('dd')) === 'Urgent');
+    await key('ArrowUp'); await key('Escape');
+    check('Esc closes and keeps the value', !(await isOpen('dd')) && (await fieldText('dd')) === 'Urgent' && (await ev(`document.activeElement.id`)) === 'dd-f');
+    await key('ArrowDown', ALT); check('Alt+Down opens', await isOpen('dd'));
+    await key('ArrowUp'); await key('Enter');
+    check('arrows move, Enter picks', (await fieldText('dd')) === 'High' && !(await isOpen('dd')));
+    await key('F4'); check('F4 opens', await isOpen('dd')); await key('F4'); check('…and closes', !(await isOpen('dd')));
+    await key(' '); check('Space opens a drop-down list', await isOpen('dd')); await key('Escape');
+    await ev(`(L.length = 0, true)`);
+    await ev(`(document.querySelector('#dd').ayniTest = 1, true)`);
+    check('Ayni.picker on a written picker gives its controller', await ev(`(() => { const p = Ayni.picker('#dd'); return p.value === 'h' && p.text === 'High' && p.mode === 'list' && p.options.length === 4 && p.name === 'Priority'; })()`));
+    await reset();
+
+    /* Combo box */
+    await focus('#city-f'); await type('mal');
+    check('combo: typing filters by the search rule (accents aside)', (await isOpen('city')) && await ev(`[...document.querySelectorAll('#city [role=option]')].filter((o) => !o.hidden).map((o) => o.textContent).join()`) === 'Málaga');
+    await key('Enter');
+    check('combo: Enter picks the suggestion', (await fieldText('city')) === 'Málaga' && (await log()) === 'city:Málaga/Málaga/City');
+    await ev(`(document.querySelector('#city-f').select(), true)`); await type('Teruel');
+    check('combo: nothing matches = the line, in words', await ev(`!document.querySelector('#city .picker-empty').hidden && document.querySelector('#city .picker-empty').textContent`) === 'Nothing matches. Enter keeps what you typed.');
+    await key('Enter');
+    check('combo: Enter keeps what was typed', (await ev(`Ayni.picker('#city').value`)) === 'Teruel' && (await log()).endsWith('city:Teruel/Teruel/City'));
+    await reset();
+
+    /* Filtered list */
+    check('filtered list made in code: a typing field, labelled by the label that named the picker', await ev(`(() => { const f = document.querySelector('#tz > .input'); return f.tagName === 'INPUT' && f.id === 'tz-field' && document.querySelector('label[for="tz-field"]')?.textContent === 'Time zone' && f.value === 'Europe/Madrid'; })()`));
+    await focus('#tz-field'); await ev(`(document.querySelector('#tz-field').select(), true)`); await type('lon');
+    check('filtered: typing narrows the list', await ev(`[...document.querySelectorAll('#tz [role=option]')].filter((o) => !o.hidden).map((o) => o.textContent).join()`) === 'Europe/London' && (await active('tz')) === 'Europe/London');
+    await key('Enter');
+    check('filtered: Enter takes the first match', (await ev(`tz.value`)) === 'Europe/London' && !(await isOpen('tz')));
+    await ev(`(document.querySelector('#tz-field').select(), true)`); await type('Atlantis');
+    check('filtered: nothing matches = the line', await ev(`document.querySelector('#tz .picker-empty').textContent`) === 'Nothing matches.');
+    await key('Escape'); check('filtered: Esc closes the list and puts the text back', !(await isOpen('tz')) && (await fieldText('tz')) === 'Europe/London');
+    await ev(`(document.querySelector('#tz-field').select(), true)`); await type('Atlantis'); await ev(`(tz.close(), true)`); await key('Enter');
+    check('filtered: free text is refused with the red "!" and its message', await ev(`(() => { const f = document.querySelector('#tz-field'), m = document.querySelector('#tz > .err-mark'); return f.getAttribute('aria-invalid') === 'true' && m && !m.hidden && document.getElementById('tz-field-err').textContent === 'Pick one from the list.'; })()`));
+    check('…the value stays as it was, no event', (await ev(`tz.value`)) === 'Europe/London' && !(await log()).includes('Atlantis'));
+    check('…the message pops up while the field has the focus', await ev(`document.getElementById('ayni-err').matches(':popover-open') && document.getElementById('ayni-err').textContent === 'Pick one from the list.'`));
+    check('…and the "!" sits inside the field, before the triangle', await ev(`(() => { const m = document.querySelector('#tz > .err-mark').getBoundingClientRect(), f = document.querySelector('#tz-field').getBoundingClientRect(); return m.right < f.right - 15 && m.left > f.left && m.top > f.top && m.bottom < f.bottom; })()`));
+    check('focusFirstError finds it', await ev(`(document.activeElement.blur(), Ayni.focusFirstError(document.getElementById('form')) && document.activeElement.id === 'tz-field')`));
+    await ev(`(document.querySelector('#tz-field').select(), true)`); await type('europe/PARIS'); await ev(`(tz.close(), true)`);
+    await ev(`(document.querySelector('#tz-field').blur(), true)`); await wait(60);
+    check('filtered: an item\'s text in another case is taken on leaving, and the "!" goes', (await ev(`tz.value`)) === 'Europe/Paris' && (await fieldText('tz')) === 'Europe/Paris' && (await ev(`document.querySelector('#tz-field').getAttribute('aria-invalid')`)) === null && await ev(`document.querySelector('#tz > .err-mark').hidden`));
+    check('focusFirstError then finds nothing', await ev(`!Ayni.focusFirstError(document.getElementById('form'))`));
+    await reset();
+
+    /* Built in code: headings, short text, placeholder, set */
+    check('the closed field shows the short text, text gives the full one', (await fieldText('cur')) === 'EUR' && (await ev(`cur.text`)) === 'EUR · Euro');
+    check('headings are drawn, are not items, look dim', (await ev(`document.querySelectorAll('#cur li.heading').length`)) === 2 && (await ev(`cur.options.length`)) === 5 && (await css('#cur li.heading', 'color')) === (await color('var(--text-dim)')) && (await ev(`document.querySelector('#cur li.heading').getAttribute('role')`)) === 'presentation');
+    await focus('#cur > .input'); await key('ArrowDown');
+    check('the list is at least as wide as the field and shows full texts', await ev(`document.querySelector('#cur .picker-pop').getBoundingClientRect().width >= document.querySelector('#cur > .input').getBoundingClientRect().width`) && (await active('cur')) === 'EUR · Euro');
+    await key('ArrowDown'); await key('ArrowDown');
+    check('the keys skip the headings', (await active('cur')) === 'CHF · Swiss franc');
+    await key('Enter');
+    check('a user pick calls onChange(value, text) and fires the event', (await log()) === 'cur:CHF/CHF · Swiss franc/Currency|onChange CHF/CHF · Swiss franc', await log());
+    await ev(`(L.length = 0, cur.set('XAU', 'Gold'), true)`);
+    check('set(value, text) shows a value the list does not hold, without adding it', (await fieldText('cur')) === 'Gold' && (await ev(`cur.value + '|' + cur.options.length + '|' + document.querySelectorAll('#cur [aria-selected="true"]').length`)) === 'XAU|5|0');
+    await ev(`cur.set('')`);
+    check('nothing chosen: the dim placeholder', (await fieldText('cur')) === '' && (await css('#cur > .input', 'content', '::before')) === '"Pick a currency"' && (await css('#cur > .input', 'color', '::before')) === (await color('var(--text-dim)')));
+    check('set never fires the event', (await log()) === '');
+    await ev(`(cur.options = [{ value: 'SEK', text: 'SEK · Swedish krona', short: 'SEK' }, 'NOK'], cur.value = 'NOK', true)`);
+    check('options replaced at any time', (await ev(`[...document.querySelectorAll('#cur [role=option]')].map((o) => o.textContent).join()`)) === 'SEK · Swedish krona,NOK' && (await fieldText('cur')) === 'NOK');
+    await reset();
+
+    /* States */
+    check('disabled: faded, not focusable, never opens', (await css('#dis', 'opacity')) === '0.45' && (await ev(`document.querySelector('#dis-f').tabIndex`)) === -1 && (await ev(`(Ayni.picker('#dis').open(), Ayni.picker('#dis').isOpen)`)) === false);
+    await ev(`(Ayni.picker('#cur').disabled = true, true)`);
+    check('controller disabled = the same look', (await css('#cur', 'opacity')) === '0.45' && (await ev(`document.querySelector('#cur > .input').getAttribute('aria-disabled')`)) === 'true');
+    await ev(`(Ayni.picker('#cur').disabled = false, true)`);
+    await click('#ro-f');
+    check('read-only: tint, no border, no triangle, does not open', (await css('#ro-f', 'borderTopColor')) === 'rgba(0, 0, 0, 0)' && (await css('#ro', 'display', '::after')) === 'none' && !(await isOpen('ro')) && (await fieldText('ro')) === 'B');
+    await focus('#ro-f'); await key('a');
+    check('read-only: type-ahead changes nothing', (await fieldText('ro')) === 'B');
+    await reset();
+
+    /* Placing */
+    await ev(`(window.scrollTo(0, 0), true)`); await wait(80);
+    await click('#low > .input', false);
+    check('no room below: the list opens above the field', (await isOpen('low')) && await ev(`document.querySelector('#low .picker-pop').getBoundingClientRect().bottom <= document.querySelector('#low > .input').getBoundingClientRect().top`));
+    check('a picker with no label is named by its aria-label', (await ev(`document.querySelector('#low > .input').getAttribute('aria-label')`)) === 'Near the bottom');
+    await reset();
+
+    /* In a toolbar */
+    check('toolbar: 30 px, no fill, a thin line', (await height('#font > .input')) === 30 && (await css('#font > .input', 'backgroundColor')) === 'rgba(0, 0, 0, 0)' && (await css('#font > .input', 'borderTopColor')) === (await color('var(--line)')));
+    check('toolbar: named by its tooltip', (await ev(`document.querySelector('#font > .input').getAttribute('aria-label')`)) === 'Font');
+    await into('#font'); { const [x, y] = await mid('#font > .input'); await mouse('mouseMoved', x, y); await wait(80); }
+    check('toolbar: grey tint under the pointer, not Accent', (await css('#font > .input', 'backgroundColor')) === (await bg('color-mix(in srgb, var(--text) 9%, transparent)')));
+    await ev(`(() => { const d = document.getElementById('doc'); d.focus(); const r = document.createRange(); r.setStart(d.firstChild, 5); r.collapse(true); getSelection().removeAllRanges(); getSelection().addRange(r); return true; })()`);
+    await click('#font > .input', false);
+    check('toolbar: the pointer opens the list and the document keeps the focus', (await isOpen('font')) && (await ev(`document.activeElement.id`)) === 'doc');
+    await pickByMouse('font', 'Georgia');
+    check('toolbar: after a pick the focus and the caret are where they were', (await ev(`font.value`)) === 'Georgia' && (await ev(`document.activeElement.id + '|' + getSelection().anchorOffset`)) === 'doc|5');
+    await click('#size > .input', false); await ev(`(document.querySelector('#size > .input').select(), true)`); await type('13'); await key('Enter');
+    check('toolbar combo: typed 13 + Enter, the focus goes back to the document', (await ev(`size.value`)) === '13' && (await ev(`document.activeElement.id`)) === 'doc');
+    await click('#size > .input', false); await key('Escape'); await key('Escape');
+    check('toolbar: Esc gives the focus back too', (await ev(`document.activeElement.id`)) === 'doc' && (await fieldText('size')) === '13');
+    await reset();
+
+    /* More, in an overfull title row */
+    check('fitBar: a picker leaves first by its rank', await ev(`document.getElementById('fit-size').classList.contains('fit-out')`));
+    check('More: the picker is a submenu of its items, the chosen one ticked', await ev(`(() => { const it = fb.items().find((i) => i.label === 'Size'); const s = it && it.sub(); return !!s && s.map((x) => x.label + (x.checked ? '*' : '')).join() === '10,12*,14'; })()`));
+    await click('#fit .fit-more'); await wait(60);
+    await ev(`(() => { const r = [...document.querySelectorAll('#ayni-menu [role^="menuitem"]')].find((x) => x.textContent.includes('Size')); r.click(); return true; })()`); await wait(120);
+    await ev(`(() => { const r = [...document.querySelectorAll('#ayni-menu-sub [role^="menuitem"]')].find((x) => x.textContent.trim() === '14'); r.click(); return true; })()`); await wait(80);
+    check('…a row picked there sets it and fires the event', (await ev(`fitSize.value`)) === '14' && (await log()) === 'fit-size:14/14/Size', await log());
+    await reset();
+
+    /* In a menu row */
+    await click('#menu-btn'); await wait(60);
+    await click('#dow > .input', false);
+    check('menu row: the list opens over the menu, the menu stays', (await isOpen('dow')) && await ev(`document.getElementById('menu').matches(':popover-open')`));
+    await pickByMouse('dow', 'Sunday');
+    check('menu row: a pick sets it and leaves the menu open', (await ev(`dow.value`)) === '0' && await ev(`document.getElementById('menu').matches(':popover-open')`));
+    await focus('#dow > .input'); await key('ArrowDown');
+    check('menu row: Down opens the list, not the next menu row', (await isOpen('dow')) && (await ev(`document.activeElement.id`)) === 'dow-field');
+    await key('Escape');
+    check('menu row: Esc closes only the list', !(await isOpen('dow')) && await ev(`document.getElementById('menu').matches(':popover-open')`));
+    await ev(`(document.activeElement.blur(), true)`); await wait(40); await click('#dow > .input', false);
+    check('menu row: opened by the pointer, the list does not take the focus', (await isOpen('dow')) && (await ev(`document.activeElement.id`)) !== 'dow-field');
+    await ev(`(document.getElementById('menu').hidePopover(), true)`); await wait(40);
+    check('menu row: closing the menu closes the list', !(await isOpen('dow')));
+    await reset();
+
+    /* In a modal dialog */
+    await click('#dlg-open'); await wait(80);
+    await click('#dlg-pk > .input', false);
+    check('dialog: the list opens inside the modal dialog and takes clicks', (await isOpen('dlg-pk')) && await ev(`document.getElementById('dlg').contains(document.querySelector('#dlg-pk .picker-pop'))`));
+    await pickByMouse('dlg-pk', 'Landscape');
+    check('dialog: picked', (await ev(`dlgPk.value`)) === 'Landscape' && await ev(`document.getElementById('dlg').open`));
+    await key('ArrowDown'); await key('Escape');
+    check('dialog: Esc closes the list, not the dialog', !(await isOpen('dlg-pk')) && await ev(`document.getElementById('dlg').open`));
+    await key('Escape'); await wait(80);
+    check('dialog: the next Esc closes the dialog', !(await ev(`document.getElementById('dlg').open`)));
+    await reset();
+
+    /* Saved as it changes */
+    await click('#auto > .input'); await pickByMouse('auto', 'Dark'); await wait(80);
+    check('autoSave: a pick saves its value', (await ev(`S.join()`)) === 'Dark' && (await ev(`auto.value`)) === 'Dark' && !(await ev(`auto.disabled`)));
+    await click('#auto > .input'); await pickByMouse('auto', 'Broken'); await wait(120);
+    check('autoSave: a failed save puts the old value back and says so', (await ev(`S.join()`)) === 'Dark,Broken' && (await ev(`auto.value`)) === 'Dark' && (await fieldText('auto')) === 'Dark' && await ev(`!document.getElementById('auto-msg').hidden && document.getElementById('auto-msg').textContent.length > 0`));
+    await reset();
+
+    /* Touch and phones */
+    await ev(`(Ayni.setTouchPreview(true), true)`);
+    check('touch: the field is 44 px, a toolbar picker stays 30 px', (await height('#dd-f')) === 44 && (await height('#font > .input')) === 30);
+    await click('#dd-f');
+    check('touch: rows are 44 px', (await height('#dd [role="option"]')) >= 44);
+    await reset();
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 760, deviceScaleFactor: 1, mobile: true });
+    await wait(150);
+    await click('#tz-field');
+    check('phone: the list is a bottom sheet the width of the screen, the field above it', (await isOpen('tz')) && await ev(`(() => { const p = document.querySelector('#tz .picker-pop'), r = p.getBoundingClientRect(), f = document.querySelector('#tz-field').getBoundingClientRect(); return p.classList.contains('sheet') && Math.round(r.bottom) === innerHeight && Math.round(r.width) === innerWidth && f.bottom <= r.top; })()`));
+    await reset();
+    await ev(`(Ayni.setTouchPreview(false), true)`);
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+
+    check('no untranslated keys in the pickers family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('no errors or warnings in the pickers family', t.logs.length === 0, t.logs.slice());
+
+    /* In another language */
+    await ev(`(localStorage.setItem('ayni-lang', 'es'), true)`);
+    await t.open(BASE + '/tests/pickers-only.html');
+    await ev(`(() => { const f = document.querySelector('#tz-field'); f.value = 'Atlantis'; f.dispatchEvent(new Event('input')); tz.close(); f.dispatchEvent(new FocusEvent('blur')); return true; })()`); await wait(60);
+    check('es: the empty lines and the message follow the page\'s language', await ev(`[document.querySelector('#city .picker-empty').textContent, document.querySelector('#tz .picker-empty').textContent, document.getElementById('tz-field-err').textContent].join('|')`) === 'Nada coincide. Intro guarda lo que has escrito.|Nada coincide.|Elige uno de la lista.');
+    check('es: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    await ev(`(localStorage.removeItem('ayni-lang'), true)`);
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

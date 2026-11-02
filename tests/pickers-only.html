@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni pickers family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus (placing, menu rows, More), lists (the option
+     rows, type-ahead), fields (the filtered list's "!") and pickers families, and nothing else (no ayni.css, no
+     ayni.js). #demo opens the currency list (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-lists.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<link rel="stylesheet" href="../ayni-pickers.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-lists.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
+<script src="../ayni-pickers.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  /* Everything the pickers tell, in order */
+  document.addEventListener('ayni:change', (e) => { if (e.target.matches('.picker')) L.push(`${e.target.id}:${e.detail.value}/${e.detail.text}/${e.detail.name}`); });
+  window.tz = Ayni.picker('#tz', { options: ['Europe/Lisbon', 'Europe/London', 'Europe/Madrid', 'Europe/Paris', 'America/New_York', 'Asia/Tokyo'], value: 'Europe/Madrid' });
+  window.cur = Ayni.picker('#cur', { value: 'EUR', placeholder: 'Pick a currency', options: [{ heading: 'Frequent' }, { value: 'EUR', text: 'EUR · Euro', short: 'EUR' }, { value: 'USD', text: 'USD · US dollar', short: 'USD' },
+    { heading: 'All currencies' }, { value: 'CHF', text: 'CHF · Swiss franc', short: 'CHF' }, { value: 'GBP', text: 'GBP · Pound sterling', short: 'GBP' }, { value: 'JPY', text: 'JPY · Japanese yen', short: 'JPY' }],
+    onChange: (v, t) => L.push(`onChange ${v}/${t}`) });
+  window.font = Ayni.picker('#font', { options: ['Arial', 'Georgia', 'Courier New', 'Verdana'], value: 'Arial' });
+  window.size = Ayni.picker('#size', { mode: 'combo', options: ['8', '10', '11', '12', '14', '72'], value: '11' });
+  window.dow = Ayni.picker('#dow', { options: [{ value: '1', text: 'Monday' }, { value: '0', text: 'Sunday' }, { value: '6', text: 'Saturday' }], value: '1' });
+  window.fitSize = Ayni.picker('#fit-size', { options: ['10', '12', '14'], value: '12' });
+  window.dlgPk = Ayni.picker('#dlg-pk', { options: ['Portrait', 'Landscape'], value: 'Portrait' });
+  window.low = Ayni.picker('#low', { options: ['One', 'Two', 'Three', 'Four'], value: 'One' });
+  window.auto = Ayni.picker('#auto', { options: ['Light', 'Dark', 'Broken'], value: 'Light' });
+  window.S = [];
+  Ayni.autoSave($('#auto'), (v) => { S.push(v); return v === 'Broken' ? Promise.reject(new Error('no')) : Promise.resolve(); }, { msg: $('#auto-msg') });
+  window.fb = Ayni.fitBar($('#fit'));
+  if (location.hash === '#demo') { $('#cur').scrollIntoView(); cur.open(); }
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 150vh; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; max-width: 1000px; }
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  #tb { display: flex; align-items: center; gap: 4px; border: var(--panel-border); padding: 4px; }
+  #doc { border: var(--panel-border); padding: 8px; min-height: 40px; }
+  #fit { display: flex; align-items: center; gap: 8px; width: 200px; border: var(--panel-border); padding: 4px; }
+  #fit h2 { margin: 0; font-size: 1rem; flex: none; }
+  #lowbox { position: fixed; left: 20px; bottom: 8px; width: 200px; }
+</style>
+</head>
+<body>
+<div class="cols">
+  <div class="col">
+    <form id="form" onsubmit="return false">
+      <div class="fields">
+        <div class="field"><label for="dd-f">Priority</label>
+          <div class="picker" id="dd" data-picker="list">
+            <input type="hidden" name="priority" value="n">
+            <div class="input" id="dd-f" tabindex="0"></div>
+            <div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="dd-list"><li role="option" data-value="l">Low</li><li role="option" data-value="n">Normal</li><li role="option" data-value="h">High</li><li role="option" data-value="u">Urgent</li></ul></div>
+          </div></div>
+        <div class="field"><label for="city-f">City</label>
+          <div class="picker" id="city" data-picker="combo">
+            <input type="hidden" name="city" value="">
+            <input class="input" id="city-f" placeholder="Type or pick a city">
+            <div class="panel popup picker-pop" popover="manual"><ul role="listbox"><li role="option">A Coruña</li><li role="option">Bilbao</li><li role="option">Córdoba</li><li role="option">Madrid</li><li role="option">Málaga</li><li role="option">Sevilla</li></ul></div>
+          </div></div>
+        <div class="field"><label for="tz">Time zone</label><div class="picker" id="tz" data-picker="filter"></div></div>
+        <div class="field"><label for="cur">Currency</label><div class="picker" id="cur" style="width: 110px"></div></div>
+        <div class="field"><label for="dis-f">Disabled</label>
+          <div class="picker" id="dis"><input type="hidden" value="A"><div class="input" id="dis-f" aria-disabled="true"></div><div class="panel popup picker-pop" popover="manual"><ul role="listbox"><li role="option">A</li></ul></div></div></div>
+        <div class="field"><label for="ro-f">Read-only</label>
+          <div class="picker" id="ro"><input type="hidden" value="B"><div class="input" id="ro-f" tabindex="0" aria-readonly="true"></div><div class="panel popup picker-pop" popover="manual"><ul role="listbox"><li role="option">A</li><li role="option">B</li></ul></div></div></div>
+        <div class="field"><label for="auto">Theme (saved at once)</label><div class="picker" id="auto"></div><p class="form-error" id="auto-msg" hidden></p></div>
+      </div>
+    </form>
+  </div>
+  <div class="col">
+    <div role="toolbar" aria-label="Format" id="tb">
+      <div class="tb-group"><div class="picker" id="font" data-tip="Font" style="width: 120px"></div><div class="picker" id="size" data-tip="Font size" style="width: 64px"></div></div>
+      <div class="tb-group"><button class="btn" data-tip="Clear"><span class="icon" data-icon="close"></span></button></div>
+    </div>
+    <div id="doc" contenteditable="true">Some text to format.</div>
+    <header id="fit"><h2>Report</h2><div role="toolbar" aria-label="Tools">
+      <div class="tb-group"><div class="picker" id="fit-size" data-tip="Size" data-rank="5" style="width: 70px"></div><button class="btn" data-tip="Print" data-rank="4"><span class="icon" data-icon="file"></span></button><button class="btn" data-tip="Copy" data-rank="3"><span class="icon" data-icon="copy"></span></button><button class="btn" data-tip="Cut" data-rank="2"><span class="icon" data-icon="cut"></span></button></div>
+    </div></header>
+    <button class="btn bordered" id="menu-btn" popovertarget="menu" data-tip="Calendar options"><span class="icon" data-icon="more"></span></button>
+    <div class="panel menu" popover id="menu" role="menu" aria-label="Calendar options">
+      <button role="menuitemcheckbox" aria-checked="true" id="wk">Show week numbers</button>
+      <div role="separator"></div>
+      <div class="menu-field"><label for="dow">Week starts on</label><div class="picker" id="dow"></div></div>
+    </div>
+    <button class="btn text bordered" id="dlg-open" data-open-dialog="dlg">Page setup</button>
+    <dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+      <header><h2 id="dlg-t">Page setup</h2><button class="btn" data-close data-tip="Close"><span class="icon" data-icon="close"></span></button></header>
+      <div class="body"><div class="field"><label for="dlg-pk">Orientation</label><div class="picker" id="dlg-pk"></div></div></div>
+    </dialog>
+  </div>
+</div>
+<div id="lowbox"><div class="picker" id="low" aria-label="Near the bottom"></div></div>
+</body>
+</html>

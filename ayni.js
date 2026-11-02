@@ -1,9 +1,8 @@
 /* Ayni library 0.1.0: the behaviour of the Ayni controls not yet split into their own family file. Plain JavaScript,
-   no build step, evergreen browsers 2024+. Load it after ayni-base.js, ayni-menus.js (its menus, toolbars and
-   popup placing) and ayni-lists.js (type-ahead for the list picker):
+   no build step, evergreen browsers 2024+. Load it after ayni-base.js and ayni-menus.js (its menus, toolbars and
+   popup placing):
      <script src="ayni-base.js" defer></script>
      <script src="ayni-menus.js" defer></script>
-     <script src="ayni-lists.js" defer></script>
      <script src="ayni.js" defer></script>
    When the page has loaded it wires up every control it finds. Ayni.init(root) wires up controls added later
    (each control is wired once). Controls tell the app what happened with DOM events that bubble (ayni:change,
@@ -15,8 +14,6 @@ const { fire, wired, once, each, tx, iconName, drawIcons, isRO, layer, isTouch, 
 /* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js, which loads before this file */
 const { initMenu, initToolbar, contextMenu, place } = Ayni.core.menus;
 const invoker = () => Ayni.core.menus.invoker();
-/* Type-ahead comes from ayni-lists.js, which also loads before this file */
-const { makeTypeAhead } = Ayni.core.lists;
 
 /* A cancelable event: false when the page called preventDefault() */
 const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, cancelable: true }));
@@ -83,100 +80,6 @@ const initTabs = (list) => {
   select(start || tabs[0], false);
 };
 
-
-/* ---------- List picker: drop-down list (typing off) and combo box (typing on), one component ---------- */
-/* RULE: one list picker serves every drop-down list and combo box, on every device. Fires ayni:change on the .picker
-   with { value, name, field, input } when the user picks or types a value. */
-const initPicker = (root) => {
-  const field = $(':scope > .input', root), hidden = $(':scope > input[type="hidden"]', root), pop = $('.picker-pop', root);
-  const list = $('[role="listbox"]', pop), empty = $('.picker-empty', pop), all = $$('[role="option"]', list);
-  const typing = root.dataset.picker === 'combo', label = $(`label[for="${field.id}"]`), name = label.textContent.trim();
-  all.forEach((o, i) => { o.id ||= `${field.id}-o${i}`; o.dataset.value ??= o.textContent.trim(); });
-  const shown = () => all.filter((o) => !o.hidden);
-  const isOpen = () => pop.matches(':popover-open');
-  const activeOpt = () => all.find((o) => o.classList.contains('active'));
-  const setActive = (o) => {
-    all.forEach((x) => x.classList.toggle('active', x === o));
-    if (o) { field.setAttribute('aria-activedescendant', o.id); o.scrollIntoView({ block: 'nearest' }); } else field.removeAttribute('aria-activedescendant');
-  };
-  const set = (v, announce = true) => {
-    hidden.value = v; all.forEach((o) => o.setAttribute('aria-selected', o.dataset.value === v));
-    if (typing) field.value = v; else field.textContent = v;
-    if (announce) fire(root, 'ayni:change', { value: v, name, field, input: hidden });
-  };
-  const place = () => {
-    const r = field.getBoundingClientRect(), sheet = isTouch() && innerWidth < 600;
-    pop.classList.toggle('sheet', sheet);
-    if (sheet) { // bottom sheet, kept above the on-screen keyboard; the field scrolls up so the sheet never hides it
-      const vv = visualViewport, kb = vv ? Math.max(0, innerHeight - vv.offsetTop - vv.height) : 0;
-      Object.assign(pop.style, { top: 'auto', left: '', width: '', bottom: kb + 'px', maxHeight: `min(50dvh, ${Math.max(160, (vv ? vv.height : innerHeight) - 16)}px)` });
-      const over = r.bottom + 8 - pop.getBoundingClientRect().top;
-      if (over > 0) {
-        let q = root.parentElement;
-        while (q && !(q.scrollHeight > q.clientHeight && /auto|scroll/.test(getComputedStyle(q).overflowY))) q = q.parentElement;
-        (q || document.scrollingElement).scrollTop += over;
-      }
-      return;
-    }
-    const below = innerHeight - r.bottom - 12, above = r.top - 12, want = Math.min(280, list.scrollHeight + 10);
-    const up = want > below && above > below;
-    Object.assign(pop.style, { bottom: '', width: r.width + 'px', left: Math.max(4, Math.min(r.left, innerWidth - r.width - 4)) + 'px', maxHeight: Math.max(120, Math.min(280, up ? above : below)) + 'px' });
-    pop.style.top = (up ? r.top - 4 - pop.getBoundingClientRect().height : r.bottom + 4) + 'px';
-  };
-  const open = () => {
-    if (isOpen() || field.getAttribute('aria-readonly') === 'true' || field.getAttribute('aria-disabled') === 'true') return;
-    pop.showPopover(); field.setAttribute('aria-expanded', 'true'); place();
-    setActive(shown().find((o) => o.getAttribute('aria-selected') === 'true') || shown()[0]);
-  };
-  const close = () => {
-    if (!isOpen()) return;
-    pop.hidePopover(); field.setAttribute('aria-expanded', 'false'); setActive(null);
-    all.forEach((o) => { o.hidden = false; }); if (empty) empty.hidden = true;
-  };
-  const pick = (o) => { set(o.dataset.value); close(); field.focus(); };
-  root.addEventListener('ayni:dismiss', (e) => { e.preventDefault(); close(); keepTyped(); });
-  const keepTyped = () => { if (typing && field.value.trim() !== hidden.value) set(field.value.trim()); };
-  /* Type-ahead (typing off), shared helper; works while closed too */
-  const ta = makeTypeAhead((o) => o.dataset.value);
-  const typeAhead = (ch) => {
-    const hit = ta.find(ch, all, isOpen() ? activeOpt() : all.find((o) => o.dataset.value === hidden.value));
-    if (hit && !isRO(field)) isOpen() ? setActive(hit) : set(hit.dataset.value);
-  };
-  root.addEventListener('click', (e) => { if (pop.contains(e.target)) return; if (!isOpen()) open(); else if (!typing) close(); });
-  label.addEventListener('click', () => field.focus());
-  list.addEventListener('click', (e) => { const o = e.target.closest('[role="option"]'); if (o) pick(o); });
-  list.addEventListener('pointermove', (e) => { const o = e.target.closest('[role="option"]'); if (o && e.pointerType === 'mouse') setActive(o); });
-  pop.addEventListener('mousedown', (e) => e.preventDefault()); // the focus stays in the field
-  document.addEventListener('pointerdown', (e) => { if (isOpen() && !root.contains(e.target)) { close(); keepTyped(); } }, true);
-  field.addEventListener('blur', () => setTimeout(() => { if (!root.contains(document.activeElement)) { close(); keepTyped(); } }));
-  addEventListener('resize', () => isOpen() && place()); visualViewport?.addEventListener('resize', () => isOpen() && place());
-  addEventListener('scroll', (e) => { if (isOpen() && !pop.contains(e.target)) place(); }, true);
-  field.addEventListener('keydown', (e) => {
-    const opts = shown(), cur = opts.indexOf(activeOpt()), go = (i) => setActive(opts[Math.max(0, Math.min(opts.length - 1, i))]);
-    if ((e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) || e.key === 'F4') { e.preventDefault(); isOpen() ? close() : open(); return; }
-    switch (e.key) {
-      case 'ArrowDown': case 'ArrowUp': e.preventDefault(); if (!isOpen()) open(); else go(cur + (e.key === 'ArrowDown' ? 1 : -1)); return;
-      case 'PageDown': case 'PageUp': if (isOpen()) { e.preventDefault(); go(cur + (e.key === 'PageDown' ? 8 : -8)); } return;
-      case 'Home': case 'End': if (isOpen() && !typing) { e.preventDefault(); go(e.key === 'Home' ? 0 : opts.length - 1); } return;
-      case 'Enter':
-        if (isOpen()) { e.preventDefault(); const a = activeOpt(); if (a) pick(a); else { close(); keepTyped(); } }
-        else if (!typing) { e.preventDefault(); open(); } else keepTyped();
-        return;
-      case 'Escape': if (isOpen()) { e.preventDefault(); e.stopPropagation(); close(); } return;
-      case 'Tab': close(); keepTyped(); return;
-      case ' ': if (!typing && !ta.busy()) { e.preventDefault(); const a = activeOpt(); isOpen() ? a && pick(a) : open(); return; }
-    }
-    if (!typing && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); typeAhead(e.key); }
-  });
-  if (typing) field.addEventListener('input', () => {
-    const m = Ayni.matcher(field.value);      // the search rule (4.5): words in any order, "phrase", -word
-    all.forEach((o) => { o.hidden = !!m && !m(o.dataset.value); });
-    empty.hidden = shown().length > 0;
-    if (!isOpen()) open(); else place();
-    setActive(m ? shown()[0] || null : null);
-  });
-  set(hidden.value, false);
-};
 
 /* ---------- Splitter (item 69): drag, arrows, Home/End; Enter collapses/restores the first pane; double-click resets ---------- */
 /* Fires ayni:split with { action: 'reset' | 'collapse' | 'restore', pane, message } after a user action */
@@ -460,7 +363,6 @@ const initClock = (el) => {
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   each(root, '[role="tablist"]', 'tabs', initTabs);
-  each(root, '.picker', 'picker', initPicker);
   each(root, '.split', 'split', initSplit);
   each(root, '.desktop', 'desktop', initDesktop);
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);

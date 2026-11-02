@@ -111,38 +111,18 @@ html.touch .split.rows .split-ctl button:first-child::before { left: -34px; } ht
 }
 
 
-/* RULE: one list picker serves every drop-down list and combo box, on every device: no native select, datalist or
-   wheel. A field with our popup triangle; the list opens in a Panel popup below the field (above when there is no
-   room), or as a bottom sheet on phones that sits above the on-screen keyboard. */
-.picker { position: relative; }
-.picker > .input { padding-right: 28px; }
-.picker > div.input { display: flex; align-items: center; cursor: pointer; user-select: none; }
-.picker::after { content: ""; position: absolute; right: 10px; top: 50%; translate: 0 -50%; width: 9px; height: 6px; background: var(--accent);
-  clip-path: polygon(0 0, 100% 0, 50% 100%); pointer-events: none; }
-.picker-pop { position: fixed; inset: auto; margin: 0; padding: 4px; }
-.picker-pop:not(:popover-open) { display: none; }
-.picker-pop [role="listbox"] { border: 0; padding: 0; max-height: none; overflow: visible; background: none; }
-.picker-pop [role="option"][hidden] { display: none; }
-.picker-pop [role="option"].active:not([aria-selected="true"]) { background: var(--card-head); box-shadow: none; }
-/* The chosen item of a list picker is full Accent (a picked row in a list is only tinted) */
-.picker-pop [role="option"][aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
-.picker-empty { margin: 0; padding: 6px 8px; font-size: .85rem; color: var(--text-dim); }
-.panel.picker-pop.sheet { left: 0; right: 0; width: auto; max-width: none; border-radius: var(--panel-radius) var(--panel-radius) 0 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
-
 /* RULE: states. One look per state across every control, with colours from the 5 base colours.
    Disabled: faded to 45% and not interactive. Read-only: no border, soft tint (--readonly-bg); the value can be read but
    not changed. Loading / empty: a short centred message in the control. Error: Danger colour on the group border, and
    the message under it. */
 .choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled), fieldset:disabled,
-[role="tab"][aria-disabled="true"], .picker:has(> .input[aria-disabled="true"]) { opacity: .45; cursor: default; }
+[role="tab"][aria-disabled="true"] { opacity: .45; cursor: default; }
 fieldset:disabled :is(.input, .choice, .switch, input):disabled, fieldset:disabled :is(.choice, .switch, .switch-pair) { opacity: 1; }
-.choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled),
-.picker:has(> .input[aria-disabled="true"]) { pointer-events: none; }
-:is(fieldset, .picker > .input)[aria-readonly="true"],
+.choice:has(input:disabled), .switch:has(input:disabled), .switch-pair:has(input:disabled) { pointer-events: none; }
+fieldset[aria-readonly="true"],
 fieldset:has(input[aria-readonly="true"]) { border-color: transparent; background: var(--readonly-bg); }
 :not(fieldset) > :is(.switch, .switch-pair):has(input[aria-readonly="true"]), :not(fieldset) > .choice:has(input[aria-readonly="true"]) { background: var(--readonly-bg); border-radius: var(--ctl-radius); padding: 4px 8px; width: fit-content; }
 [aria-readonly="true"], :has(> input[aria-readonly="true"]), .switch-pair:has(input[aria-readonly="true"]) :is(label, .track) { cursor: default; }
-.picker:has(> .input[aria-readonly="true"])::after { display: none; }
 .state-msg { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 14px 8px; color: var(--text-dim); font-size: .85rem; text-align: center; list-style: none; }
 .state-msg .busy { width: 16px; height: 16px; }
 .state-box { border: var(--panel-border); border-radius: var(--ctl-radius); }

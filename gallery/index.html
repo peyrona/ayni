@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="../ayni-lists.css">
 <link rel="stylesheet" href="../ayni-help.css">
 <link rel="stylesheet" href="../ayni-fields.css">
+<link rel="stylesheet" href="../ayni-pickers.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -28,6 +29,7 @@
 <script src="../ayni-lists.js" defer></script>
 <script src="../ayni-help.js" defer></script>
 <script src="../ayni-fields.js" defer></script>
+<script src="../ayni-pickers.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -232,6 +234,31 @@
             <div class="panel popup picker-pop" popover="manual"><ul role="listbox" id="combo-list" aria-labelledby="combo-l"><li role="option">A Coruña</li><li role="option">Alicante</li><li role="option">Barcelona</li><li role="option">Bilbao</li><li role="option">Córdoba</li><li role="option">Granada</li><li role="option">Madrid</li><li role="option">Málaga</li><li role="option">Murcia</li><li role="option">Palma</li><li role="option">Sevilla</li><li role="option">Valencia</li><li role="option">Valladolid</li><li role="option">Zaragoza</li></ul><p class="picker-empty" hidden>No city matches. Enter keeps what you typed.</p></div>
           </div></div>
         <p class="out" id="combo-out"></p></div>
+      <div class="spec"><h3>Filtered list</h3>
+        <p class="rule">For a long list (time zones, currencies, languages). Type to narrow the list, by the search rule; Enter takes the first match. Only an item of the list is taken: text that names none gets the red "!", and the value stays as it was. Built in code with <code>Ayni.picker</code>.</p>
+        <div class="field"><label for="tz-pk">Time zone</label><div class="picker" id="tz-pk" data-picker="filter"></div></div>
+        <p class="out" id="tz-pk-field-out"></p></div>
+      <div class="spec"><h3>Headings and short text</h3>
+        <p class="rule">A long list can be split under headings; a heading is not an item, and the keys skip it. Where the field has little room it shows an item's short text ("USD"); the list shows the full one. The page gets the value.</p>
+        <div class="field"><label for="cur-pk">Currency</label><div class="picker" id="cur-pk" style="max-width: 120px"></div></div>
+        <p class="out" id="cur-pk-field-out"></p></div>
+      <div class="spec"><h3>In a toolbar</h3>
+        <p class="rule">A font and its size, in a document's toolbar: the toolbar's height, no fill, a thin line, the buttons' grey tint under the pointer. The size is a combo box: type 13 and Enter. After a pick the cursor is back in the text, where it was.</p>
+        <div role="toolbar" aria-label="Format" class="pk-bar">
+          <div class="tb-group"><div class="picker" id="font-pk" data-tip="Font" style="width: 120px"></div><div class="picker" id="size-pk" data-tip="Font size" style="width: 64px"></div></div>
+          <div class="tb-group"><button class="btn" data-tip="Bold" aria-pressed="false" data-toggle><span class="icon" data-icon="bold"></span></button></div>
+        </div>
+        <div class="pk-doc" contenteditable="true" spellcheck="false">Pick a font: the cursor stays in this text.</div>
+        <p class="out" id="pk-bar-out"></p></div>
+      <div class="spec"><h3>In a menu row</h3>
+        <p class="rule">A setting at the end of a menu row. The list opens over the menu, and a pick does not close it.</p>
+        <button class="btn bordered" popovertarget="pk-menu" data-tip="Calendar options"><span class="icon" data-icon="more"></span></button>
+        <div class="panel menu" popover id="pk-menu" role="menu" aria-label="Calendar options">
+          <button role="menuitemcheckbox" aria-checked="true">Show week numbers</button>
+          <div role="separator"></div>
+          <div class="menu-field"><label for="dow-pk">Week starts on</label><div class="picker" id="dow-pk"></div></div>
+        </div>
+        <p class="out" id="dow-pk-field-out"></p></div>
       <div class="spec"><h3>Tree view</h3>
         <p class="rule">A tree for browsing only. Up and Down move and select; Right opens a folder or enters it, Left closes it or goes to its parent. The triangle, a double-click or Enter opens and closes a folder; on a file they open it. Typing jumps to the first match, and * opens every folder at the same level.</p>
         <label for="tree" id="tree-l" class="list-label">Folders</label>

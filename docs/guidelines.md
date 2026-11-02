@@ -27,7 +27,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 Ayni aims for the best user experience by being consistent, congruent and intuitive: the same thing always looks the same, behaves the same and means the same, on every device.
 
 1. **One look, one meaning.** A visual sign has exactly one meaning across the whole interface. A filled background means "default button" and nothing else. A small dot on a button means "second action". A small down-pointing triangle means "opens a list or popup". Colour of an icon carries meaning (danger, success, warning). No sign is reused for something else.
-2. **One control per job.** There is one list picker for every drop-down list and combo box, one search field, one number field, one date field. Native browser widgets whose look or behaviour differ between browsers (select, datalist, date wheels) are not used.
+2. **One control per job.** There is one list picker for every drop-down list, filtered list and combo box, one search field, one number field, one date field. Native browser widgets whose look or behaviour differ between browsers (select, datalist, date wheels) are not used.
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. Every view has a Help button (?) that explains its buttons in words, on every device; on touch, where there are no tooltips, it is the way to learn what a button does.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
@@ -135,7 +135,7 @@ A round button in the title row (a toggle, `data-theme-toggle`) switches between
 | Item | Mouse and keyboard | Touch |
 | --- | --- | --- |
 | Control height (fields, list picker) | 32 px | 44 px |
-| Fields in a toolbar | 30 px | Hit area 44 px |
+| Fields and list pickers in a toolbar | 30 px | Hit area 44 px |
 | Push button (circle) | 36 px, icon 18 px | Drawn 36 px, hit area 44 px |
 | Small button (`.sm`, in rows and cards) | 30 px, icon 15 px | Drawn 30 px, hit area 44 px |
 | Toolbar and notification buttons | 30 px (36 px in a tall toolbar, `[role="toolbar"].tall`, for an app's title row) | Drawn the same, hit area 44 px |
@@ -507,27 +507,57 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 | The value | each call returns a controller whose `value` is `YYYY-MM-DD`, `--MM-DD` (no year), `HH:MM` or `''`, and whose `set(value)` puts one in; `onChange` gets the same, on a pick and when a typed value is taken (the field is left, or `Ayni.focusFirstError` checks it); the date helpers are in `Ayni.dates` |
 | What the page writes | only the `.input-group` and its `input.input`: Ayni makes the button, the popup (right after the field, so it lives in the field's dialog), the error message and the placeholder, in the page's language, when the page leaves them out |
 
-## 7. List picker: drop-down list and combo box
+## 7. List picker: drop-down list, filtered list and combo box
 
-One Ayni list picker serves every drop-down list and every combo box, on every device; the browser's native select, datalist and scrolling wheels are never used.
+One Ayni list picker serves every drop-down list, filtered list and combo box, on every device; the browser's native select, datalist and scrolling wheels are never used.
 
-### 7.1 Two modes
+### 7.1 Three modes
 
-|  | Drop-down list | Combo box |
-| --- | --- | --- |
-| Use for | One choice from a fixed set (Priority) | A value that can be typed or picked (City) |
-| Typing | Off. A letter jumps to the first match, even while the list is closed | On. The list shows only the suggestions that match, by the search rule (4.5) |
-| Free text | Not possible | Kept when nothing matches |
-| Enter | Picks the highlighted item | Picks the highlighted suggestion, or keeps what was typed |
+|  | Drop-down list | Filtered list | Combo box |
+| --- | --- | --- | --- |
+| Use for | One choice from a short, fixed set (Priority, Paper size) | One choice from a long set (time zone, currency, language) | A value that can be typed or picked (City, Font size) |
+| Typing | Off. A letter jumps to the first match, even while the list is closed | On. The list shows only the items that match, by the search rule (4.5) | On. The list shows only the suggestions that match, by the search rule (4.5) |
+| Free text | Not possible | Not possible: text that names no item gets the error "!" (4.7), and the value stays as it was | Kept when nothing matches |
+| Enter | Picks the highlighted item | Picks the highlighted item (the first match while typing) | Picks the highlighted suggestion, or keeps what was typed |
+
+A list of more than about 15 items is a filtered list, not a drop-down list.
+
+A list whose pick runs an action at once (open one of the recent files) is not a list picker: it is a button with a menu (9). A list picker only holds a value.
 
 ### 7.2 Behaviour
 
-- **Look:** a field with an Accent triangle at its end, marking the list.
-- **Opening:** click or tap the field, or press Alt+Down or F4 (in a combo box, Down also opens the full list).
+- **Look:** a field with an Accent triangle at its end, marking the list. It shows the chosen item's text; the page gets the item's value, which can differ (a language code behind its name).
+- **Name:** a picker is named by its label. In a toolbar or a menu row, where there is no label, by its tooltip or the row's text.
+- **Opening:** click or tap the field, or press Alt+Down or F4 (in a filtered list and a combo box, Down also opens the full list). Up and Down on a closed drop-down list open it; they never change the value unseen.
 - **Where the list opens:** in a popup Panel below the field, or above it when there is no room below. On phones (touch, below 600 px) it opens as a sheet at the bottom of the screen, kept above the on-screen keyboard.
 - **Inside the list:** arrows move, Enter picks, Esc closes; type-ahead as in lists (8.3). Rows are 44 px high on touch.
+- **Headings:** a long list can be split under headings (Frequent, All currencies). A heading is not an item: it cannot be picked, and arrows and type-ahead skip it.
+- **Short text:** an item can show a shorter text in the closed field than in the list (the field says "USD", the list says "USD · US dollar"), where the field has little room.
+- **Nothing chosen:** the field shows a dim placeholder ("Pick a folder"), or nothing at all where nothing fits (a selection of text in several fonts).
+- **A value the list does not hold:** the page can show one (a font the document uses but the list does not name); it is shown in the field, never added to the list.
 - **Form value:** a hidden input carries the picked value, so forms submit it like a normal field.
 - **States:** disabled is faded; read-only shows the value on a tint without border and hides the triangle.
+
+### 7.3 In a toolbar and in a menu
+
+- **In a toolbar** (a font and its size): the picker takes the toolbar's 30 px height and sits on the toolbar without a fill, with a thin line round it so it shows where it ends; under the pointer it gets the same grey tint as the toolbar's buttons. Its tooltip names it.
+- A picker in a toolbar never keeps the focus: after a pick, Enter or Esc, the focus goes back to where it was before (the document and its caret stay as they were), as the toolbar's buttons never take it. Opened with the pointer, the list does not take the focus away from the document.
+- When the toolbar does not fit (9.9), a picker that leaves goes into More as a submenu of its items, with the chosen one ticked. Typing a free value (a combo box) is only possible while it is on the toolbar.
+- **In a menu row** (a setting at the end of a row of the More menu), the list opens over the menu, and a pick does not close the menu.
+
+### 7.4 For developers
+
+| Need | Markup or code |
+| --- | --- |
+| A picker in the page | `.picker` with `data-picker="list"`, `"filter"` or `"combo"`: a hidden `input`, a `div.input[role="combobox"]` (an `input.input` for typing modes) and a `.panel.popup.picker-pop[popover]` holding `ul[role="listbox"]` with `li[role="option"]` (`data-value` when the value is not the text, `data-short` for the short text, `li.heading` for a heading) |
+| A picker built in code | `Ayni.picker(element, { mode, options, value, placeholder, onChange })` on an empty `.picker`, or on one written in the page; `options` is a list of `{ value, text, short }`, `{ heading }`, or plain strings |
+| The controller | `value`, `text`, `options` (setting it replaces the items at any time), `set(value, text)` (a `text` shows a value the list does not hold), `disabled`, `isOpen`, `open()`, `close()` |
+| What was picked | `ayni:change { value, text, name, field, input }` on the `.picker`, and `onChange(value, text)`; never fired by `set()` |
+| Its name | `label[for]` on the field, or on the `.picker` (Ayni points it at the field it makes), or `aria-label` / `data-tip` on the `.picker` |
+| Saved as it changes | `Ayni.autoSave(picker, save)`: each pick saves; a failed save puts the old value back |
+| In a toolbar | any `.picker` inside `[role="toolbar"]`; `data-rank` as for any tool (9.9) |
+| In a menu row | `.menu-field` inside the `.panel.menu`: the `label`, then the `.picker` |
+| A filtered list's error | Ayni makes the `.error` and the "!" (with `ayni-fields.js`); `Ayni.focusFirstError` checks the typed text too |
 
 ## 8. Lists
 
@@ -661,7 +691,7 @@ Open menus and popups close when the page, or any container outside them, scroll
 - A row of round tool buttons (30 px; 36 px in a title row), each with a 44 px hit area on touch.
 - Tools come in **groups**. A thin line is drawn between two groups that show; a group with nothing showing takes no room and no line. Nobody places a separator by hand.
 - The whole toolbar is one Tab stop; Left and Right move between tools, Home and End jump. A field inside it (a search field) is a Tab stop of its own.
-- Tools can be push buttons, toggle buttons (Bold, Italic) or a button that opens a menu or popup (with its triangle; the More button has none).
+- Tools can be push buttons, toggle buttons (Bold, Italic), a button that opens a menu or popup (with its triangle; the More button has none), a field, or a list picker (a font and its size, 7.3).
 - A disabled tool is faded but keeps its tooltip, which says why ("Underline: not available for headings").
 - In a title row the toolbar sits plain on the row. A toolbar on its own (above a tree) is a tinted strip with a border.
 
@@ -679,6 +709,7 @@ The title row of a view or window shows what you look at on the left and what yo
 - The tools that left are listed in the **More** (⋮) menu, at the start of the system group, in toolbar order, with a line between groups, and below them the app's own menu items. With nothing to list, there is no More button.
 - Search never leaves while nothing is picked. While items are picked, their actions get the room.
 - An open search needs at least 180 px: while it has less, tools leave into More by rank as above, and they come back when it folds. Nothing ever just vanishes.
+- A list picker that leaves is a submenu of its items in More, the chosen one ticked (7.3).
 - A tool run from More comes back to the row while it is in use (its menu or field is open), and leaves again on the next press elsewhere.
 - They come back as the row widens. Desktop windows work the same way (17.3).
 
@@ -761,7 +792,7 @@ A floating dialog shows its title row and bottom row plain on the dialog's colou
 | Confirmation | `await Ayni.confirm({ title, body, confirm, danger, other, cancel })`: `true`, `false`, or `'other'` for the third choice |
 | Message | `await Ayni.alert({ title, body })`; `body` keeps its line breaks |
 | Question | `await Ayni.ask({ title, label, placeholder, value, hint, max, check })`: the trimmed text, or `null` when cancelled; `check(text)` returns the answer, or `false` to keep the dialog open |
-| A field saved as it changes | `Ayni.autoSave(field, save, { wait, msg, done })`: `save(value)` returns a promise; typing waits `wait` ms (700); a failed save puts the old value back and shows `msg` |
+| A field saved as it changes | `Ayni.autoSave(field, save, { wait, msg, done })`: `field` is a field, a switch or a list picker (`.picker`); `save(value)` returns a promise; typing waits `wait` ms (700); a failed save puts the old value back and shows `msg` |
 | Focus somewhere else on open | focus it yourself when opening; Ayni then leaves the focus alone |
 | A lock screen | `dialog.lock` (a Panel or a full-screen dialog of its own): stays above every other dialog and notification; Esc never closes a dialog under it |
 
@@ -1154,7 +1185,11 @@ These were considered and turned down; they are listed so they are not proposed 
 | First-visit marks with a × that works at once | Not taken: it counts down 9 s first (15.4) |
 | An info label that opens only on a click | Replaced: with a mouse it opens on hover, a click pins it (14.2) |
 | A letter "i" drawn in an Accent circle | Replaced: an "i" icon in the link colour (14.2) |
-| Native select, datalist, or the device's own date and time pickers and wheels | Rejected: the Ayni list picker, calendar and time popup (6) |
+| Native select, datalist, or the device's own date and time pickers and wheels | Rejected: the Ayni list picker (7), calendar and time popup (6) |
+| A drop-down list whose pick runs an action (Recent files…) | Replaced: a button with a menu; a list picker only holds a value (7.1) |
+| A combo box that keeps any text, for a long fixed list (time zones) | Replaced: the filtered list, which only takes an item of the list (7.1) |
+| Up and Down changing a closed drop-down's value unseen | Dropped: they open the list (7.2) |
+| A filled field, or an Accent wash under the pointer, for a list picker in a toolbar | Not taken: no fill, a thin line, the grey tint of the toolbar's buttons (7.3) |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |
 | Text labels on every button | Not used: icon-only round buttons with tooltips; text buttons only for wide calls to action (3.9) |

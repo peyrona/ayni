@@ -37,7 +37,7 @@ save.on('press', async () => { save.busy('Saving…'); await store(); save.idle(
 | `RadioGroup` | Field | `radio-group.js` | Radio buttons, and the two-sided switch |
 | `Slider` | Field | `slider.js` | Slider with its value |
 | `ListBox` | Field | `list-box.js` | List, single or multiple selection |
-| `ListPicker` | Field | `list-picker.js` | Drop-down list and combo box |
+| `ListPicker` | Field | `list-picker.js` | Drop-down list, filtered list and combo box (`Ayni.picker`) |
 | `Tree` | Field | `tree.js` | Tree view, with editing |
 | `Calendar` | Field | `calendar.js` | Calendar |
 | `DateField` | TextField | `date-field.js` | Date, typed or picked |
