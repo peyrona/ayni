@@ -925,6 +925,110 @@ try {
     check('no errors or warnings in the menus family', t.logs.length === 0, t.logs.slice());
   }
 
+  section('Menu bar from a list');
+  {
+    t.logs.length = 0;
+    await t.open(BASE + '/tests/menus-only.html');
+    const ev = (js) => t.evaluate(js), wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    await ev(`(document.body.insertAdjacentHTML('afterbegin', '<div id="mb"></div>'), window.mbN = 0, window.mbRan = '', window.mb = Ayni.menuBar('#mb', { menus: () => [{ label: 'File', items: () => [{ id: 'n', label: 'Opened ' + (++mbN), run: () => { mbRan = 'n'; } }, { sep: true }, { id: 'o', label: 'Off', disabled: true, why: 'No' }] }, { label: 'Edit', items: [{ id: 'u', label: 'Undo', key: 'Ctrl+Z' }] }] }), true)`);
+    check('menu bar: role, one button per menu, one Tab stop', await ev(`mbEl = document.getElementById('mb'), mbEl.getAttribute('role') === 'menubar' && [...mbEl.children].map((b) => b.textContent).join() === 'File,Edit' && [...mbEl.children].map((b) => b.tabIndex).join() === '0,-1'`));
+    check('menu bar: each menu named by the bar', await ev(`document.getElementById('mb-0').dataset.bar === 'mb' && document.getElementById('mb-1').matches('.panel.menu[popover][role="menu"]')`));
+    await ev(`(mb.openAt(0), true)`); await wait(80);
+    check('openAt opens that menu, filled as it opens', await ev(`document.getElementById('mb-0').matches(':popover-open') && /Opened 1/.test(document.getElementById('mb-0').textContent) && mb.isOpen()`));
+    check('…with its name from the bar', await ev(`document.getElementById('mb-0').getAttribute('aria-label') === 'File'`));
+    await ev(`(mb.openAt(0), true)`); await wait(40);
+    check('openAt on an open menu leaves it', await ev(`document.getElementById('mb-0').matches(':popover-open')`));
+    await ev(`(mb.close(), true)`); await wait(60);
+    check('close() closes it', !(await ev(`mb.isOpen()`)));
+    await ev(`(mb.openAt(0), true)`); await wait(80);
+    check('it is filled again, so its rows show what is true now', await ev(`/Opened 2/.test(document.getElementById('mb-0').textContent)`));
+    await ev(`([...document.querySelectorAll('#mb-0 [role^="menuitem"]')][0].click(), true)`); await wait(60);
+    check('a row runs', (await ev(`mbRan`)) === 'n');
+    await ev(`(mb.build(), true)`); await wait(40);
+    check('build() starts again, with nothing doubled', await ev(`document.querySelectorAll('#mb > button').length === 2 && document.querySelectorAll('.panel.menu[data-bar="mb"]').length === 2`));
+    await ev(`(document.getElementById('mb').remove(), true)`);
+    check('no errors or warnings on the menu bar', t.logs.length === 0, t.logs.slice());
+  }
+
+  section('Choosing a folder or a file');
+  {
+    t.logs.length = 0;
+    await t.open(BASE + '/tests/lists-only.html');
+    const ev = (js) => t.evaluate(js), wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const until = async (js) => { for (let i = 0; i < 60; i++) { if (await ev(js)) return true; await wait(25); } return false; };
+    const P = `dialog.panel[open]`, OK = `document.querySelector('${P} footer .btn.primary')`, NO = `document.querySelector('${P} footer [data-close]')`;
+    const row = (name) => `[...document.querySelectorAll('${P} .fp-tree .ti')].find((x) => x.textContent.trim().startsWith(${JSON.stringify(name)}))`;
+    await ev(`(window.T = [{ id: 'f/a', name: 'a', children: [{ id: 'f/a/b', name: 'b', children: [] }] }, { id: 'f/c', name: 'c', children: [] }], window.L = [], window.ctl = null,
+      window.fold = (o) => { window.got = 'waiting'; Ayni.pickFolder(Object.assign({ title: 'Pick', root: 'f', load: () => { L.push('load'); return JSON.parse(JSON.stringify(T)); },
+        create: (p, n) => { L.push('create ' + p + ' ' + n); return p + '/' + n; }, rename: (id, n) => { L.push('rename ' + id + ' ' + n); return id.replace(/[^/]+$/, n); },
+        remove: (id) => { L.push('remove ' + id); }, onOpen: (c) => { window.ctl = c; } }, o)).then((v) => { window.got = v; }); }, true)`);
+    await ev(`(fold({ note: 'A note' }), true)`);
+    check('folder: the tree loads, the note on top', await until(`!!${row('a')}`) && await ev(`document.querySelector('${P} .text').textContent === 'A note'`));
+    check('folder: nothing lit: choose, delete and rename are off, new folder on', await ev(`(() => { const b = document.querySelectorAll('${P} footer .extra .btn'); return ${OK}.ariaDisabled === 'true' && b[0].ariaDisabled === 'true' && b[1].ariaDisabled === 'true' && b[2].ariaDisabled === 'false'; })()`));
+    await ev(`(${row('a')}.click(), true)`); await wait(40);
+    check('folder: a click lights it, and the buttons wake', await ev(`${OK}.ariaDisabled === 'false' && document.querySelector('${P} footer .extra .btn').ariaDisabled === 'false'`));
+    await ev(`(document.querySelectorAll('${P} footer .extra .btn')[2].click(), true)`); await wait(40);
+    check('folder: new folder turns it into the name form', await ev(`document.querySelector('${P} .field input').id !== undefined && document.activeElement === document.querySelector('${P} .field input') && ${OK}.ariaDisabled === 'true' && !document.querySelector('${P} footer .extra')`));
+    await ev(`(${NO}.click(), true)`); await wait(40);
+    check('folder: × drops the name, the dialog stays', await ev(`!!document.querySelector('${P}') && !document.querySelector('${P} .field')`) && (await ev(`got`)) === 'waiting');
+    await ev(`(document.querySelectorAll('${P} footer .extra .btn')[2].click(), true)`); await wait(40);
+    const type = (v) => ev(`(() => { const i = document.querySelector('${P} .field input'); i.value = ${JSON.stringify(v)}; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+    for (const bad of ['', 'x/y', '..']) { await type(bad); check(`folder: the name "${bad}" is refused`, await ev(`${OK}.ariaDisabled === 'true'`)); }
+    await ev(`(L.length = 0, true)`);
+    await type('new'); await ev(`(${OK}.click(), T[0].children.push({ id: 'f/a/new', name: 'new', children: [] }), true)`);
+    check('folder: created in the lit folder, the tree read again, the new one lit', await until(`L.join() === 'create f/a new,load' && !!${row('new')}`) && await ev(`${row('new')}.closest('li').getAttribute('aria-current') !== null || !!document.querySelector('${P} [aria-current]')`), await ev(`L`));
+    await ev(`(document.querySelectorAll('${P} footer .extra .btn')[1].click(), true)`); await wait(40);
+    check('folder: rename starts with its name, picked', await ev(`(() => { const i = document.querySelector('${P} .field input'); return i.value === 'new' && i.selectionEnd === 3; })()`));
+    await ev(`(L.length = 0, ${OK}.click(), true)`); await wait(40);
+    check('folder: the same name changes nothing', (await ev(`L.length`)) === 0 && !(await ev(`!!document.querySelector('${P} .field')`)));
+    await ev(`(document.querySelectorAll('${P} footer .extra .btn')[1].click(), true)`); await wait(40);
+    await type('old'); await ev(`(T[0].children[1] = { id: 'f/a/old', name: 'old', children: [] }, ${OK}.click(), true)`);
+    check('folder: renamed, the new id stays lit', await until(`L.join() === 'rename f/a/new old,load' && !!${row('old')}`), await ev(`L`));
+    await ev(`(L.length = 0, T[0].children.pop(), document.querySelector('${P} footer .extra .btn').click(), true)`);
+    check('folder: delete acts at once, nothing lit after it', await until(`L.join() === 'remove f/a/old,load' && ${OK}.ariaDisabled === 'true'`), await ev(`L`));
+    await ev(`(L.length = 0, ctl.task(Promise.resolve('f/c')), true)`);
+    check('task(): a later job shows, then the tree is read again and its answer lit', await until(`L.join() === 'load' && ${OK}.ariaDisabled === 'false'`));
+    await ev(`(ctl.task(Promise.reject(new Error('Nope'))), true)`);
+    check('a job that fails says so', await until(`[...document.querySelectorAll('#ayni-toasts .toast')].some((x) => /Nope/.test(x.textContent))`));
+    await ev(`(${row('c')}.click(), true)`); await wait(40); await ev(`(${OK}.click(), true)`);
+    check('folder: choose answers its id, the dialog goes', await until(`got === 'f/c' && !document.querySelector('${P}')`), await ev(`got`));
+    check('…and the job told after that knows', !(await ev(`ctl.isOpen()`)));
+    await ev(`(fold({ rootName: 'Home' }), true)`);
+    check('folder: rootName shows the root, open', await until(`!!${row('Home')} && !!${row('a')}`));
+    await ev(`(${row('Home')}.click(), true)`); await wait(40);
+    check('folder: the root can be chosen, never deleted', await ev(`${OK}.ariaDisabled === 'false' && document.querySelector('${P} footer .extra .btn').ariaDisabled === 'true'`));
+    await ev(`(${NO}.click(), true)`);
+    check('folder: cancelled, it answers null', await until(`got === null`));
+    await ev(`(fold({ load: () => [] }), true)`);
+    check('folder: none, says so', await until(`/no folders/.test(document.querySelector('${P} .fp-msg')?.textContent || '')`));
+    await ev(`(${NO}.click(), true)`); await wait(40);
+    await ev(`(fold({ load: () => { throw new Error('x'); } }), true)`);
+    check('folder: unreadable, says so', await until(`/could not be loaded/.test(document.querySelector('${P} .fp-msg')?.textContent || '')`));
+    await ev(`(${NO}.click(), true)`); await wait(40);
+    await ev(`(window.F = { 'f': [{ id: 'f/z.txt', name: 'z.txt', size: 5 }, { id: 'f/a10.txt', name: 'a10.txt', size: 1 }, { id: 'f/a2.txt', name: 'a2.txt', size: 2 }, { id: 'f/sub', name: 'sub', dir: true }], 'f/sub': [] },
+      window.file = (o) => { window.got = 'waiting'; Ayni.pickFile(Object.assign({ title: 'File', dir: 'f', rootName: 'Home', list: (d) => F[d], sizeText: (n) => n + ' B' }, o)).then((v) => { window.got = v; }); }, file(), true)`);
+    check('file: folders first, then the names in number order', await until(`[...document.querySelectorAll('${P} .fp-name')].map((x) => x.textContent).join() === 'sub,a2.txt,a10.txt,z.txt'`));
+    check('file: a size on the files, the first crumb named', await ev(`document.querySelector('${P} .fp-row:nth-child(2) .fp-size').textContent === '2 B' && document.querySelector('${P} .fp-crumbs b').textContent === 'Home'`));
+    const frow = (n) => `[...document.querySelectorAll('${P} .fp-row')].find((x) => x.querySelector('.fp-name').textContent === '${n}')`;
+    check('file: nothing lit, the button is off', await ev(`${OK}.ariaDisabled === 'true'`));
+    await ev(`(${frow('sub')}.click(), true)`);
+    check('file: a click opens a folder, the crumb goes back', await until(`/empty/.test(document.querySelector('${P} .fp-msg')?.textContent || '') && !!document.querySelector('${P} .fp-crumbs button')`));
+    await ev(`(document.querySelector('${P} .fp-crumbs button').click(), true)`);
+    await until(`!!${frow('a2.txt')}`);
+    await ev(`(${frow('a2.txt')}.click(), true)`); await wait(30);
+    check('file: a click lights a file', await ev(`${frow('a2.txt')}.getAttribute('aria-selected') === 'true' && ${OK}.ariaDisabled === 'false'`));
+    await ev(`(${OK}.click(), true)`);
+    check('file: the button answers its node', await until(`got && got.id === 'f/a2.txt'`));
+    await ev(`(file(), true)`); await until(`!!${frow('z.txt')}`);
+    await ev(`(${frow('z.txt')}.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })), true)`);
+    check('file: a double click too', await until(`got && got.id === 'f/z.txt'`));
+    await ev(`(file({ list: () => Promise.reject(new Error('x')) }), true)`);
+    check('file: unreadable, says so', await until(`/could not be loaded/.test(document.querySelector('${P} .fp-msg')?.textContent || '')`));
+    await ev(`(${NO}.click(), true)`);
+    check('file: cancelled, it answers null', await until(`got === null`));
+    check('no errors or warnings choosing a folder or a file', t.logs.length === 0, t.logs.slice());
+  }
+
   section('Search family (base + buttons + notifications + dialogs + menus + search)');
   {
     t.logs.length = 0;
@@ -1997,6 +2101,36 @@ try {
     await ev(`(Ayni.setTouchPreview(false), true)`);
 
     check('no untranslated keys in the fields family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    /* ---------- Asking for a password ---------- */
+    {
+      const pwd = (o) => ev(`(window.pw = 'waiting', Ayni.ask(Object.assign({ password: true, title: 'Lock' }, ${JSON.stringify(o)})).then((v) => { window.pw = v; }), true)`);
+      const open = () => ev(`!!document.querySelector('dialog.panel[open] #ayni-ask-pw')`);
+      const type = (id, v) => ev(`(document.getElementById('${id}').value = ${JSON.stringify(v)}, true)`);
+      const okBtn = `document.querySelector('dialog.panel[open] footer .btn.primary')`;
+      await pwd({ lead: 'For the file', okTip: 'Open' }); await wait(80);
+      check('password: a dialog with its lead, a password box and an eye', await ev(`(() => { const d = document.querySelector('dialog.panel[open]'), i = d.querySelector('#ayni-ask-pw'); return i.type === 'password' && i.autocomplete === 'current-password' && d.querySelector('p.hint').textContent === 'For the file' && !!d.querySelector('[data-reveal] .icon svg') && !d.querySelector('#ayni-ask-repeat'); })()`));
+      check('password: the words are translated, the first box has the focus', await ev(`document.querySelector('dialog.panel[open] label').textContent === 'Password' && document.activeElement.id === 'ayni-ask-pw'`));
+      check('password: the default button says what the page asked', await ev(`${okBtn}.dataset.tip === 'Open'`));
+      await ev(`(${okBtn}.click(), true)`); await wait(40);
+      check('password: an empty box is refused, with no message', await open() && await ev(`document.querySelector('dialog.panel[open] .form-error').hidden`));
+      await type('ayni-ask-pw', ' a b '); await ev(`(${okBtn}.click(), true)`); await wait(60);
+      check('password: it comes back exactly as typed, spaces too', (await ev(`window.pw`)) === ' a b ');
+      check('password: the dialog is gone from the page', !(await ev(`!!document.getElementById('ayni-ask-pw')`)));
+      await pwd({}); await wait(60); await ev(`(document.querySelector('dialog.panel[open] [data-close]').click(), true)`); await wait(60);
+      check('password: cancelled, it answers null', (await ev(`window.pw`)) === null);
+      await pwd({}); await wait(60); await ev(`(document.querySelector('dialog.panel[open]').close(), true)`); await wait(60);
+      check('password: Esc answers null too', (await ev(`window.pw`)) === null);
+      await pwd({ verify: true, min: 6 }); await wait(60);
+      check('password: a new one asks twice, for the manager to make one', await ev(`document.getElementById('ayni-ask-repeat').type === 'password' && document.getElementById('ayni-ask-pw').autocomplete === 'new-password'`));
+      await type('ayni-ask-pw', 'abc'); await type('ayni-ask-repeat', 'abc'); await ev(`(${okBtn}.click(), true)`); await wait(40);
+      check('password: too short is refused and says how long', await open() && /6/.test(await ev(`document.querySelector('dialog.panel[open] .form-error').textContent`)));
+      await type('ayni-ask-pw', 'abcdefg'); await type('ayni-ask-repeat', 'abcdefh'); await ev(`(${okBtn}.click(), true)`); await wait(40);
+      check('password: two that differ are refused, the second box emptied', await open() && (await ev(`document.getElementById('ayni-ask-repeat').value`)) === '' && await ev(`document.activeElement.id`) === 'ayni-ask-repeat');
+      await type('ayni-ask-repeat', 'abcdefg'); await ev(`(${okBtn}.click(), true)`); await wait(60);
+      check('password: two the same go through', (await ev(`window.pw`)) === 'abcdefg');
+      await pwd({ min: 20 }); await wait(60); await type('ayni-ask-pw', 'x'); await ev(`(${okBtn}.click(), true)`); await wait(60);
+      check('password: one that exists is whatever it is', (await ev(`window.pw`)) === 'x');
+    }
     check('no errors or warnings in the fields family', t.logs.length === 0, t.logs.slice());
 
     /* In another language */
@@ -2627,8 +2761,14 @@ try {
 
     /* ---------- Languages ---------- */
     check('no untranslated keys in the layout family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    await ev(`(document.body.insertAdjacentHTML('beforeend', '<div class="empty-state" id="es"><span class="icon" data-icon="file"></span><p class="empty-title">None</p><p>Press +</p></div><p class="section-label" id="sl">Group</p><div class="card-row" id="cr">Row</div>'), Ayni.init(document.body), true)`); await wait(40);
+    check('empty state: centred, its glyph 44 px and faint', await ev(`(() => { const s = getComputedStyle(es), g = es.querySelector('svg').getBoundingClientRect(); return s.alignItems === 'center' && g.width === 44 && getComputedStyle(es.querySelector('svg')).opacity === '0.6'; })()`));
+    check('empty state: the first line bold, the second smaller', await ev(`(() => { const a = getComputedStyle(es.querySelector('.empty-title')), b = getComputedStyle(es.querySelector('p:last-child')); return +a.fontWeight === 600 && parseFloat(a.fontSize) > parseFloat(b.fontSize); })()`));
+    check('section label: uppercase, small', await ev(`(() => { const s = getComputedStyle(sl); return s.textTransform === 'uppercase' && parseFloat(s.fontSize) < 12; })()`));
+    check('card row: a row on its own card', await ev(`(() => { const s = getComputedStyle(cr); return s.display === 'flex' && s.borderTopStyle === 'solid' && parseFloat(s.borderTopLeftRadius) > 0; })()`));
+    await ev(`(es.remove(), sl.remove(), cr.remove(), true)`);
     check('no errors or warnings in the layout family', t.logs.length === 0, t.logs.slice());
-    const NEW = ['ayni.split.drag', 'ayni.more.show', 'ayni.more.hide', 'ayni.tab.close'];
+    const NEW = ['ayni.fp.choose', 'ayni.fp.chooseFile', 'ayni.fp.delete', 'ayni.fp.emptyFolder', 'ayni.fp.loadError', 'ayni.fp.loading', 'ayni.fp.newFolder', 'ayni.fp.noFolders', 'ayni.fp.pickFile', 'ayni.fp.pickFolder', 'ayni.fp.rename', 'ayni.split.drag', 'ayni.more.show', 'ayni.more.hide', 'ayni.tab.close', 'ayni.password', 'ayni.password.repeat', 'ayni.password.tooShort', 'ayni.password.noMatch'];
     for (const lang of ['en', 'es', 'pt', 'fr', 'de']) {
       const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'i18n', lang + '.json'), 'utf8'));
       check(`${lang}: the layout family's texts are all there`, NEW.every((k) => j[k]), NEW.filter((k) => !j[k]));

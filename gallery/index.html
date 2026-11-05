@@ -86,7 +86,10 @@
         <div class="row"><button class="btn" id="open-modeless" aria-label="Find in files…" data-tip="Find in files…"><span class="icon" data-icon="search"></span></button></div></div>
       <div class="spec"><h3>Built in code</h3>
         <p class="rule">A confirmation, a question and a message are one call each: <code>Ayni.confirm</code>, <code>Ayni.ask</code> and <code>Ayni.alert</code>. The question's Accept stays faded until there is text.</p>
-        <div class="row"><button class="btn danger" id="code-confirm" aria-label="Delete with Ayni.confirm…" data-tip="Delete with Ayni.confirm…"><span class="icon" data-icon="trash"></span></button><button class="btn" id="code-ask" aria-label="New folder with Ayni.ask…" data-tip="New folder with Ayni.ask…"><span class="icon" data-icon="plus"></span></button><button class="btn" id="code-alert" aria-label="Message with Ayni.alert…" data-tip="Message with Ayni.alert…"><span class="icon" data-icon="info"></span></button></div></div>
+        <div class="row"><button class="btn" id="code-folder" aria-label="Choose a folder…" data-tip="Choose a folder…"><span class="icon" data-icon="folder"></span></button>
+          <button class="btn" id="code-file" aria-label="Choose a file…" data-tip="Choose a file…"><span class="icon" data-icon="file"></span></button>
+          <button class="btn" id="code-pw" aria-label="New password…" data-tip="New password…"><span class="icon" data-icon="eye"></span></button>
+          <button class="btn danger" id="code-confirm" aria-label="Delete with Ayni.confirm…" data-tip="Delete with Ayni.confirm…"><span class="icon" data-icon="trash"></span></button><button class="btn" id="code-ask" aria-label="New folder with Ayni.ask…" data-tip="New folder with Ayni.ask…"><span class="icon" data-icon="plus"></span></button><button class="btn" id="code-alert" aria-label="Message with Ayni.alert…" data-tip="Message with Ayni.alert…"><span class="icon" data-icon="info"></span></button></div></div>
       <div class="spec"><h3>Dialog rules</h3>
         <p class="rule">Esc always closes a dialog, as if its Close button were pressed; a click on the dimmed page around it does nothing. It opens with the caret in its first field, never on a button. On a computer or tablet it moves by its title row. Avoid Accept and Cancel wherever possible: apply changes as they happen, or when the dialog closes. With Close as the only button, it goes at the right of the title row. Otherwise all buttons, Close included, go in a bottom row: the usual ones (Close, Accept, Cancel) at the right, any extra actions at the left. Enter anywhere in a Panel runs its default (filled) button, except in a text area, on another button, or while a list or menu is open.</p></div>
       <div class="spec"><h3>States</h3>
@@ -680,6 +683,11 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
         <div class="field"><label for="mf-name">Name</label><input id="mf-name" class="input" value="Ana Morales"></div>
         <button type="button" class="more-toggle" id="mf-btn" aria-expanded="false" aria-controls="mf-more"></button>
         <div id="mf-more" hidden><div class="field"><label for="mf-web">Web site</label><input id="mf-web" class="input"></div></div></div>
+      <div class="spec"><h3>Empty state, section label, card row</h3>
+        <p class="rule">What a list shows with nothing to list; a small heading over a group; a row on its own card.</p>
+        <div class="empty-state" id="es-demo"><span class="icon" data-icon="folder"></span><p class="empty-title">No files yet</p><p>Press + to add the first one.</p></div>
+        <p class="section-label">Accounts</p>
+        <div class="card-row" id="cr-demo"><span class="icon" data-icon="file"></span><span>Budget 2026.ods</span></div></div>
       <div class="spec"><h3>Tags</h3>
         <p class="rule">A small read-only word on an item. A tag that can be pressed is a text button.</p>
         <div class="row"><span class="tag">Drama</span><span class="tag">1994</span><span class="tag">Today</span></div></div>

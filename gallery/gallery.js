@@ -87,6 +87,25 @@ $('#code-confirm').onclick = async () => {
   const yes = await Ayni.confirm({ title: 'Delete report.pdf?', body: 'The file goes to the bin.\nYou can restore it for 30 days.', confirm: 'Delete', danger: true });
   const m = yes ? 'Deleted report.pdf' : 'Kept report.pdf'; say('dlg-out', m); status(m);
 };
+/* The data of the two choosers, in memory: in an app it is the server's */
+const demoTree = [{ id: 'home/Photos', name: 'Photos', children: [{ id: 'home/Photos/2026', name: '2026', children: [] }] }, { id: 'home/Work', name: 'Work', children: [] }];
+const inTree = (list, id) => { for (const n of list) { if (n.id === id) return n; const hit = inTree(n.children, id); if (hit) return hit; } return null; };
+$('#code-folder').onclick = async () => {
+  const id = await Ayni.pickFolder({ title: 'Save in', root: 'home', rootName: 'Home', load: () => demoTree,
+    create: (p, name) => { const n = { id: p + '/' + name, name, children: [] }; (p === 'home' ? demoTree : inTree(demoTree, p).children).push(n); return n.id; },
+    rename: (id, name) => { const n = inTree(demoTree, id); n.name = name; n.id = id.replace(/[^/]+$/, name); return n.id; },
+    remove: (id) => { const cut = (l) => { const i = l.findIndex((n) => n.id === id); if (i >= 0) l.splice(i, 1); else l.forEach((n) => cut(n.children)); }; cut(demoTree); } });
+  Ayni.toast('info', id || 'Left as it was');
+};
+$('#code-file').onclick = async () => {
+  const f = await Ayni.pickFile({ title: 'Attach', dir: 'home', rootName: 'Home', sizeText: (n) => n + ' KB',
+    list: (d) => (d === 'home' ? [{ id: 'home/Photos', name: 'Photos', dir: true }, { id: 'home/notes.txt', name: 'notes.txt', size: 2 }] : [{ id: d + '/beach.jpg', name: 'beach.jpg', size: 840 }]) });
+  Ayni.toast('info', f ? f.name : 'Left as it was');
+};
+$('#code-pw').onclick = async () => {
+  const pw = await Ayni.ask({ password: true, title: 'Protect the document', lead: 'There is no way back from a lost password.', verify: true, okTip: 'Protect' });
+  Ayni.toast('info', pw === null ? 'Left as it was' : `A password of ${pw.length} characters`);
+};
 $('#code-ask').onclick = async () => {
   const name = await Ayni.ask({ title: 'New folder', label: 'Name', value: 'New folder', okTip: 'Create',
     check: (v) => (/[\\/]/.test(v) ? (status('A name cannot contain / or \\'), false) : v) });

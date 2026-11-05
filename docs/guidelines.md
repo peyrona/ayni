@@ -735,6 +735,7 @@ The title row of a view or window shows what you look at on the left and what yo
 | Pop-up menu on an area | `Ayni.contextMenu(area, { menu, target, keyTarget, onDrag })` |
 | Long tap that picks | `Ayni.longTap(area, selector, (item, x, y) => …)`: the same ring and timing; the click its release leaves is swallowed |
 | Shortcut text | `Ayni.keyLabel('Ctrl+C')`: "Ctrl+C", or "⌘C" on Mac |
+| A menu bar from a list | `Ayni.menuBar(bar, { menus })`: `menus` is `[{ key or label, items }]`, `items` the rows of `Ayni.menuAt`, read each time a menu opens; returns `{ build, openAt, close, isOpen }` |
 | A popup | `.panel.popup.controls[popover]`, opened with `popovertarget`; `h4` heads a group; `.tall` lets it grow to the height of the screen; `Ayni.showPopup(popup, button)` opens one from code, as its button would |
 | Tool group | `.panel.popup.tools[popover]` holding the real `.btn` tools; `data-lit-by="id id"` on the group button names the toggles that light it |
 | Toolbar | `[role="toolbar"]` (one Tab stop, wired by Ayni) with `.tb-group` children; the lines between groups are Ayni's |
@@ -798,6 +799,9 @@ A floating dialog shows its title row and bottom row plain on the dialog's colou
 | A button made in code | `Ayni.dialogButton(role, tip, icon)`; role `close`, `primary`, `danger` or `''` |
 | Confirmation | `await Ayni.confirm({ title, body, confirm, danger, other, cancel })`: `true`, `false`, or `'other'` for the third choice |
 | Message | `await Ayni.alert({ title, body })`; `body` keeps its line breaks |
+| Choose a folder | `await Ayni.pickFolder({ title, note, root, rootName, load, create, rename, remove, failed, noFolders, onOpen })`: the id, or `null`; the app owns the data (16.10), Ayni the dialog; `onOpen(ctl)` gives `{ task(promise), rekey(from, to), isOpen() }` for an Undo that comes later |
+| Choose a file | `await Ayni.pickFile({ title, dir, rootName, list, sizeText, okTip })`: the node, or `null`; `list(dir)` gives `[{ id, name, dir, size }]` |
+| Password | `await Ayni.ask({ password: true, title, lead, label, verify, min, okTip, noTip })`: the password as typed, or `null`; `verify` asks twice for a new one, at least `min` (8) characters; the eye needs the fields family; nothing is kept |
 | Question | `await Ayni.ask({ title, label, placeholder, value, hint, max, check })`: the trimmed text, or `null` when cancelled; `check(text)` returns the answer, or `false` to keep the dialog open |
 | A field saved as it changes | `Ayni.autoSave(field, save, { wait, msg, done })`: `field` is a field, a switch or a list picker (`.picker`); `save(value)` returns a promise; typing waits `wait` ms (700); a failed save puts the old value back and shows `msg` |
 | Focus somewhere else on open | focus it yourself when opening; Ayni then leaves the focus alone |
@@ -909,10 +913,19 @@ A border with a title (Shipping address, Delivery) around related controls. Radi
 
 A long form folds its rarely used half behind one line: a small pill with a chevron at the start of a thin rule ("More fields"). Pressed, the fields open below it, the chevron turns and the pill reads "Fewer fields". A form that holds something in the folded half opens unfolded, so nothing is hidden. It is not for one or two fields, which simply stay in the form.
 
-### 12.4 For developers
+### 12.4 Empty states, section labels and card rows
+
+- **Empty state:** what a list shows with nothing to list: the app's glyph, faint, a bold line saying what is missing, a quieter line saying what to do, and at most one text button.
+- **Section label:** a small uppercase heading over a group of fields or rows. It is the only place for uppercase. It is dimmer than a button, so it never reads as one.
+- **Card row:** a row on its own card, for items that stand alone (an account, a trip). Hover firms up its border; a picked one takes the soft Accent tint (8.9).
+
+### 12.5 For developers
 
 | Need | Markup or call |
 | --- | --- |
+| Empty state | `.empty-state` with an icon, `p.empty-title` and a `p`; toggle it with `hidden` |
+| Section label | `.section-label` |
+| Card row | `.card-row` |
 | Tabs in the page | `[role="tablist"]` with `[role="tab"]` and `[role="tabpanel"]`, linked by `aria-controls`; Ayni wires them when the page loads |
 | Tabs from code | `Ayni.tabs(list, { items, value, onSelect, onClose, scope, hash })` returns `{ value, tabs, select(value), set(items, value), add(item, index), close(value), setTabEnabled(value, on, why) }`. An item is `{ value, label, icon, tip, panel, closable, disabled, why }` |
 | No panel of its own | leave `panel` (or `aria-controls`) out; the page draws its one view in `onSelect` |
@@ -1113,6 +1126,8 @@ A tree in a side pane does not take room on a phone (below 640 px): a button in 
 ### 16.10 Picking a place: Move to…
 
 Move to…, Copy to… and Save in… open a dialog with the same tree in a box, opened down to where the items are now, with that place lit. A click lights a folder; a double-click, Enter or the dialog's default button picks it. Places that cannot take the items (a folder into itself) are faded and skipped. A short line under the title can say what will happen, and change with the lit folder. On touch this replaces dragging.
+
+**Choosing a folder or a file.** Where an app needs a place or a file, not a move, the same tree opens as a dialog. Choosing a folder: the arrow opens and closes, a click lights a folder, a double click or Enter chooses it, and three buttons in the corner delete, rename and create folders, so nobody has to leave for that. While a name is typed the dialog is the name form, and × drops the name, not the dialog. Choosing a file goes one folder at a time, a crumb on top, folders first, each file with its size.
 
 ### 16.11 States and look
 
