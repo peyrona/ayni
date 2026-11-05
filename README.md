@@ -37,7 +37,7 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 
 **Every language, no network.** Every text comes from a language file (English, Spanish, Portuguese, French and German ship with Ayni). The system font is used, and nothing is loaded from other sites.
 
-**Nothing to build, take only what you use.** The base (`ayni-i18n.js`, `ayni-base.css`, `ayni-base.js`, `ayni-icons.js` and the `i18n/` folder) holds the colours, light and dark, icons and texts; the controls come on top, one file pair per family of controls (until they are all split, `ayni.css` and `ayni.js` hold the rest). It all works from any static web server. The target is evergreen browsers from 2024 on (Chrome 119, Firefox 128, Safari 18).
+**Nothing to build, take only what you use.** The base (`ayni-i18n.js`, `ayni-base.css`, `ayni-base.js`, `ayni-icons.js` and the `i18n/` folder) holds the colours, light and dark, icons and texts; the controls come on top, one file pair per family of controls, plus `ayni.css` for the page's own defaults and helpers. It all works from any static web server. The target is evergreen browsers from 2024 on (Chrome 119, Firefox 128, Safari 18).
 
 ![The Ayni gallery in dark mode: sliders, a date field, the calendar and the date-and-time popup](docs/gallery-dark.png)
 
@@ -48,12 +48,12 @@ Most interfaces grow one screen at a time, and every screen invents its own litt
 | **Buttons** | Push buttons (normal, small, bordered), default and busy buttons, toggles, popup buttons, second-action buttons, buttons over pictures, text buttons for wide calls to action, radio buttons, check boxes with a mixed state, switches |
 | **Lists** | Item lists that pick like a file manager (Ctrl+click, Shift ranges, touch picking with a long tap), with the picked items' actions in the title row, grids of cards, drag and drop onto folders; pick lists with type-ahead; drop-down list, filtered list (long lists: type to narrow, only an item is taken) and combo box, all with one list picker on every device; a tree view that navigates beside a list or edits in place, with Move to… |
 | **Texts** | Text fields with buttons inside, one search field and one search rule (words in any order, "phrase", -word, accents ignored) that folds behind a magnifier in a title row, with a filter, a count and stepping through hits, a find bar for documents, password show/hide, text area with a counter, number field (− field +), editing in place, fields in toolbars, errors shown inside the field, progress |
-| **Pickers** | Slider, date field (the year may be left out), time field, date and time, a calendar with month and year views and date limits; the same on every device, never the device's own pickers |
+| **Pickers** | Slider, date field (the year may be left out), time field, date and time, a calendar with month and year views, date limits, week numbers and a view-only mode; the same on every device, never the device's own pickers |
 | **Menus** | Menu bar, pull-down menus with one level of submenus, pop-up menus (right-click, long tap, Shift+F10), menus built in code, toolbars in groups that fit their row by rank (the rest in one More menu), tool groups, popups that hold any control |
 | **Help** | A Help button (?) in every view with a card that explains each button, a guided tour that lights the screen one button at a time (opening menus and More for you), first-visit marks for a brand-new user, info labels that open on hover or tap |
 | **Feedback** | Tooltips, notifications (four kinds, stacked, Undo with Ctrl+Z while it shows), progress notifications, status bar, loading and empty states |
 | **Layout** | Panels, tabs (closable, scrollable, keyboard-friendly, under the page too), group boxes, More fields, a splitter with collapse and reset, scrolling everywhere |
-| **Desktop** | Taskbar at the top or bottom, applications launcher with search, one chip per window with its controls, clock widget, windows with a title row toolbar and their own modeless dialogs |
+| **Desktop** | Taskbar on any edge of the screen, applications launcher with search, one chip per window with its controls, clock and other widgets, windows with a title row toolbar and their own modeless dialogs; the bar also serves an app that has its own windows |
 | **Dialogs** | Message, live settings, apply on close, confirmation, modeless |
 
 Everything works from the keyboard, with a mouse and by touch, and every state is shown in the gallery.
@@ -75,6 +75,7 @@ Copy the `ayni-*` files, `tz-geo.json` and the `i18n/` folder next to your page:
 <link rel="stylesheet" href="ayni-fields.css">
 <link rel="stylesheet" href="ayni-pickers.css">
 <link rel="stylesheet" href="ayni-layout.css">
+<link rel="stylesheet" href="ayni-desktop.css">
 <link rel="stylesheet" href="ayni.css">
 <script src="ayni-icons.js" defer></script>
 <script src="ayni-base.js" defer></script>
@@ -88,7 +89,7 @@ Copy the `ayni-*` files, `tz-geo.json` and the `i18n/` folder next to your page:
 <script src="ayni-fields.js" defer></script>
 <script src="ayni-pickers.js" defer></script>
 <script src="ayni-layout.js" defer></script>
-<script src="ayni.js" defer></script>
+<script src="ayni-desktop.js" defer></script>
 
 <button class="btn primary" data-i18n-attr="aria-label:new, data-tip:new">
   <span class="icon" data-icon="plus"></span>
@@ -108,7 +109,7 @@ The rules behind every control are in the [Ayni Design Guidelines](docs/guidelin
 Ayni is at version 0.1.0. The design is still being closed, so the markup and the API may change before 1.0.
 
 - [ ] **Nayive's look.** Colours, type, corners, icons and languages taken from Nayive, the first app built on Ayni (rules written, code under way).
-- [ ] **Desktop mode.** From 1024 px wide, Ayni switches on its own to a desktop with windows and a taskbar; below that there is no desktop mode. Under way: the taskbar (at the top or bottom, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
+- [ ] **Desktop mode.** From 1024 px wide, by default, Ayni switches on its own to a desktop with windows and a taskbar; below that there is no desktop mode, unless the app sets its own rule. Under way: the taskbar (on any edge, with the launcher, one chip per window and the clock) and the window are in, see the [desktop page](https://peyrona.github.io/ayni/gallery/desktop.html).
 - [x] **Tree view.** Optional root, hidden items, drag and drop, keyboard moves, cut/copy/paste, insert, delete with Undo, rename in place and loading on demand.
 - [ ] **Item lists and the navigation tree.** Picking like a file manager, the picked items' actions in the title row, drop on folders, Move to… (rules written, code under way).
 - [ ] **Accessibility for everyone.** Screen readers, captions, right-to-left languages and Windows High Contrast come once the design is closed.
@@ -151,7 +152,6 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
   <script src="ayni-fields.js" defer></script>
   <script src="ayni-pickers.js" defer></script>
   <script src="ayni-layout.js" defer></script>
-  <script src="ayni.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -165,7 +165,7 @@ Ayni is at version 0.1.0. The design is still being closed, so the markup and th
 </html>
 ```
 
-`ayni-i18n.js` comes first and without `defer`: it starts loading the texts at once and keeps the page hidden until they are in (2.5 s at most). `data-dict` is the folder with the app's own language files, `data-langs` the languages it offers (the first one is its reference language); Ayni's own texts come from its `i18n/` folder. The one-line script applies the saved light or dark choice before the first paint. Load the other scripts with `defer`, in this order. Ayni starts once the page is parsed and the texts are in; `Ayni.ready` resolves then, and your own code that builds controls or calls Ayni waits for it (`await Ayni.ready` in a module). When the page has loaded, `ayni.js` wires up every control it finds. For content added later, call `Ayni.init(element)`; a control is never wired twice, so calling it again is safe.
+`ayni-i18n.js` comes first and without `defer`: it starts loading the texts at once and keeps the page hidden until they are in (2.5 s at most). `data-dict` is the folder with the app's own language files, `data-langs` the languages it offers (the first one is its reference language); Ayni's own texts come from its `i18n/` folder. The one-line script applies the saved light or dark choice before the first paint. Load the other scripts with `defer`, in this order. Ayni starts once the page is parsed and the texts are in; `Ayni.ready` resolves then, and your own code that builds controls or calls Ayni waits for it (`await Ayni.ready` in a module). When the page has loaded, Ayni wires up every control it finds. For content added later, call `Ayni.init(element)`; a control is never wired twice, so calling it again is safe.
 
 The markup of each control is the one in `gallery/index.html`: copy a specimen from there and change its text. The main building blocks are:
 
@@ -215,10 +215,11 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Splitter | `.split` (`.split.rows` for top and bottom) with two `.pane` and a `.splitter` between them; a `.splitter` in the page's own layout: `Ayni.splitter` |
 | Light/dark toggle | `data-theme-toggle` on a button |
 | Status bar | `.statusbar` of `span` cells, a `.bottom` tab row first; mark a message cell with `data-ayni-status` |
-| Desktop | `.desktop[data-edge]` with `main.area` and `nav.taskbar` (launcher `.btn.primary[popovertarget]`, `.chips`, `.widgets`); see `gallery/desktop.html` |
+| Desktop | `.desktop[data-edge]` (top, bottom, left, right; size `--bar-h`; `data-mode="app"` when the app has its own rule) with `main.area` and `nav.taskbar` (launcher `.btn.primary[popovertarget]`, `.chips`, `.widgets`); see `gallery/desktop.html` |
 | Window | `section.panel.window` inside `.area`: `header` with `.app` (icon and `h2`) and `[role="toolbar"]`, then `.body`. Its chip is added by Ayni |
 | Launcher | `.panel.popup.launcher[popover]` with a `.search-field` and `.apps > button[data-app]` |
-| Clock widget | `.widget.clock` (any app widget is a `.widget`) |
+| Clock widget | `.widget.clock` (any app widget is a `.widget`, a button too) |
+| Chip written by the app | `.chip[role=group]` with `button.chip-main` and `.chip-ctl`, for an app with its own windows (guideline 17.5) |
 
 A few controls need one call because they take options:
 
@@ -230,7 +231,7 @@ Ayni.searchField(field).filtered(2);                                 // the filt
 Ayni.findBar(bar, { find, step, replace, selected, onClose });       // a find bar above a document; count(at, total)
 const test = Ayni.matcher('bill "light blue" -paid');               // test(text) is true for a match; null when nothing is asked
 Ayni.longTap(list, '.row', (row, x, y) => { … });                    // long tap with the ring (lists: start picking)
-Ayni.calendar(element, (date) => { … });                             // inline calendar
+Ayni.calendar(element, (date) => { … });                             // inline calendar; no function = view only; data-weeks = week numbers
 Ayni.dateField(input, { popup, onChange: (date) => { … } });         // YYYY-MM-DD field with a calendar popup; noYear: true allows --MM-DD
 Ayni.timeField(input, { popup, onChange: (time) => { … } });         // HH:MM field with an hour and minute popup
 Ayni.dateTimeField(input, { popup, value, onChange: (date) => { … } }); // YYYY-MM-DD HH:MM
@@ -263,8 +264,8 @@ Controls tell the page what happened with DOM events that bubble, so one listene
 | `ayni:split` | `.split` or `.splitter` | `{ action, pane, message }` |
 | `ayni:more` | `.more-toggle` | `{ open }`: the user pressed it |
 | `ayni:theme` | `document` | `{ theme }`: light or dark changed (by hand, by the system, by the sun, in another tab) |
-| `ayni:desktopmode` | `document` | `{ on }`: the width crossed 1024 px; desktop mode exists only from there |
-| `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to the top or the bottom |
+| `ayni:desktopmode` | `document` | `{ on }`: the width crossed 1024 px, where desktop mode starts by default |
+| `ayni:edge` | `.desktop` | `{ edge }`: the user moved the taskbar to another edge |
 | `ayni:launch` | `.launcher` | `{ app, item }`: an app was picked |
 | `ayni:window` | `.panel.window` | `{ window, state }`: open, select, minimise, maximise, restore or close |
 | `ayni:close` | `.panel.window` | `{ window }`, before it closes; cancelable |
@@ -297,11 +298,11 @@ Ayni.icons.use({ render: (name) => `<i class="bi bi-${name}"></i>`, map: { close
 
 Any name the map leaves out keeps Ayni's own icon (or your app's `i-<name>` symbol), and the console lists the control icons the set does not map. `Ayni.icons.use(null)` goes back to the built-in set. Every icon on the page is redrawn, so the set can change at any time.
 
-A ready-made map for [Lucide](https://lucide.dev), which has the same style as Ayni's icons, is in `icons/lucide.js`. Load it after `ayni.js`, then call `Ayni.icons.use(Ayni.icons.lucide)`. It fetches Lucide's sprite from a CDN; pass `sprite` to use your own copy. The gallery's Icons tab switches the whole gallery between Ayni and Lucide.
+A ready-made map for [Lucide](https://lucide.dev), which has the same style as Ayni's icons, is in `icons/lucide.js`. Load it after `ayni-base.js`, then call `Ayni.icons.use(Ayni.icons.lucide)`. It fetches Lucide's sprite from a CDN; pass `sprite` to use your own copy. The gallery's Icons tab switches the whole gallery between Ayni and Lucide.
 
 ### Colours
 
-Each scheme, light and dark, sets its colours at the top of `ayni.css`: `--bg` (page), `--card` (panels), `--card2` (fields, chips), `--line`, `--text`, `--text-dim`, `--text-faint`, `--accent`, `--on-accent`, `--on-solid`, `--danger`, `--ok`, `--warn`, `--busy`, `--link` and `--shadow`. A few more are derived from them (`--card-head`, `--field-line`, `--accent-soft`, `--readonly-bg`, `--track`). An app overrides any of them for its own look. The same file holds the corners (`--radius-s/m/l/pill`), spacing (`--space-1` to `--space-5`), shadows (`--elev-card`, `--elev-dialog`), motion (`--tr-fast`, `--tr-move`) and type (`--font-sans`, `--font-mono`, `--field-fs`).
+Each scheme, light and dark, sets its colours at the top of `ayni-base.css`: `--bg` (page), `--card` (panels), `--card2` (fields, chips), `--line`, `--text`, `--text-dim`, `--text-faint`, `--accent`, `--on-accent`, `--on-solid`, `--danger`, `--ok`, `--warn`, `--busy`, `--link` and `--shadow`. A few more are derived from them (`--card-head`, `--field-line`, `--accent-soft`, `--readonly-bg`, `--track`). An app overrides any of them for its own look. The same file holds the corners (`--radius-s/m/l/pill`), spacing (`--space-1` to `--space-5`), shadows (`--elev-card`, `--elev-dialog`), motion (`--tr-fast`, `--tr-move`) and type (`--font-sans`, `--font-mono`, `--field-fs`).
 
 The page follows the system setting until the user picks light or dark (`ayni-theme`), or Sun mode, which follows the real sun at the place the page gives with `Ayni.theme.setPlace()`. The user's own schemes are kept as `ayni-schemes`. Every open tab follows a change at once, and `ayni:theme` fires on `document`.
 
@@ -333,8 +334,9 @@ The page follows the system setting until the user picks light or dark (`ayni-th
 | `ayni-pickers.js` | Pickers family: the list picker in its three modes, `Ayni.picker`, its submenu in a toolbar's More (needs `ayni-lists.js` for type-ahead, `ayni-menus.js` for placing) |
 | `ayni-layout.css` | Layout family: tabs (also nested), the status bar, group boxes, More fields, tags, the splitter |
 | `ayni-layout.js` | Layout family: tabs, `Ayni.tabs`, the splitter, `Ayni.splitter`, `Ayni.status` |
-| `ayni.css` | The look of the controls not yet in a family file, and the touch sizes (needs `ayni-menus.css` and `ayni-lists.css`) |
-| `ayni.js` | The behaviour of the controls not yet in a family file (needs `ayni-menus.js`, loaded before it); a family file hands its start-up to `Ayni.core.family()` |
+| `ayni-desktop.css` | Desktop family: the taskbar, chips, gadgets, windows, the launcher (needs `ayni-menus.css`); an app with its own windows loads only this one |
+| `ayni-desktop.js` | Desktop family: the taskbar, windows, `Ayni.windows`, `Ayni.setTaskbarEdge`, `Ayni.isDesktop`, the launcher, the clock (needs `ayni-menus.js`) |
+| `ayni.css` | What no family owns: the page's defaults, layout helpers, states, the touch sizes of plain rows |
 | `ayni-icons.js` | The built-in icons, only those the controls use (Nayive's drawings) |
 | `tz-geo.json` | The main city of each time zone, for Sun mode on a device that gives no place |
 | `icons/lucide.js` | Map from Ayni's icon names to [Lucide](https://lucide.dev)'s, for `Ayni.icons.use()` |

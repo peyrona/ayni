@@ -2642,11 +2642,394 @@ try {
     check('the gallery shows the new parts', await ev(`Ayni.tabs('#sheets').tabs.length === 3 && !!document.querySelector('.choices') && !!document.querySelector('.tag') && document.getElementById('mf-btn').textContent.includes('More fields')`));
   }
 
+  section('Desktop family (base + buttons + notifications + dialogs + menus + search + fields + desktop)');
+  {
+    t.logs.length = 0;
+    await t.send('Page.bringToFront');   /* A tab behind another makes no frames, and media changes wait for a frame */
+    const size = (width, height) => t.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+    await size(1280, 760);
+    const PAGE = BASE + '/tests/desktop-only.html';
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const fresh = async (url = PAGE) => { await t.open(url); await ev(`(localStorage.clear(), true)`); await t.open(url); await wait(50); };
+    await fresh();
+    check('a page with the desktop family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    check('no ayni.css, no ayni.js', await ev(`![...document.scripts].some((s) => /\\/ayni\\.js$/.test(s.src)) && ![...document.styleSheets].some((s) => /\\/ayni\\.css$/.test(s.href || ''))`));
+    let held = 0;   /* A move while the button is down says so, or Chromium ends the drag */
+    const mouse = (type, x, y, button = 'left', clickCount = 1) => {
+      if (type === 'mousePressed') held = button === 'right' ? 2 : 1; if (type === 'mouseReleased') held = 0;
+      return t.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' && !held ? 'none' : button, buttons: held, clickCount });
+    };
+    const box = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; })()`);
+    const mid = async (sel) => { const r = await box(sel); return [r.l + r.w / 2, r.t + r.h / 2]; };
+    const click = async (sel, button = 'left') => { const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y, button); await mouse('mouseReleased', x, y, button); await wait(60); };
+    const drag = async ([x, y], dx, dy) => { await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); for (let i = 1; i <= 5; i++) await mouse('mouseMoved', x + dx * i / 5, y + dy * i / 5); await mouse('mouseReleased', x + dx, y + dy); await wait(40); };
+    const KEYS = { F10: 121, Escape: 27, Enter: 13, PageUp: 33, PageDown: 34, ArrowDown: 40 };
+    const key = async (k, mods = 0) => {
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: KEYS[k], modifiers: mods });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: KEYS[k], modifiers: mods });
+      await wait(40);
+    };
+    const log = () => ev(`L.splice(0).join('|')`);
+    const FRONT = '.chip[aria-current="true"]';
+    const CHIP = (i) => `.chips > .chip:nth-child(${i})`;
+    const frontName = () => ev(`document.querySelector(${JSON.stringify(FRONT + ' .chip-main')}).textContent.trim()`);
+    const style = (sel, prop, pseudo = '') => ev(`getComputedStyle(document.querySelector(${JSON.stringify(sel)})${pseudo ? `, '${pseudo}'` : ''})[${JSON.stringify(prop)}]`);
+    const setEdge = async (e) => { await ev(`(Ayni.setTaskbarEdge(document.querySelector('.desktop'), '${e}'), true)`); await wait(40); };
+    const closePops = () => ev(`(document.querySelectorAll('[popover]').forEach((p) => p.matches(':popover-open') && p.hidePopover()), true)`);
+
+    /* ---------- Chips ---------- */
+    check('one chip per window, in order', await ev(`[...document.querySelectorAll('.chips > .chip')].map((c) => c.getAttribute('aria-label')).join()`) === 'Files,Notes');
+    check('the last window opened is selected', (await frontName()) === 'Notes' && await ev(`w2.classList.contains('active') && !w1.classList.contains('active')`));
+    check('a chip is a group of real buttons', await ev(`document.querySelector('.chip').getAttribute('role') === 'group' && [...document.querySelectorAll('.chip button')].every((b) => b.tagName === 'BUTTON') && !document.querySelector('.chip button button')`));
+    check('the selected chip shows its name and three buttons', (await style(FRONT + ' .chip-main > span:not(.icon)', 'display')) !== 'none' && (await style(FRONT + ' .chip-ctl', 'display')) === 'flex' && await ev(`document.querySelectorAll(${JSON.stringify(FRONT + ' [data-win]')}).length === 3`));
+    check('another chip shows only its icon, its name in the tooltip', (await style(CHIP(1) + ' .chip-main > span:not(.icon)', 'display')) === 'none' && (await style(CHIP(1) + ' .chip-ctl', 'display')) === 'none' && await ev(`document.querySelector(${JSON.stringify(CHIP(1) + ' .chip-main')}).dataset.tip === 'Files'`));
+    check('the selected chip has an Accent edge at the bottom', /inset/.test(await style(FRONT, 'boxShadow')) && /0px -3px/.test(await style(FRONT, 'boxShadow')), await style(FRONT, 'boxShadow'));
+    check('the selected chip is drawn on the card colour', (await style(FRONT, 'backgroundColor')) === await ev(`(() => { const p = document.createElement('i'); p.style.background = 'var(--card)'; document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c; })()`));
+    await log();
+    await click(CHIP(1) + ' .chip-main');
+    check('a click on a chip selects its window', (await frontName()) === 'Files' && await ev(`w1.classList.contains('active') && +w1.style.zIndex > +w2.style.zIndex`));
+    check('…and tells it', (await log()) === 'select Files');
+    await click(CHIP(1) + ' .chip-main');
+    check('a click on the selected chip minimises', await ev(`w1.classList.contains('min') && getComputedStyle(w1).display === 'none'`) && (await log()).startsWith('minimise Files'));
+    check('…the next window comes to the front', (await frontName()) === 'Notes');
+    check('a minimised window\'s icon is greyed', (await style(CHIP(1) + ' .chip-main', 'color')) === await ev(`(() => { const p = document.createElement('i'); p.style.color = 'var(--text-dim)'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`));
+    await click(CHIP(1) + ' .chip-main');
+    check('a click brings it back', await ev(`!w1.classList.contains('min') && w1.classList.contains('active')`));
+    await log(); const w2b = await box('#w2'); await mouse('mouseMoved', w2b.r - 30, w2b.b - 30); await mouse('mousePressed', w2b.r - 30, w2b.b - 30); await mouse('mouseReleased', w2b.r - 30, w2b.b - 30); await wait(40);
+    check('a click in a window selects it', (await frontName()) === 'Notes');
+    await ev(`(w1f.focus(), true)`); await wait(30);
+    check('the focus moving into a window selects it', (await frontName()) === 'Files');
+    await ev(`(document.activeElement.blur(), true)`);
+    await ev(`(Ayni.windows.select(w2), true)`); await log();
+
+    /* ---------- The window buttons ---------- */
+    await click(FRONT + ' [data-win="max"]');
+    check('maximise fills the area', await ev(`w2.classList.contains('max')`) && JSON.stringify(await box('#w2')) === JSON.stringify(await box('.area')), await box('#w2'));
+    check('…the button now says restore', await ev(`document.querySelector(${JSON.stringify(FRONT + ' [data-win="max"]')}).getAttribute('aria-label') === 'Restore'`));
+    check('…no resize grips while maximised', (await style('#w2 > .win-grip', 'display')) === 'none');
+    const maxBox = await box('#w2');
+    await drag(await mid('#w2 > header h2'), 40, 40);
+    check('…and the title row does not move it', JSON.stringify(await box('#w2')) === JSON.stringify(maxBox));
+    await click(FRONT + ' [data-win="max"]');
+    check('restore gives it back', await ev(`!w2.classList.contains('max') && w2.offsetWidth === 560`));
+    check('…and tells both', (await log()) === 'maximise Notes|restore Notes');
+    const [hx, hy] = await mid('#w2 > header h2');
+    await mouse('mouseMoved', hx, hy); await mouse('mousePressed', hx, hy); await mouse('mouseReleased', hx, hy); await mouse('mousePressed', hx, hy, 'left', 2); await mouse('mouseReleased', hx, hy, 'left', 2); await wait(40);
+    check('a double click on the title row maximises', await ev(`w2.classList.contains('max')`));
+    await ev(`(Ayni.windows.restore(w2), true)`); await log();
+
+    /* ---------- Moving and resizing ---------- */
+    let before = await box('#w2');
+    await drag(await mid('#w2 > header h2'), 60, 30);
+    let now = await box('#w2');
+    check('the title row moves a window', now.l === before.l + 60 && now.t === before.t + 30, { before, now });
+    before = now;
+    await drag(await mid('#w2 [role="toolbar"] .btn'), 60, 30);
+    check('a toolbar button does not', JSON.stringify(await box('#w2')) === JSON.stringify(before));
+    await drag(await mid('#w2 > header h2'), -2000, -2000);
+    now = await box('#w2');
+    check('it stops at the top left of the area', now.l === 0 && now.t === 0, now);
+    await drag(await mid('#w2 > header h2'), 3000, 3000);
+    now = await box('#w2');
+    let ar = await box('.area');
+    check('its title row stays inside the area', now.t + 44 <= ar.b + 1 && now.r <= ar.r + 1, { now, ar });
+    await ev(`(Object.assign(w2.style, { left: '120px', top: '90px' }), true)`);
+    before = await box('#w2');
+    await drag([before.r - 6, before.b - 6], 50, 40);
+    now = await box('#w2');
+    check('a corner resizes it', now.w === before.w + 50 && now.h === before.h + 40, { before, now });
+    before = now;
+    await drag([before.l + 1, before.t + 100], 30, 0);
+    now = await box('#w2');
+    check('the left edge keeps the right edge still', now.r === before.r && now.l === before.l + 30, { before, now });
+    now = await box('#w2');
+    await drag([now.r - 6, now.b - 6], -2000, -2000);
+    now = await box('#w2');
+    check('it stops at the smallest size', now.w === 260 && now.h === 160, now);
+    await drag([now.r - 6, now.b - 6], 3000, 3000);
+    now = await box('#w2'); ar = await box('.area');
+    check('it never grows past the area', now.r <= ar.r + .5 && now.b <= ar.b + .5, { now, ar });
+    await ev(`(Object.assign(w2.style, { left: '120px', top: '90px', width: '560px', height: '280px' }), true)`);
+
+    /* ---------- Closing ---------- */
+    await fresh();
+    await ev(`(keep = true, true)`); await click(FRONT + ' [data-win="close"]');
+    check('ayni:close can keep a window open', await ev(`!!document.getElementById('w2')`) && (await log()) === 'asks Notes');
+    await ev(`(keep = false, true)`); await click(FRONT + ' [data-win="close"]');
+    check('closing takes the window and its chip', await ev(`!document.getElementById('w2') && document.querySelectorAll('.chip').length === 1`));
+    check('…and selects the next', (await frontName()) === 'Files');
+    check('…and tells it', /close Notes/.test(await log()));
+
+    /* ---------- Windows added later, title and chip ---------- */
+    await fresh();
+    await ev(`(add('A'), add('B'), true)`);
+    check('a window added later gets its chip and comes to the front', (await frontName()) === 'B' && await ev(`document.querySelectorAll('.chip').length === 4`));
+    check('new windows cascade', await ev(`(() => { const w = document.querySelectorAll('.panel.window'); return parseInt(w[3].style.left) - parseInt(w[2].style.left); })()`) === 28);
+    await ev(`(Ayni.windows.title(document.querySelector('.panel.window.active'), 'Report.docx'), true)`);
+    check('title() names the title row, the chip and its tooltip', (await frontName()) === 'Report.docx' && await ev(`(() => { const c = document.querySelector(${JSON.stringify(FRONT)}); return c.getAttribute('aria-label') === 'Report.docx' && c.querySelector('.chip-main').dataset.tip === 'Report.docx' && document.querySelector('.panel.window.active h2').textContent === 'Report.docx'; })()`));
+    await ev(`(() => { const b = document.createElement('button'); b.className = 'btn'; b.id = 'mine'; b.setAttribute('aria-label', 'Mine'); Ayni.windows.chip(document.querySelector('.panel.window.active')).querySelector('.chip-ctl').prepend(b); return true; })()`);
+    check('chip() lets an app add a window button', await ev(`document.querySelector(${JSON.stringify(FRONT + ' .chip-ctl')}).children.length === 4 && mine.getBoundingClientRect().width > 0`));
+
+    /* ---------- A modeless dialog belongs to its window ---------- */
+    await fresh();
+    await ev(`(fd.show(), true)`); await wait(50);
+    check('a modeless dialog moves into the area, above its window', await ev(`fd.parentElement.classList.contains('area') && fd.classList.contains('owned') && +fd.style.zIndex > +w2.style.zIndex`));
+    check('…it has no chip', await ev(`document.querySelectorAll('.chip').length === 2`));
+    await click(FRONT + ' [data-win="min"]'); await wait(40);
+    check('…it hides with its window', await ev(`fd.hidden`));
+    await click(CHIP(2) + ' .chip-main'); await wait(40);
+    check('…and comes back with it', await ev(`!fd.hidden && fd.open`));
+    await drag(await mid('#fd > header h2'), 30, 20);
+    check('…it moves by its title row', await ev(`parseInt(fd.style.left) > 0`));
+    await click(FRONT + ' [data-win="close"]'); await wait(40);
+    check('…and closes with its window', await ev(`!fd.open`));
+
+    /* ---------- Tools that do not fit ---------- */
+    await fresh();
+    const out = () => ev(`[...document.querySelectorAll('#w2 [role="toolbar"] .fit-out')].map((b) => b.getAttribute('aria-label')).join()`);
+    check('a wide window keeps every tool, no More', (await out()) === '' && await ev(`document.querySelector('#w2 .fit-more').hidden`));
+    check('tools with no rank got their place as rank', await ev(`[...document.querySelectorAll('#w2 [role="toolbar"] > .btn')].map((b) => b.dataset.rank).join()`) === '1,2,3,4,5,1');
+    await ev(`(w2.style.width = '270px', true)`); await wait(120);
+    check('narrow: tools leave, the highest rank first, the name stays', (await out()).startsWith('Bold') === false && /Share/.test(await out()) && !/Save|Print/.test(await out()) && await ev(`!document.querySelector('#w2 .fit-more').hidden && document.querySelector('#w2 h2').getBoundingClientRect().width > 30`), await out());
+    check('…nothing is clipped', await ev(`(() => { const b = document.querySelector('#w2 .fit-more').getBoundingClientRect(), w = w2.getBoundingClientRect(); return b.right <= w.right; })()`));
+    await click('#w2 .fit-more'); await wait(120);
+    check('More lists what left', await ev(`/Share/.test(document.getElementById('ayni-menu').textContent)`), await ev(`document.getElementById('ayni-menu')?.textContent`));
+    await ev(`([...document.querySelectorAll('#ayni-menu [role="menuitem"]')].find((b) => /Share/.test(b.textContent)).click(), true)`); await wait(60);
+    check('…and runs the tool', await ev(`R.includes('Share')`), await ev(`R`));
+    await ev(`(w2.style.width = '640px', true)`); await click('#w2 .body'); await wait(150);
+    check('they come back as it widens', (await out()) === '' && await ev(`document.querySelector('#w2 .fit-more').hidden`), await out());
+
+    /* ---------- The four edges ---------- */
+    await fresh();
+    const off = (e, p, b) => (e === 'bottom' ? p.b <= b.t : e === 'top' ? p.t >= b.b : e === 'left' ? p.l >= b.r : p.r <= b.l);
+    for (const e of ['bottom', 'top', 'left', 'right']) {
+      await setEdge(e);
+      const b = await box('.taskbar'), a = await box('.area'), side = e === 'left' || e === 'right';
+      check(`${e}: the bar sits on that edge`, e === 'bottom' ? b.b === 760 && b.w === 1280 : e === 'top' ? b.t === 0 && b.w === 1280 : e === 'left' ? b.l === 0 && b.h === 760 : b.r === 1280 && b.h === 760, b);
+      check(`${e}: 48 px`, (side ? b.w : b.h) === 48, b);
+      check(`${e}: the area takes the rest and never lies under it`, off(e === 'bottom' ? 'bottom' : e, a, b) && a.w * a.h === (side ? 1232 * 760 : 1280 * 712), { a, b });
+      check(`${e}: launcher, chips, gadgets in order`, side ? (await box('#go')).b <= (await box('.chips')).t + 1 && (await box('.chips')).b <= (await box('.widgets')).t + 1 : (await box('#go')).r <= (await box('.chips')).l + 1 && (await box('.chips')).r <= (await box('.widgets')).l + 1);
+      check(`${e}: the selected chip ${side ? 'hides' : 'shows'} its name`, ((await style(FRONT + ' .chip-main > span:not(.icon)', 'display')) === 'none') === side);
+      check(`${e}: the chip stays inside the bar`, await ev(`(() => { const c = document.querySelector(${JSON.stringify(FRONT)}).getBoundingClientRect(), b = document.querySelector('.taskbar').getBoundingClientRect(); return c.left >= b.left - .5 && c.right <= b.right + .5 && c.top >= b.top - .5 && c.bottom <= b.bottom + .5; })()`));
+      check(`${e}: its buttons ${side ? 'stack under the icon' : 'sit in a row'}`, (await style(FRONT + ' .chip-ctl', 'flexDirection')) === (side ? 'column' : 'row'));
+      const shadow = await style(FRONT, 'boxShadow'), want = { bottom: '0px -3px', top: '0px 3px', left: '3px 0px', right: '-3px 0px' }[e];
+      check(`${e}: the Accent edge is on the side of the screen`, shadow.includes(want + ' 0px 0px'), shadow);
+      await click('#s-btn'); await wait(60);
+      check(`${e}: a popup opens off the bar`, off(e, await box('#tall'), await box('.taskbar')), await box('#tall'));
+      await closePops();
+      await click('#m-btn'); await wait(60);
+      const m = await box('#month');
+      check(`${e}: and stays on the screen`, off(e, m, await box('.taskbar')) && m.l >= 0 && m.t >= 0 && m.r <= 1280 && m.b <= 760, m);
+      await closePops();
+      await click('#go'); await wait(60);
+      check(`${e}: the launcher too`, off(e, await box('#apps'), await box('.taskbar')), await box('#apps'));
+      await closePops();
+    }
+    await setEdge('bottom'); await log();
+    await ev(`(Ayni.setTaskbarEdge(document.querySelector('.desktop'), 'middle'), true)`);
+    check('an edge that does not exist is ignored', await ev(`document.querySelector('.desktop').dataset.edge`) === 'bottom' && (await log()) === '');
+    await ev(`(document.querySelector('.taskbar').scrollIntoView(), true)`);
+    const gap = await box('.chips');
+    const [gx, gy] = [gap.r - 10, gap.t + gap.h / 2];
+    await mouse('mouseMoved', gx, gy); await mouse('mousePressed', gx, gy, 'right'); await mouse('mouseReleased', gx, gy, 'right'); await wait(120);
+    check('right-click on the bar offers the four edges', await ev(`[...document.querySelectorAll('#ayni-edge [role="menuitemradio"]')].map((b) => b.dataset.edge).join()`) === 'bottom,top,left,right' && await ev(`document.getElementById('ayni-edge').matches(':popover-open')`));
+    check('…with a word for each', await ev(`[...document.querySelectorAll('#ayni-edge [role="menuitemradio"]')].map((b) => b.textContent.trim()).join()`) === 'Taskbar at the bottom,Taskbar at the top,Taskbar on the left,Taskbar on the right');
+    check('…the current one ticked', await ev(`document.querySelector('#ayni-edge [data-edge="bottom"]').getAttribute('aria-checked')`) === 'true');
+    await ev(`(document.querySelector('#ayni-edge [data-edge="right"]').click(), true)`); await wait(60);
+    check('picking one moves the bar and tells it', await ev(`document.querySelector('.desktop').dataset.edge`) === 'right' && (await log()) === 'edge right');
+    check('…and it is kept', await ev(`localStorage.getItem('ayni-taskbar-edge')`) === 'right');
+    await t.open(PAGE); await wait(40);
+    check('…for next time', await ev(`document.querySelector('.desktop').dataset.edge`) === 'right');
+    await ev(`(localStorage.setItem('ayni-taskbar-edge', 'nowhere'), true)`); await t.open(PAGE); await wait(40);
+    check('a saved edge that does not exist falls back to the markup', await ev(`document.querySelector('.desktop').dataset.edge`) === 'bottom');
+    await click('#m-btn'); await wait(60);
+    const mb = await box('#m-btn');
+    await mouse('mouseMoved', mb.l + 4, mb.t + 4); await closePops();
+    await mouse('mousePressed', mb.l + 4, mb.t + 4, 'right'); await mouse('mouseReleased', mb.l + 4, mb.t + 4, 'right'); await wait(120);
+    check('right-click on a gadget does not', !(await ev(`document.getElementById('ayni-edge')?.matches(':popover-open')`)));
+
+    /* ---------- The bar's size ---------- */
+    await fresh();
+    for (const n of [36, 72]) {
+      await ev(`(document.querySelector('.desktop').style.setProperty('--bar-h', '${n}px'), true)`); await wait(40);
+      const b = await box('.taskbar');
+      check(`${n} px: the bar`, b.h === n, b);
+      check(`${n} px: the launcher button leaves a margin, the window buttons follow the bar`, n === 36 ? (await box('#go')).h === 28 && (await box(FRONT + ' [data-win="min"]')).w === 22 : (await box('#go')).h === 36 && (await box(FRONT + ' [data-win="min"]')).w === 30, [await box('#go'), await box(FRONT + ' [data-win="min"]')]);
+      check(`${n} px: the launcher button and the chip fit inside`, await ev(`[document.getElementById('go'), document.querySelector(${JSON.stringify(FRONT)})].every((el) => { const r = el.getBoundingClientRect(), a = document.querySelector('.taskbar').getBoundingClientRect(); return r.top >= a.top - .5 && r.bottom <= a.bottom + .5; })`));
+    }
+    await ev(`(document.querySelector('.desktop').style.setProperty('--bar-h', '36px'), Ayni.setTouchPreview(true), true)`); await wait(60);
+    check('touch: at least 56 px, whatever the size', (await box('.taskbar')).h === 56, await box('.taskbar'));
+    await ev(`(document.querySelector('.desktop').style.setProperty('--bar-h', '72px'), true)`); await wait(40);
+    check('touch: more when the size says so', (await box('.taskbar')).h === 72);
+    await ev(`(document.querySelector('.desktop').style.removeProperty('--bar-h'), true)`); await wait(40);
+    check('touch: window buttons are 36 px, 8 px apart', (await box(FRONT + ' [data-win="min"]')).w === 36 && (await style(FRONT + ' .chip-ctl', 'gap')) === '8px');
+    check('touch: each has a 44 px hit area', await ev(`(() => { const b = document.querySelector(${JSON.stringify(FRONT + ' [data-win="min"]')}), s = getComputedStyle(b, '::before'); return b.getBoundingClientRect().width - parseFloat(s.left) - parseFloat(s.right) >= 44; })()`));
+    check('touch: a window\'s grips are 12 px', (await style('#w2 > .win-grip[data-dir="e"]', 'width')) === '12px');
+    await setEdge('left');
+    check('touch: a side bar is 56 px wide', (await box('.taskbar')).w === 56);
+    await setEdge('bottom');
+    await ev(`(Ayni.setTouchPreview(false), true)`); await wait(40);
+
+    /* ---------- Many chips ---------- */
+    await fresh();
+    await ev(`(() => { for (let i = 0; i < 26; i++) add('W' + i); return true; })()`); await wait(80);
+    const inView = () => ev(`(() => { const c = document.querySelector('.chips').getBoundingClientRect(), f = document.querySelector(${JSON.stringify(FRONT)}).getBoundingClientRect(); return f.left >= c.left - 1 && f.right <= c.right + 1 && f.top >= c.top - 1 && f.bottom <= c.bottom + 1; })()`);
+    check('too many chips: the row scrolls, no chip is cut off for good', await ev(`(() => { const c = document.querySelector('.chips'); return c.scrollWidth > c.clientWidth && getComputedStyle(c).overflowX === 'auto'; })()`));
+    check('the selected chip is in view', await inView());
+    await ev(`(document.querySelector('.chips').scrollLeft = 0, true)`);
+    const c0 = await box('.chips');
+    await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: c0.l + 100, y: c0.t + c0.h / 2, deltaX: 0, deltaY: 120 }); await wait(120);
+    check('the wheel moves the row along the bar', (await ev(`document.querySelector('.chips').scrollLeft`)) === 120, await ev(`document.querySelector('.chips').scrollLeft`));
+    await ev(`(Ayni.windows.select(document.querySelector('.panel.window')), true)`); await wait(60);
+    check('selecting a window brings its chip into view', await inView());
+    await setEdge('left'); await ev(`(Ayni.windows.select(document.querySelectorAll('.panel.window')[20]), true)`); await wait(60);
+    check('on a side bar the column scrolls, and the chip comes into view', await ev(`(() => { const c = document.querySelector('.chips'); return c.scrollHeight > c.clientHeight; })()`) && await inView(), await ev(`(() => { const c = document.querySelector('.chips'), r = c.getBoundingClientRect(), f = document.querySelector(${JSON.stringify(FRONT)}).getBoundingClientRect(); return [c.scrollHeight, c.clientHeight, r.top, r.bottom, f.top, f.bottom, r.left, r.right, f.left, f.right]; })()`));
+    await setEdge('bottom');
+
+    /* ---------- A tall popup ---------- */
+    await fresh();
+    await size(1280, 620);
+    await click('#s-btn'); await wait(80);
+    let p = await box('#tall'), b2 = await box('.taskbar');
+    check('a popup taller than the room stops above the bar', p.b <= b2.t && p.t >= 0, { p, b2 });
+    check('…and scrolls', await ev(`(() => { const e = document.getElementById('tall'); return e.scrollHeight > e.clientHeight && getComputedStyle(e).overflowY === 'auto'; })()`));
+    await closePops();
+    await size(1280, 760);
+    await click('#s-btn'); await wait(80);
+    check('a .tall popup goes past the 320 px of others', (await box('#tall')).h > 320, await box('#tall'));
+    await closePops(); await click('#l-btn'); await wait(80);
+    check('…another keeps its 320 px, the room on the bar never lifts it', (await box('#long')).h === 320, await box('#long'));
+    await closePops(); await click('#s-btn'); await wait(80);
+    await ev(`(() => { const s = document.getElementById('size'); s.value = 60; s.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`); await wait(40);
+    check('a press inside leaves it open, and the bar follows the slider', await ev(`document.getElementById('tall').matches(':popover-open')`) && (await box('.taskbar')).h === 60);
+    await closePops();
+    await ev(`(document.querySelector('.desktop').style.removeProperty('--bar-h'), true)`);
+    await ev(`(Ayni.showPopup(document.getElementById('month'), document.getElementById('m-btn')), true)`); await wait(80);
+    check('showPopup: a popup opened from code is placed by that button', off('bottom', await box('#month'), await box('.taskbar')) && Math.abs((await box('#month')).r - (await box('#m-btn')).r) < 1, await box('#month'));
+    await ev(`(document.getElementById('w1f').focus(), document.getElementById('month').hidePopover(), true)`); await wait(60);
+    check('a popup closed while the focus is elsewhere leaves the focus there', await ev(`document.activeElement.id`) === 'w1f', await ev(`document.activeElement.id`));
+    await ev(`(document.activeElement.blur(), true)`);
+    { const open = () => ev(`document.getElementById('month').matches(':popover-open')`), r = await box('.area'), x = r.r - 20, y = r.b - 20;
+      await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y);
+      await ev(`(Ayni.showPopup(document.getElementById('month'), document.getElementById('m-btn')), true)`); await wait(40);
+      check('showPopup while a press is held: it waits for the release', !(await open()));
+      await mouse('mouseReleased', x, y); await wait(80);
+      check('…then opens, and that release does not close it', await open());
+      await closePops(); }
+
+    /* ---------- The launcher and the clock ---------- */
+    await fresh();
+    await click('#go'); await wait(80);
+    check('the launcher opens with the focus in its search field', await ev(`document.activeElement.id`) === 'app-q');
+    await ev(`(() => { const i = document.getElementById('app-q'); i.value = 'not'; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`); await wait(30);
+    check('typing filters by the search rule', await ev(`[...document.querySelectorAll('.apps > button')].filter((b) => !b.hidden).map((b) => b.dataset.app).join()`) === 'notes');
+    await key('Enter'); await wait(60);
+    check('Enter opens the first match and closes it', (await log()).endsWith('launch notes') && await ev(`!document.getElementById('apps').matches(':popover-open')`));
+    await click('#go'); await wait(80);
+    check('the most used app comes first', await ev(`document.querySelector('.apps > button').dataset.app`) === 'notes');
+    await closePops();
+    check('the clock shows the time and has a long date in its tooltip', await ev(`/\\d/.test(clk.textContent) && clk.dataset.tip.length > 8 && clk.tabIndex === 0`));
+
+    /* ---------- When it is on ---------- */
+    await fresh();
+    check('wide: it is on', await ev(`Ayni.isDesktop()`) && (await style('#small', 'display')) === 'none');
+    await size(900, 900); await wait(80);
+    check('below 1024 px it hides, and .no-desktop shows', (await style('.desktop', 'display')) === 'none' && (await style('#small', 'display')) === 'block');
+    check('…Ayni.isDesktop() says so', !(await ev(`Ayni.isDesktop()`)));
+    check('…and the page is told', /mode false/.test(await log()));
+    await ev(`(document.querySelector('.desktop').dataset.mode = 'app', true)`); await wait(30);
+    check('data-mode="app": the app has its own rule, it shows', (await style('.desktop', 'display')) === 'grid' && await ev(`Ayni.isDesktop()`));
+    await ev(`(delete document.querySelector('.desktop').dataset.mode, true)`);
+    await size(1280, 760); await wait(80);
+    check('wide again: the page is told', /mode true/.test(await log()));
+
+    /* ---------- The calendar: week numbers and view only ---------- */
+    await fresh();
+    await click('#m-btn'); await wait(60);
+    const firstWeeks = (y, m) => ev(`(view.set(new Date(${y}, ${m}, 15)), [...document.querySelectorAll('#view tbody th.cal-wk')].map((c) => c.textContent).join())`);
+    check('week numbers: January 2026 starts in week 1', (await firstWeeks(2026, 0)) === '1,2,3,4,5,6', await firstWeeks(2026, 0));
+    check('week numbers: January 2021 starts in week 53', (await firstWeeks(2021, 0)) === '53,1,2,3,4,5', await firstWeeks(2021, 0));
+    check('week numbers: December 2024 ends in week 1', (await firstWeeks(2024, 11)) === '48,49,50,51,52,1', await firstWeeks(2024, 11));
+    check('week numbers: over a summer-time change', (await firstWeeks(2026, 2)) === '9,10,11,12,13,14', await firstWeeks(2026, 2));
+    check('week numbers: a header cell over them, 8 columns', await ev(`document.querySelectorAll('#view thead th').length === 8 && document.querySelector('#view tbody tr').children.length === 8`));
+    check('view only: days are no buttons and take no focus', await ev(`document.querySelectorAll('#view td button').length === 0 && document.querySelectorAll('#view td span').length === 42 && !document.querySelector('#view td [tabindex]')`));
+    const title = () => ev(`document.querySelector('#view .cal-title').textContent.trim()`);
+    await ev(`(view.set(new Date()), true)`); await wait(30);
+    const today = await title();
+    check('view only: today is marked', await ev(`document.querySelectorAll('#view td span.today').length`) === 1);
+    check('view only: nothing is shown as picked', !(await ev(`!!document.querySelector('#view [aria-selected="true"]')`)));
+    await click('#view [data-nav="1"]');
+    check('view only: the arrow moves it', (await title()) !== today);
+    await click('#view [data-today]');
+    check('view only: Today goes back to this month', (await title()) === today);
+    await ev(`(document.querySelector('#view .cal-title').focus(), true)`);
+    await key('PageDown');
+    check('view only: Page Down moves a month', (await title()) !== today);
+    await key('PageUp');
+    check('view only: Page Up comes back', (await title()) === today);
+    await click('#view .cal-title'); await wait(30);
+    check('view only: the title opens the months', await ev(`document.querySelectorAll('#view .cal-grid button').length === 12`));
+    check('view only: the grid is as wide as the days with week numbers', (await box('#view .cal-grid')).w === 272, await box('#view .cal-grid'));
+    await click('#view .cal-title'); await wait(30);
+    check('view only: then the years', await ev(`/\\d{4}.*\\d{4}/.test(document.querySelector('#view .cal-title').textContent)`));
+    await click('#view .cal-grid button:nth-child(2)'); await wait(30);
+    check('view only: picking a year goes back to the days, with no crash', await ev(`document.querySelectorAll('#view td span').length`) === 42);
+    await closePops();
+    check('a calendar with a function still picks, week numbers or not', await ev(`(() => { document.getElementById('pickp').showPopover(); document.querySelector('#pick td button[data-d]').click(); return R.some((x) => x.startsWith('picked')) && !!document.querySelector('#pick .cal-wk'); })()`));
+    await closePops();
+    await ev(`(Ayni.setTouchPreview(true), document.getElementById('month').showPopover(), true)`); await wait(40);
+    check('touch: a view-only day is a 44 px cell', (await ev(`document.querySelector('#view td span').offsetWidth`)) === 44 && (await ev(`document.querySelector('#view td span').offsetHeight`)) === 44);
+    await closePops(); await ev(`(Ayni.setTouchPreview(false), true)`);
+
+    /* ---------- Dark ---------- */
+    await scheme(t, 'dark'); await wait(60);
+    check('dark: the selected chip takes the dark card colour', (await style(FRONT, 'backgroundColor')) === 'rgb(37, 39, 43)', await style(FRONT, 'backgroundColor'));
+    await scheme(t, 'light'); await wait(60);
+
+    /* ---------- Languages ---------- */
+    check('no untranslated keys in the desktop family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('no errors or warnings in the desktop family', t.logs.length === 0, t.logs.slice());
+    const NEW = ['ayni.desk.edge.left', 'ayni.desk.edge.right'];
+    for (const lang of ['en', 'es', 'pt', 'fr', 'de']) {
+      const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'i18n', lang + '.json'), 'utf8'));
+      check(`${lang}: the desktop family's texts are all there`, NEW.every((k) => j[k]) && !j['ayni.win.more'], NEW.filter((k) => !j[k]));
+    }
+    await ev(`(localStorage.clear(), localStorage.setItem('ayni-lang', 'es'), true)`); await t.open(PAGE); await wait(40);
+    check('es: the edge menu', await ev(`document.querySelector('#ayni-edge [data-edge="left"]').textContent.trim()`) === 'Barra de tareas a la izquierda');
+    check('es: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    await ev(`(localStorage.clear(), true)`);
+
+    /* ---------- An app with its own windows: the look only ---------- */
+    t.logs.length = 0;
+    await size(900, 1000);
+    const CSS = BASE + '/tests/desktop-css-only.html';
+    await t.open(CSS); await wait(40);
+    check('look only: starts clean, with no ayni-desktop.js', t.logs.length === 0 && await ev(`![...document.scripts].some((s) => /ayni-desktop\\.js$/.test(s.src)) && !window.Ayni.windows`), t.logs.slice());
+    check('look only: data-mode="app" shows it below 1024 px', (await style('.desktop', 'display')) === 'grid');
+    check('look only: the bar is 48 px', (await box('.taskbar')).h === 48);
+    check('look only: boxes size as Ayni\'s, with no reset from ayni.css', await ev(`['.desktop', '.taskbar', '.chips', '.chip', '.chip-main', '.widget'].every((s) => getComputedStyle(document.querySelector(s)).boxSizing === 'border-box')`));
+    check('look only: a written chip looks selected', (await style('#c1 .chip-main > span:not(.icon)', 'display')) !== 'none' && await ev(`document.querySelectorAll('#c1 .chip-ctl .btn').length === 4 && [...document.querySelectorAll('#c1 .chip-ctl .btn')].every((b) => b.getBoundingClientRect().width === 30)`));
+    check('look only: the other shows its icon, minimised grey', (await style('#c2 .chip-main > span:not(.icon)', 'display')) === 'none' && (await style('#c2 .chip-ctl', 'display')) === 'none');
+    check('look only: a button gadget has no browser look', (await style('#clock', 'borderTopWidth')) === '0px' && (await style('#clock', 'backgroundColor')) === 'rgba(0, 0, 0, 0)');
+    for (const e of ['top', 'left', 'right', 'bottom']) {
+      await ev(`(document.querySelector('.desktop').dataset.edge = '${e}', true)`); await wait(30);
+      await click('#wx'); await wait(60);
+      check(`look only: ${e}: Ayni.place opens the popup off the bar`, off(e, await box('#pop'), await box('.taskbar')), await box('#pop'));
+      await closePops();
+    }
+    check('look only: no errors or warnings', t.logs.length === 0, t.logs.slice());
+    await size(1280, 900);
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');
   check('desktop.html loads with no errors or warnings', t.logs.length === 0, t.logs.slice());
   check('desktop.html: no untranslated keys', (await t.evaluate(RAW_KEYS)).length === 0, await t.evaluate(RAW_KEYS));
+  check('desktop.html: the month and the settings gadgets', await t.evaluate(`!!document.querySelector('#month-view[data-weeks] .cal-title') && document.querySelectorAll('button.widget').length === 2 && !!document.querySelector('.panel.popup.controls.tall')`));
+  await t.open(BASE + '/gallery/index.html');
+  check('the gallery shows week numbers and a view-only calendar', await t.evaluate(`!!document.querySelector('#cal-view .cal-wk') && !document.querySelector('#cal-view td button')`));
 } catch (e) {
   failed.push('the run stopped: ' + e.message);
   console.error(e);

@@ -32,7 +32,6 @@
 <script src="../ayni-fields.js" defer></script>
 <script src="../ayni-pickers.js" defer></script>
 <script src="../ayni-layout.js" defer></script>
-<script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
 </head>
@@ -486,6 +485,9 @@
         <p class="rule">Arrow keys move by day and week, Page Up and Page Down by month, Enter picks. Click the month title for a 12-month grid, again for a grid of years; picking one returns to the days. The Today button jumps to today and picks it. This one only allows the next 60 days: other days look disabled and cannot be picked.</p>
         <div class="cal inline" id="cal-inline"></div>
         <p class="out" id="cal-out"></p></div>
+      <div class="spec"><h3>Week numbers, view only</h3>
+        <p class="rule">A calendar that only shows the month, as one opened from a clock: days take no press, the arrows, the title and Today still move it. Each row starts with its ISO week number.</p>
+        <div class="cal inline" id="cal-view" data-weeks></div></div>
       <div class="spec"><h3>States</h3>
         <p class="rule">A disabled slider or date field is faded and ignores input. A read-only one keeps its value visible on a soft tint, without border, and the calendar button goes away.</p>
         <div class="field"><label for="st-s1">Volume, disabled</label><div class="slider-row"><input id="st-s1" type="range" value="40" disabled><output for="st-s1">40%</output></div></div>

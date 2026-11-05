@@ -2,7 +2,7 @@
 
 A proposal for the programming interface of Ayni: one vanilla JavaScript class per component. These files are
 **skeletons only**: each class has its constructor, properties and methods, every body is empty, and everything is
-documented with JSDoc (`/** … */`). Nothing here is loaded by `ayni.js` yet.
+documented with JSDoc (`/** … */`). Nothing here is loaded by the library yet.
 
 ## How it works
 

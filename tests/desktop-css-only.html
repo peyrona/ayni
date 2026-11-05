@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni desktop look only</title>
+<!-- An app with its own window engine (guideline 17.4): it takes ayni-desktop.css and not ayni-desktop.js, writes the bar
+     and its chips itself, and has its own rule for when the desktop shows (data-mode="app"). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-desktop.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<style>body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); margin: 0; }</style>
+</head>
+<body>
+<div class="desktop" data-edge="bottom" data-mode="app">
+  <main class="area"><div class="my-window">A window of the app's own</div></main>
+  <nav class="taskbar" aria-label="Taskbar">
+    <button class="btn" aria-label="Menu" data-tip="Menu"><span class="icon" data-icon="apps"></span></button>
+    <div class="chips" role="group" aria-label="Open windows">
+      <div class="chip" id="c1" role="group" aria-label="Report.docx" aria-current="true">
+        <button class="chip-main"><span class="icon" data-icon="file"></span><span>Report.docx</span></button>
+        <span class="chip-ctl"><button class="btn" data-win="scale" aria-label="Scale" data-tip="Scale"><span class="icon" data-icon="more"></span></button><button class="btn" data-win="min" aria-label="Minimise" data-tip="Minimise"><span class="icon" data-icon="minimise"></span></button><button class="btn" data-win="max" aria-label="Maximise" data-tip="Maximise"><span class="icon" data-icon="maximise"></span></button><button class="btn" data-win="close" aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button></span>
+      </div>
+      <div class="chip min" id="c2" role="group" aria-label="Files"><button class="chip-main" data-tip="Files"><span class="icon" data-icon="folder"></span><span>Files</span></button><span class="chip-ctl"></span></div>
+    </div>
+    <div class="widgets" role="group" aria-label="Widgets">
+      <button class="widget" id="wx" popovertarget="pop" aria-label="Weather" data-tip="Weather"><span class="icon" data-icon="more"></span></button>
+      <button class="widget" id="clock">Mon 12:30</button>
+    </div>
+  </nav>
+</div>
+<div class="panel popup controls tall" popover id="pop" aria-label="Weather"><h4>Today</h4><p>Sun</p></div>
+</body>
+</html>

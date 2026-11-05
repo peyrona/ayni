@@ -31,7 +31,7 @@ Ayni aims for the best user experience by being consistent, congruent and intuit
 3. **Apply as you go.** Changes take effect as they are made, or when a dialog closes. Accept and Cancel buttons are avoided wherever possible. A Cancel button is added only when the user really needs a way back.
 4. **Nothing hidden that matters.** Every button has a tooltip. A disabled control still explains why it is disabled. Tooltips never hold the only copy of important text. Every view has a Help button (?) that explains its buttons in words, on every device; on touch, where there are no tooltips, it is the way to learn what a button does.
 5. **Same rules for mouse, keyboard and touch.** Every action can be reached with each of them. Touch adds a long tap, which always means "more for this thing".
-6. **Responsive by default.** The same screens work from a 320 px phone up. On touch devices every target takes at least 44 px, as an invisible hit area around what is drawn. From 1024 px wide, desktop mode with windows switches on automatically; below that there is none (see chapter 17).
+6. **Responsive by default.** The same screens work from a 320 px phone up. On touch devices every target takes at least 44 px, as an invisible hit area around what is drawn. From 1024 px wide, desktop mode with windows switches on by default; below that there is none, unless the app sets its own rule (see chapter 17).
 7. **Built on standard parts.** Plain HTML elements first (button, input, dialog, popover, fieldset), with a small shared JavaScript helper. New controls are created only when no existing one fits.
 8. **The user decides speed.** A single click never waits, except on a button that has a second action. Nothing disappears before the user can act on it: notifications pause while the pointer is on them, and errors stay until dismissed.
 
@@ -494,6 +494,10 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 | Today | Today button (bottom left) jumps to today and picks it | — |
 | Close | Click outside | Esc |
 
+**Week numbers.** A calendar can start each row with its ISO week number (week 1 holds the year's first Thursday).
+
+**View only.** A calendar that shows dates and picks nothing (a month opened from a clock): days take no press and no focus; the arrows, Page Up and Page Down, the month and year grids and Today still move it. Today only goes to today's month.
+
 **Limits.** A calendar can have a minimum and maximum date. Days, months, years and arrows outside the range look disabled and cannot be picked (for example "only the next 60 days").
 
 **On touch** each day has a 44 px cell. Below 360 px wide the days are drawn 6 px smaller inside that cell so the calendar fits a 320 px screen.
@@ -505,7 +509,7 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 | Date field | `.input-group.date-field` with an `input.input` and its calendar `.btn`; `Ayni.dateField(input, { popup, onChange, noYear })`; `noYear: true` allows a date without a year (`--MM-DD`) |
 | Time field | `.input-group.time-field` with an `input.input` and its clock `.btn`; `Ayni.timeField(input, { popup, onChange })` gives `HH:MM` |
 | Date and time | `Ayni.dateTimeField(input, { popup, value, onChange })` |
-| Inline calendar | `Ayni.calendar(element, onPick)` |
+| Inline calendar | `Ayni.calendar(element, onPick)`; without `onPick` it is view only; `data-weeks` on the element shows the week numbers |
 | The value | each call returns a controller whose `value` is `YYYY-MM-DD`, `--MM-DD` (no year), `HH:MM` or `''`, and whose `set(value)` puts one in; `onChange` gets the same, on a pick and when a typed value is taken (the field is left, or `Ayni.focusFirstError` checks it); the date helpers are in `Ayni.dates` |
 | What the page writes | only the `.input-group` and its `input.input`: Ayni makes the button, the popup (right after the field, so it lives in the field's dialog), the error message and the placeholder, in the page's language, when the page leaves them out |
 
@@ -647,7 +651,7 @@ Rows are 44 px tall on touch. The tree view follows the same states (chapter 16)
 
 ## 9. Menus, popups and toolbars
 
-Menus and popups are Panels that open next to what opened them, in the top layer: above everything, a dialog too. Under a button they hang below it (above it when there is no room), lined up with the button's left edge, or with its right edge when the button sits in the right half of the screen; a pop-up menu opens at the pointer. Only one is open at a time (a submenu stays with its menu). They close with Esc, a press outside, a pick, Tab (menus), when the page scrolls or resizes (9.6), and when the window loses the focus (another window or frame was clicked).
+Menus and popups are Panels that open next to what opened them, in the top layer: above everything, a dialog too. Under a button they hang below it (above it when there is no room), lined up with the button's left edge, or with its right edge when the button sits in the right half of the screen; beside a side taskbar they open next to it (17.1); a pop-up menu opens at the pointer. Only one is open at a time (a submenu stays with its menu). They close with Esc, a press outside, a pick, Tab (menus), when the page scrolls or resizes (9.6), and when the window loses the focus (another window or frame was clicked).
 
 **The page keeps its focus.** Opening a menu or popup with the mouse or a finger, or pressing inside one, never takes the focus off the page: an editor's caret and a sheet's selected cells stay where they were, so the command acts on them. Fields inside a popup take the focus as usual. Opened from the keyboard, the first item takes the focus, and closing gives it back to the button.
 
@@ -682,7 +686,7 @@ Menus and popups are Panels that open next to what opened them, in the top layer
 
 ### 9.5 Popups with controls
 
-- A popup can hold any control: text fields, search fields, radio buttons, switches, sliders, check boxes, lists. Changes apply as they are made (no Accept button). When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it.
+- A popup can hold any control: text fields, search fields, radio buttons, switches, sliders, check boxes, lists. Changes apply as they are made (no Accept button). When the content is taller or wider than the popup, it scrolls. Esc or a click outside closes it. Headings split a long popup into groups, and a popup of settings may grow to the height of the screen.
 - **Tool group:** one toolbar button stands for a run of related tools (the six alignments, the borders) and opens a popup holding them. They are the real tools, with their own tooltips and states; pressing one runs it and closes the popup. While a toggle inside is on (Wrap text), the group button shows as on too, so the state can be seen with the popup shut.
 
 ### 9.6 Closing on scroll and resize
@@ -731,7 +735,7 @@ The title row of a view or window shows what you look at on the left and what yo
 | Pop-up menu on an area | `Ayni.contextMenu(area, { menu, target, keyTarget, onDrag })` |
 | Long tap that picks | `Ayni.longTap(area, selector, (item, x, y) => …)`: the same ring and timing; the click its release leaves is swallowed |
 | Shortcut text | `Ayni.keyLabel('Ctrl+C')`: "Ctrl+C", or "⌘C" on Mac |
-| A popup | `.panel.popup.controls[popover]`, opened with `popovertarget` |
+| A popup | `.panel.popup.controls[popover]`, opened with `popovertarget`; `h4` heads a group; `.tall` lets it grow to the height of the screen; `Ayni.showPopup(popup, button)` opens one from code, as its button would |
 | Tool group | `.panel.popup.tools[popover]` holding the real `.btn` tools; `data-lit-by="id id"` on the group button names the toggles that light it |
 | Toolbar | `[role="toolbar"]` (one Tab stop, wired by Ayni) with `.tb-group` children; the lines between groups are Ayni's |
 | Title row toolbar that fits | `data-rank="n"` on each tool or group (the Search button of a folded search: `data-search`, so it stays while nothing is picked); `Ayni.fitBar(row, { more: () => items, btn })` adds the app's own More items and can use the app's own More button |
@@ -1125,41 +1129,89 @@ Inside a side pane the tree sits plain on the pane and fills it; in a form or a 
 
 ## 17. Desktop mode
 
-Desktop mode gives Ayni a desktop like other operating systems: windows on a work area, and a taskbar. From 1024 px wide it switches on automatically. **Below 1024 px there is no desktop mode**: no taskbar and no windows; the app shows its normal screens, as on phones and tablets. Two components make it: the **taskbar** and the **window**. The gallery's [desktop page](../gallery/desktop.html) shows them working.
+Desktop mode gives Ayni a desktop like other operating systems: windows on a work area, and a taskbar. Two components make it: the **taskbar** and the **window**. The gallery's [desktop page](../gallery/desktop.html) shows them working.
+
+**When it is on.** By default from 1024 px wide; below that there are no taskbar and no windows, and the app shows its normal screens. An app that needs another rule (a height too, a mouse, a tablet held upright, the user's own choice) sets it itself: the desktop then shows whatever the width, and leaving it is the app's job. A phone never gets a desktop.
 
 ### 17.1 Taskbar
 
-- One bar, always visible, kept clean: only the launcher button at the left, the clock at the right, and the window chips filling everything between them. An app can add more gadgets (weather, network...) on either side of the clock.
-- **The user decides whether it sits at the top or the bottom** of the screen (left and right are not offered). The choice is made from the taskbar's pop-up menu (right-click, long tap, Shift+F10 or the Menu key) and is kept for next time. Bottom is the default.
+- One bar, always visible, kept clean: only the launcher button at the start, the gadgets at the end, and the window chips filling everything between them. Gadgets are the clock and whatever else the app adds (weather, battery, countdowns...).
+- **The user decides which edge of the screen it sits on: bottom, top, left or right.** Bottom is the default, and the choice is kept for next time. The choice is made from the taskbar's pop-up menu (right-click, long tap, Shift+F10 or the Menu key), or in the app's own settings when it has them; never in both, one control per job.
+- **Size.** 48 px by default; an app may let the user pick from 36 to 72 px. On touch it is at least 56 px. On a side edge this size is its width.
+- **On a side edge** the bar is a column: launcher on top, chips below it, gadgets at the foot, each gadget stacking its parts.
 - Windows never cover it. A maximised window fills the space the taskbar leaves.
-- When there are more chips than fit, the window selector scrolls; its scrollbar shows only when needed.
+- When there are more chips than fit, the window selector scrolls, along the bar; its scrollbar shows only when needed, and never on a side bar, which has no room for one (the wheel or a finger moves it). Every chip can always be reached.
+- **What opens from the bar opens off it**, on the desktop's side: above a bottom bar, below a top bar, beside a side bar. A popup taller than the room it has scrolls; it never covers the bar.
 
 ### 17.2 Applications launcher
 
-- A round, filled button at the start of the taskbar (the launcher is the taskbar's default button). Like every button that opens a popup, it shows the small triangle.
+- A button at the start of the taskbar: round and filled, the launcher being the taskbar's default button, or the app's own logo. Like every button that opens a popup, it shows the small triangle; a logo does not.
 - It opens a popup with a search field at the top and the apps below it, as a list with icon and name. The most used apps come first.
 - Typing filters the list, by the search rule (4.5). Down and Up move between the field and the apps, Enter in the field opens the first match, and typing a letter while on the list goes back to the field.
 - Picking an app closes the popup and opens the app. Esc or a click outside closes it, like any popup.
+- An app may use its own launcher instead (a page of tiles); it still opens from this button and off the bar.
 
 ### 17.3 Window
 
 - A window is a Panel, with rounded corners. It has two parts: the **title row** and the **content**.
 - The title row starts at the top left with the app's icon and the app's name, followed by the app's toolbar.
 - **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
-- **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the app's name and the three window buttons: minimise, maximise (restore while maximised) and close. A minimised window's icon is greyed.
+- **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the name of what the window shows (the document, or else the app) and the window buttons: minimise, maximise (restore while maximised) and close. An app may add window buttons of its own. On a side bar no chip shows a name, there is no room: the selected chip stacks its buttons under the icon.
+- **Chip states.** The selected chip is drawn on the card colour, with a 3 px Accent edge on the side of the screen. A minimised window's icon is greyed. An app may put a small mark on a chip (unread messages, a question waiting).
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
 - **A toolbar that does not fit:** the app's icon and name never shrink. The tools leave by rank into the More (⋮) menu, as in every title row (9.9). They come back as the window widens.
-- **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. There is no snapping: dragging to a screen edge does nothing special. The title row always stays inside the work area.
+- **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. Dragging to a screen edge does nothing special (windows that hold whole pages may offer it: 17.4). The title row always stays inside the work area.
 - **Modeless dialogs** belong to the window that opened them: such a dialog floats above its window inside the work area, moves by its title row, has no chip of its own, hides while its window is minimised and closes when its window closes. Modal dialogs dim the whole screen, as everywhere (10.3 says when they fill it).
 - Selecting a window (clicking it, its chip, or moving the focus into it) brings it to the front. The selected window's title row keeps the heading tint; the others take the content colour, and their app icon greys.
 
-### 17.4 For developers
+### 17.4 Windows that hold whole pages
 
-Markup: `.desktop[data-edge]` holds `main.area` (the windows) and `nav.taskbar` (the launcher `.btn.primary[popovertarget]`, `.chips`, and `.widgets` with the clock and any other gadget). A window is `section.panel.window` with `header > .app` (icon and `h2`) and `header > [role="toolbar"]`, then `.body`. The launcher is `.panel.popup.launcher` with a `.search-field` and `.apps > button[data-app]`. The clock is `.widget.clock`. Ayni adds the chips and the edge menu itself; a window added later is wired with `Ayni.init(window)`.
+An app made of separate pages shows each in a frame, one per window. **Ayni's code does not do this**: the window engine of such an app is the app's own, because it has to reach into its own pages and knows what they save. The app takes the taskbar, chips and gadgets from Ayni (17.5) and follows these rules.
 
-Events: `ayni:edge { edge }`, `ayni:launch { app, item }`, `ayni:window { window, state }` (open, select, minimise, maximise, restore, close) and `ayni:close`, cancelable, before a window closes. From code: `Ayni.windows.select(w)`, `minimise`, `maximise`, `restore`, `close`, and `Ayni.setTaskbarEdge(desktop, edge)`. The edge is kept in localStorage as `ayni-taskbar-edge`, the launch counts as `ayni-launch`.
+- **Title row.** The page's own top row is the title row, when it holds the app's icon and name; the window adds one only when the page has none. A press on an empty spot of that row moves the window once it has moved 4 px, so a click on a file name still edits it. A double-click maximises.
+- **Frames take the pointer away.** While a window moves or resizes, frames ignore the pointer. A press or the focus inside a frame selects its window, and closes what is open on the bar.
+- **Closing may wait.** The window asks its page first; the page may ask the user, with the window in front, and may keep it open.
+- **Modal dialogs** belong to the page, so they dim only their window. While that window is behind others, its chip shows a mark, so the question is not forgotten.
+- **One document, one window.** A file already open is brought to the front, never opened in a second window that would save over the first.
+- **Windows come back.** Open windows return after a reload with their pages, places and sizes. A new window of an app opens where that app's last one closed.
+- **Touch.** The on-screen keyboard shortens the front window so the field stays in sight; only the look changes, never the saved size.
+- **Switching.** Alt pressed and let go alone shows every window, the last used first. Keys typed in a frame never reach the page around it, so every frame is listened to.
 
-Below 1024 px `ayni.css` hides `.desktop`; anything marked `.no-desktop` shows only there. `Ayni.isDesktop()` says whether desktop mode is on, and `ayni:desktopmode { on }` fires on `document` when the width crosses 1024 px.
+Three options an app may offer, per device, with any of them left out:
+
+- **Sticky windows.** A window dropped on an edge of the work area takes that half; a dotted area shows it first. Dragged away, it gets its old size back.
+- **Tile.** One switch for the whole desk: every window not minimised gets a place, none on top of another, none left over. Columns of equal width, and stacks of equal height inside them, the first windows in the bigger places. Windows opened or closed deal the desk out again. Switched off, every window goes back exactly as it was. On touch, a screen held upright tiles by itself.
+- **Scale.** Per window: made smaller than it was at full size, the window shrinks like a picture of itself, instead of rearranging its content. Maximised, it is always at full size.
+
+### 17.5 For developers
+
+Markup: `.desktop[data-edge]` (`top`, `bottom`, `left` or `right`) holds `main.area` (the windows) and `nav.taskbar` (the launcher `.btn.primary[popovertarget]`, `.chips`, and `.widgets` with the clock and any other gadget). A window is `section.panel.window` with `header > .app` (icon and `h2`) and `header > [role="toolbar"]`, then `.body`. The launcher is `.panel.popup.launcher` with a `.search-field` and `.apps > button[data-app]`. The clock is `.widget.clock`; any gadget is a `.widget`, a button too. Ayni adds the chips and the edge menu itself; a window added later is wired with `Ayni.init(window)`.
+
+The bar's size is `--bar-h` on `.desktop`.
+
+Events: `ayni:edge { edge }`, `ayni:launch { app, item }`, `ayni:window { window, state }` (open, select, minimise, maximise, restore, close) and `ayni:close`, cancelable, before a window closes. From code: `Ayni.windows.select(w)`, `minimise`, `maximise`, `restore`, `close`, `title(w, text)` (names what the window shows), `chip(w)` (the chip, to add the app's own buttons to its `.chip-ctl`), and `Ayni.setTaskbarEdge(desktop, edge)`. The edge is kept in localStorage as `ayni-taskbar-edge`, the launch counts as `ayni-launch`.
+
+By default `.desktop` hides below 1024 px and anything marked `.no-desktop` shows only there. `Ayni.isDesktop()` says whether desktop mode is on, and `ayni:desktopmode { on }` fires on `document` when the width crosses 1024 px. `data-mode="app"` on `.desktop` means the app has its own rule: nothing hides it.
+
+**An app with its own window engine (17.4)** loads `ayni-desktop.css` and not `ayni-desktop.js`, and writes the bar itself:
+
+```html
+<div class="desktop" data-edge="bottom" data-mode="app">
+  <main class="area"></main>
+  <nav class="taskbar">
+    <button class="btn">…</button>
+    <div class="chips">
+      <div class="chip" role="group" aria-label="Report.docx" aria-current="true">
+        <button class="chip-main"><span class="icon" data-icon="file"></span><span>Report.docx</span></button>
+        <span class="chip-ctl"><button class="btn" data-win="min" aria-label="Minimise" data-tip="Minimise">…</button>…</span>
+      </div>
+    </div>
+    <div class="widgets"><button class="widget">…</button></div>
+  </nav>
+</div>
+```
+
+`aria-current="true"` marks the selected chip, `.min` a minimised one. `.chip-ctl` holds any number of `.btn`.
 
 ## 18. To be defined
 
@@ -1249,6 +1301,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | A combo box that keeps any text, for a long fixed list (time zones) | Replaced: the filtered list, which only takes an item of the list (7.1) |
 | Up and Down changing a closed drop-down's value unseen | Dropped: they open the list (7.2) |
 | A filled field, or an Accent wash under the pointer, for a list picker in a toolbar | Not taken: no fill, a thin line, the grey tint of the toolbar's buttons (7.3) |
+| The taskbar only at the top or the bottom | Replaced: any of the four edges (17.1) |
+| Desktop mode decided by the width alone | Replaced: the default; an app may set its own rule (chapter 17) |
+| A selected chip with only the icon and its buttons | Not taken: it also names what the window shows, except on a side bar (17.3) |
+| Snapping or tiling for every window | Not taken: options for windows that hold whole pages (17.4); plain windows move freely |
+| A window engine for pages inside Ayni | Not taken: it would need a hook for each thing done inside a page; the app keeps its engine and takes the bar from Ayni (17.4) |
+| A year box in the calendar | Not taken: the title steps to months, then years (6.4) |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |
 | Text labels on every button | Not used: icon-only round buttons with tooltips; text buttons only for wide calls to action (3.9) |

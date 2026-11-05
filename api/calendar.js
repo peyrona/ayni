@@ -2,7 +2,8 @@
 
 /**
  * A calendar (`.cal`), inline or inside the popup of a date field. Its title switches from days to months to years;
- * picking a month or a year goes back to the days. Days outside min and max can't be picked.
+ * picking a month or a year goes back to the days. Days outside min and max can't be picked. Without a pick function
+ * it is view only: days take no press and no focus, moving through months and years still works.
  * @extends Field
  * @fires ayni:change  detail `{ date }` when a day is picked.
  */
@@ -13,6 +14,7 @@ class Calendar extends Field {
    * @param {Date}   [options.value]  Selected day; today when left out.
    * @param {Date}   [options.min]    Earliest day (also data-min, YYYY-MM-DD).
    * @param {Date}   [options.max]    Latest day (also data-max, YYYY-MM-DD).
+   * @param {boolean} [options.weeks]  Each row starts with its ISO week number (also data-weeks).
    */
   constructor(element, options) {}
 

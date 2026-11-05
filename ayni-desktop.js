@@ -1,38 +1,32 @@
-/* Ayni library 0.1.0: the behaviour of the Ayni controls not yet split into their own family file. Plain JavaScript,
-   no build step, evergreen browsers 2024+. Load it after ayni-base.js and ayni-menus.js (its menus, toolbars and
-   popup placing):
-     <script src="ayni-base.js" defer></script>
+/* Ayni library 0.1.0, desktop family: the taskbar, windows and their modeless dialogs, the applications launcher and
+   the clock widget. Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-menus.js:
      <script src="ayni-menus.js" defer></script>
-     <script src="ayni.js" defer></script>
-   When the page has loaded it wires up every control it finds. Ayni.init(root) wires up controls added later
-   (each control is wired once). Controls tell the app what happened with DOM events that bubble (ayni:change,
-   ayni:action, ayni:press, ...), listed in README.md. Everything else the app uses lives on window.Ayni. */
+     <script src="ayni-desktop.js" defer></script>
+   The look is in ayni-desktop.css; the rules are chapter 17 of the guidelines. An app with its own window engine
+   (windows that hold whole pages, 17.4) loads ayni-desktop.css and not this file. */
 (() => {
 'use strict';
 const { $, $$, icon, setIcon } = Ayni;
-const { fire, wired, once, each, tx, iconName, layer, retip } = Ayni.core;
-/* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js, which loads before this file */
-const { initMenu, initToolbar, contextMenu, place } = Ayni.core.menus;
+const { fire, once, each, tx, iconName, layer, retip } = Ayni.core;
+/* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js */
+const { initMenu, contextMenu, place } = Ayni.core.menus;
 const invoker = () => Ayni.core.menus.invoker();
 
 /* A cancelable event: false when the page called preventDefault() */
 const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, cancelable: true }));
 
-/* Shared layers, created when the page does not have them yet */
-
-
-
-/* ---------- Desktop: taskbar and windows ---------- */
+/* ---------- Taskbar ---------- */
 /* <div class="desktop" data-edge="bottom"> holds <main class="area"> with the windows and <nav class="taskbar"> with
-   the launcher button at the left, <div class="chips"> and <div class="widgets"> (the clock, and any other gadget
-   on either side of it) at the right. The user puts the taskbar at the top or the bottom from its pop-up menu
-   (right-click, long tap, Shift+F10); the choice is kept in localStorage
-   ('ayni-taskbar-edge') and fires ayni:edge { edge } on the desktop. */
-const EDGES = ['top', 'bottom'];
-/* Desktop mode exists only from 1024 px wide (ayni.css hides .desktop below). Ayni.isDesktop() tells, and
-   ayni:desktopmode { on } fires on document when the width crosses 1024 px */
+   the launcher button at the start, <div class="chips"> and <div class="widgets"> (the clock, and any other gadget
+   on either side of it) at the end. The user puts the taskbar on any edge from its pop-up menu (right-click, long
+   tap, Shift+F10); the choice is kept in localStorage ('ayni-taskbar-edge') and fires ayni:edge { edge } on the
+   desktop. */
+const EDGES = ['bottom', 'top', 'left', 'right'];
+/* By default desktop mode starts at 1024 px wide (ayni-desktop.css hides .desktop below); data-mode="app" on .desktop
+   means the app has its own rule and nothing hides it. Ayni.isDesktop() tells, and ayni:desktopmode { on } fires on
+   document when the width crosses 1024 px */
 const wideMq = matchMedia('(min-width: 1024px)');
-const isDesktop = () => wideMq.matches;
+const isDesktop = () => wideMq.matches || !!$('.desktop[data-mode="app"]');
 wideMq.addEventListener('change', () => fire(document, 'ayni:desktopmode', { on: wideMq.matches }));
 let edgeMenu, edgeDesk, zTop = 10;
 const setEdge = (desk, edge, save = true) => {
@@ -56,11 +50,18 @@ const initDesktop = (desk) => {
   setEdge(desk, [saved, desk.dataset.edge].find((x) => EDGES.includes(x)) || 'bottom', false);
   const t = () => { edgeDesk = desk; return { name: tx('desk.taskbar'), back: bar }; };
   contextMenu(bar, { menu: edgeMenu, target: (e) => (e.target.closest('button, .widget') ? null : t()), keyTarget: t });
+  /* The wheel moves a row of chips along the bar; a column scrolls by itself */
+  $('.chips', desk)?.addEventListener('wheel', (e) => {
+    const c = e.currentTarget;
+    if (['left', 'right'].includes(desk.dataset.edge) || c.scrollWidth <= c.clientWidth || !e.deltaY) return;
+    e.preventDefault(); c.scrollLeft += e.deltaY;
+  }, { passive: false });
 };
 
 /* A window (section.panel.window inside .area): a title row (app icon and name, then the app's toolbar) and the
-   content. Ayni adds a chip for it to the taskbar; only the selected window's chip shows the controls (minimise,
-   maximise or restore, close), and windows have none of their own. Clicking a window or its chip selects it and
+   content. Ayni adds a chip for it to the taskbar; only the selected window's chip shows the name and the controls
+   (minimise, maximise or restore, close; an app adds its own to Ayni.windows.chip(w)), and windows have none of their
+   own. Ayni.windows.title(w, text) names what the window shows. Clicking a window or its chip selects it and
    brings it to the front; clicking the selected chip minimises it. The title row moves the window, any edge or
    corner resizes it (no snapping), and its title row always stays inside the area; double-click on the title row
    maximises or restores. Events: ayni:window { window, state } with state open, select, minimise, maximise,
@@ -73,6 +74,7 @@ const selectWin = (desk, w) => {
   winsOf(desk).forEach((x) => { x.classList.toggle('active', x === w); chipOf.get(x)?.setAttribute('aria-current', x === w); });
   if (!w) return;
   w.classList.remove('min'); chipOf.get(w)?.classList.remove('min'); w.style.zIndex = ++zTop;
+  chipOf.get(w)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   ownedOf(w).forEach((d) => { d.hidden = false; d.style.zIndex = ++zTop; });
   winState(w, 'select');
 };
@@ -90,8 +92,9 @@ const maximiseWin = (w, on = !w.classList.contains('max')) => {
 };
 const closeWin = (w) => {
   if (!ask(w, 'ayni:close', { window: w })) return;
-  const desk = w.closest('.desktop'); ownedOf(w).forEach((d) => d.close('close')); chipOf.get(w)?.remove(); w.remove();
-  winState(w, 'close'); selectWin(desk, frontWin(desk));
+  /* Told while it is still in the page: an event from a removed element never reaches the desktop or the document */
+  const desk = w.closest('.desktop'); ownedOf(w).forEach((d) => d.close('close')); winState(w, 'close'); chipOf.get(w)?.remove(); w.remove();
+  selectWin(desk, frontWin(desk));
 };
 /* The title row (head) moves el inside area, but not from its buttons or fields; the title row always stays inside */
 const dragBy = (el, head, area, can = () => true) => head.addEventListener('pointerdown', (e) => {
@@ -170,37 +173,10 @@ const initWindow = (w) => {
     const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up); };
     g.addEventListener('pointermove', move); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
   });
+  /* Tools that do not fit leave by rank into More (9.9); a tool with no rank has its place in the row, last out first */
   const tools = $(':scope > [role="toolbar"]', head);
-  if (tools) { fitTools(tools); if (once('toolbar', tools)) initToolbar(tools); }
+  if (tools) { [...tools.children].forEach((x, i) => { if (!x.dataset.rank) x.dataset.rank = i + 1; }); Ayni.fitBar(head); }
   winState(w, 'open'); selectWin(desk, w);
-};
-
-/* A window's toolbar that does not fit: the app's icon and name never shrink; the tools that do not fit move, from the
-   end, into a round "more" button at the end of the row, whose menu lists them (icon and tooltip text) and runs them.
-   They come back as the window widens */
-let fitN = 0;
-const fitTools = (bar) => {
-  const id = 'ayni-more-' + ++fitN;
-  bar.insertAdjacentHTML('beforeend', `<button class="btn more" popovertarget="${id}" aria-haspopup="menu" aria-label="${tx('win.more')}" data-tip="${tx('win.more')}" hidden>${icon('more')}</button>`);
-  const more = $(':scope > .more', bar);
-  const menu = layer(id, `<div class="panel menu" popover id="${id}" role="menu" aria-label="${tx('win.more')}"></div>`);
-  initMenu(menu); once('menu', menu);
-  const tools = () => $$(':scope > button:not(.more)', bar);
-  /* The row fits when its last visible button ends inside the toolbar */
-  const fits = () => { const v = $$(':scope > button:not([hidden])', bar).pop(); return !v || v.getBoundingClientRect().right <= bar.getBoundingClientRect().right + .5; };
-  const fit = () => {
-    tools().forEach((t) => (t.hidden = false)); more.hidden = true;
-    if (fits()) { if (more.tabIndex === 0) { more.tabIndex = -1; if (tools()[0]) tools()[0].tabIndex = 0; } menu.innerHTML = ''; return; }
-    more.hidden = false;
-    for (const t of tools().reverse()) { if (fits()) break; t.hidden = true; }
-    /* The toolbar's one Tab stop must stay on a visible button */
-    const all = [...tools(), more];
-    if (!all.some((t) => !t.hidden && t.tabIndex === 0)) { all.forEach((t) => (t.tabIndex = -1)); all.find((t) => !t.hidden).tabIndex = 0; }
-    menu.innerHTML = tools().filter((t) => t.hidden).map((t) => `<button role="menuitem" data-tool="${tools().indexOf(t)}">${icon(iconName($('.icon', t)) || 'more')}<span></span></button>`).join('');
-    $$('[data-tool]', menu).forEach((it) => { const t = tools()[it.dataset.tool]; $('span:not(.icon)', it).textContent = t.dataset.tip || t.getAttribute('aria-label'); it.setAttribute('aria-disabled', t.getAttribute('aria-disabled') || 'false'); });
-  };
-  menu.addEventListener('click', (e) => { const it = e.target.closest('[data-tool]'); if (it) tools()[it.dataset.tool]?.click(); });
-  new ResizeObserver(fit).observe(bar.parentElement);
 };
 
 /* Launcher (.panel.popup.launcher): a search field (.search-field) and the apps (.apps > button[data-app]), most used
@@ -249,7 +225,6 @@ const initClock = (el) => {
   tick(); setInterval(tick, 15000);
 };
 
-/* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
   each(root, '.desktop', 'desktop', initDesktop);
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);
@@ -260,7 +235,12 @@ const init = (root = document) => {
 
 Object.assign(Ayni, {
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
-    restore: (w) => maximiseWin(w, false), close: closeWin },
+    restore: (w) => maximiseWin(w, false), close: closeWin, chip: (w) => chipOf.get(w) || null,
+    title: (w, text) => {
+      const h = $(':scope > header h2', w), chip = chipOf.get(w), main = chip && $('.chip-main', chip);
+      if (h) h.textContent = text;
+      if (main) { $('span:not(.icon)', main).textContent = text; main.dataset.tip = text; chip.setAttribute('aria-label', text); retip(main); }
+    } },
   setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,
 });
 Ayni.core.family({ init });

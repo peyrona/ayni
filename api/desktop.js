@@ -2,8 +2,9 @@
 
 /**
  * The desktop (`.desktop`): the window area (`.area`) and the taskbar. Windows live in the area and never cover the
- * taskbar; a maximised window fills the area. Desktop mode exists only from 1024 px wide: below that the desktop is
- * hidden and the app shows its normal screens (`Ayni.isDesktop()`, `ayni:desktopmode`).
+ * taskbar; a maximised window fills the area. By default desktop mode exists only from 1024 px wide: below that the
+ * desktop is hidden and the app shows its normal screens (`Ayni.isDesktop()`, `ayni:desktopmode`). `data-mode="app"`
+ * on the desktop means the app has its own rule, and nothing hides it.
  * @extends Component
  * @fires window  { window, state } when a window opens, is selected, minimised, maximised, restored or closed.
  */

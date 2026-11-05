@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni desktop family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus, fields and desktop families, and nothing else
+     (no ayni.css). window.L holds everything the desktop tells, in order; add(name, tools) makes one more window; keep =
+     true makes a window refuse to close. #demo opens the month (for screenshots). -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<link rel="stylesheet" href="../ayni-search.css">
+<link rel="stylesheet" href="../ayni-desktop.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../gallery/demo-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-search.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
+<script src="../ayni-desktop.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = []; window.keep = false; window.R = [];
+  const nm = (w) => w.querySelector('h2')?.textContent;
+  document.addEventListener('ayni:window', (e) => L.push(`${e.detail.state} ${nm(e.detail.window)}`));
+  document.addEventListener('ayni:close', (e) => { L.push(`asks ${nm(e.detail.window)}`); if (keep) e.preventDefault(); });
+  document.addEventListener('ayni:edge', (e) => L.push(`edge ${e.detail.edge}`));
+  document.addEventListener('ayni:launch', (e) => L.push(`launch ${e.detail.app}`));
+  document.addEventListener('ayni:desktopmode', (e) => L.push(`mode ${e.detail.on}`));
+  document.querySelectorAll('#w2 [role="toolbar"] .btn').forEach((b) => b.addEventListener('click', () => R.push(b.getAttribute('aria-label'))));
+  window.view = Ayni.calendar($('#view'));
+  window.pick = Ayni.calendar($('#pick'), (d) => R.push('picked ' + Ayni.dates.iso(d)));
+  window.add = (name, tools = '') => {
+    const w = document.createElement('section'); w.className = 'panel window'; w.setAttribute('aria-label', name);
+    w.style.width = '300px'; w.style.height = '200px';
+    w.innerHTML = `<header><span class="app">${Ayni.icon('file')}<h2>${name}</h2></span>${tools}</header><div class="body">x</div>`;
+    $('.area').append(w); Ayni.init(w); return w;
+  };
+  $('#size').addEventListener('input', (e) => $('.desktop').style.setProperty('--bar-h', e.target.value + 'px'));
+  if (location.hash === '#demo') $('#m-btn').click();
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); margin: 0; }
+  #tall p, #long p { margin: 0; height: 200px; flex: none; }
+</style>
+</head>
+<body>
+<p class="no-desktop" id="small">Below 1024 px</p>
+<div class="desktop" data-edge="bottom">
+  <main class="area" aria-label="Desktop">
+    <section class="panel window" id="w1" aria-labelledby="w1n" style="left: 40px; top: 32px; width: 460px; height: 300px">
+      <header><span class="app"><span class="icon" data-icon="folder"></span><h2 id="w1n">Files</h2></span>
+        <div role="toolbar" aria-label="Files tools"><button class="btn" aria-label="New" data-tip="New"><span class="icon" data-icon="new"></span></button></div></header>
+      <div class="body"><p>Files</p><input class="input" id="w1f" aria-label="In the window"></div>
+    </section>
+    <section class="panel window" id="w2" aria-labelledby="w2n" style="left: 120px; top: 90px; width: 560px; height: 280px">
+      <header><span class="app"><span class="icon" data-icon="edit"></span><h2 id="w2n">Notes</h2></span>
+        <div role="toolbar" aria-label="Notes tools">
+          <button class="btn" aria-label="Save" data-tip="Save"><span class="icon" data-icon="save"></span></button>
+          <button class="btn" aria-label="Bold" data-tip="Bold"><span class="icon" data-icon="bold"></span></button>
+          <button class="btn" aria-label="Italic" data-tip="Italic"><span class="icon" data-icon="italic"></span></button>
+          <button class="btn" aria-label="Underline" data-tip="Underline"><span class="icon" data-icon="underline"></span></button>
+          <button class="btn" aria-label="Share" data-tip="Share"><span class="icon" data-icon="share"></span></button>
+          <button class="btn" data-rank="1" aria-label="Print" data-tip="Print"><span class="icon" data-icon="print"></span></button>
+        </div></header>
+      <div class="body"><p>Notes</p></div>
+    </section>
+  </main>
+  <nav class="taskbar" aria-label="Taskbar">
+    <button class="btn primary" id="go" popovertarget="apps" aria-label="Applications" data-tip="Applications"><span class="icon" data-icon="apps"></span></button>
+    <div class="chips" role="group" aria-label="Open windows"></div>
+    <div class="widgets" role="group" aria-label="Widgets">
+      <button class="widget" id="m-btn" popovertarget="month" aria-label="This month" data-tip="This month"><span class="icon" data-icon="calendar"></span></button>
+      <button class="widget" id="s-btn" popovertarget="tall" aria-label="Settings" data-tip="Settings"><span class="icon" data-icon="settings"></span></button>
+      <button class="widget" id="l-btn" popovertarget="long" aria-label="Long" data-tip="Long"><span class="icon" data-icon="file"></span></button>
+      <div class="widget clock" id="clk"></div>
+    </div>
+  </nav>
+</div>
+
+<dialog class="panel" id="fd" aria-labelledby="fd-t"><header><h2 id="fd-t">Find</h2><button class="btn" data-close aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button></header><div class="body"><p>Find in files</p></div></dialog>
+
+<div class="panel popup controls" popover id="month" aria-label="This month"><div class="cal" id="view" data-weeks></div></div>
+<div class="panel popup controls" popover id="pickp" aria-label="Pick"><div class="cal" id="pick" data-weeks></div></div>
+<div class="panel popup controls tall" popover id="tall" aria-label="Settings">
+  <h4>Taskbar</h4>
+  <div class="field"><label for="size">Size</label><input id="size" type="range" min="36" max="72" step="2" value="48"></div>
+  <h4>Long</h4><p>one</p><p>two</p><p>three</p><p>four</p><p>five</p>
+</div>
+
+<div class="panel popup controls" popover id="long" aria-label="Long"><h4>Not tall</h4><p>one</p><p>two</p><p>three</p><p>four</p><p>five</p></div>
+
+<div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
+  <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"></div>
+  <div class="apps" role="group" aria-label="Apps">
+    <button data-app="calendar"><span class="icon" data-icon="calendar"></span>Calendar</button>
+    <button data-app="files"><span class="icon" data-icon="folder"></span>Files</button>
+    <button data-app="notes"><span class="icon" data-icon="edit"></span>Notes</button>
+  </div>
+  <p class="empty" hidden>No app matches</p>
+</div>
+</body>
+</html>

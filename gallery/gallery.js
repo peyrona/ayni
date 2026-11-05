@@ -1,5 +1,5 @@
 /* Ayni Components gallery: the demo wiring of this page only (outputs, status messages, sample data).
-   Every control's behaviour comes from the library (../ayni.js); nothing here is needed by a real app.
+   Every control's behaviour comes from the library (../ayni-*.js); nothing here is needed by a real app.
    A module, so it can wait for Ayni to start (its texts must be in first). */
 await Ayni.ready;
 const { $, $$, status } = Ayni;
@@ -439,6 +439,7 @@ const { iso, formatLong, formatDateTime } = Ayni.dates;
 /* The inline calendar only allows the next 60 days */
 { const t = new Date(), c = $('#cal-inline'); c.dataset.min = iso(t); c.dataset.max = iso(new Date(t.getFullYear(), t.getMonth(), t.getDate() + 60)); }
 Ayni.calendar($('#cal-inline'), (d) => { say('cal-out', 'Picked ' + formatLong(d)); status('Date: ' + iso(d)); });
+Ayni.calendar($('#cal-view'));
 $('#date-f').value = iso(new Date());
 Ayni.dateField($('#date-f'), { popup: $('#cal-pop'), onChange: (d) => status('Delivery date: ' + iso(d)) });
 /* The appointment starts at the next full hour */

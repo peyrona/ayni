@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="../ayni-help.css">
 <link rel="stylesheet" href="../ayni-fields.css">
 <link rel="stylesheet" href="../ayni-layout.css">
+<link rel="stylesheet" href="../ayni-desktop.css">
 <link rel="stylesheet" href="../ayni.css">
 <style>
 /* Demo page only: the note on the desktop background and the sample window contents */
@@ -42,7 +43,7 @@
 <script src="../ayni-help.js" defer></script>
 <script src="../ayni-fields.js" defer></script>
 <script src="../ayni-layout.js" defer></script>
-<script src="../ayni.js" defer></script>
+<script src="../ayni-desktop.js" defer></script>
 </head>
 <body>
 <!-- Ayni desktop mode: the taskbar (launcher, window chips, widgets) and windows. The app's own pieces (the apps and
@@ -54,13 +55,13 @@
     <aside class="note" aria-label="About this page">
       <h3>Desktop mode</h3>
       <ul>
-        <li><b class="ok">Decided:</b> the taskbar goes at the top or the bottom. Right-click it (long tap on touch, or Shift+F10).</li>
+        <li><b class="ok">Decided:</b> the taskbar goes on any edge. Right-click it (long tap on touch, or Shift+F10). Its size is in the gear on the bar.</li>
         <li><b class="ok">Decided:</b> the launcher is a popup with a search field and the apps, most used first.</li>
-        <li><b class="ok">Decided:</b> launcher at the left, clock at the right, window chips between them; an app can add gadgets on either side of the clock.</li>
-        <li><b class="ok">Decided:</b> chips show only the icon, except the selected window's chip: icon, name and its 3 buttons.</li>
-        <li><b class="ok">Decided:</b> drag the title row to move a window, any edge or corner to resize it; double-click the title row to maximise. No snapping.</li>
-        <li><b class="ok">Decided:</b> no desktop mode below 1024 px wide.</li>
-        <li><b class="ok">Decided:</b> toolbar tools that don't fit go into a "more" button at the end of the title row.</li>
+        <li><b class="ok">Decided:</b> launcher at the start, clock at the end, window chips between them; an app can add gadgets on either side of the clock (try the month and the gear).</li>
+        <li><b class="ok">Decided:</b> chips show only the icon, except the selected window's chip: icon, name (not on a side edge) and its 3 buttons.</li>
+        <li><b class="ok">Decided:</b> drag the title row to move a window, any edge or corner to resize it; double-click the title row to maximise. No snapping here; windows that hold whole pages may offer it.</li>
+        <li><b class="ok">Decided:</b> no desktop mode below 1024 px wide, unless the app sets its own rule.</li>
+        <li><b class="ok">Decided:</b> toolbar tools that don't fit leave by rank into the More menu.</li>
         <li><b class="ok">Decided:</b> a modeless dialog belongs to its window: it floats above it, has no chip, hides and closes with it. Try Find in the Files window.</li>
       </ul>
       <a href="index.html">Back to the gallery</a>
@@ -99,7 +100,7 @@
           <button class="btn" aria-label="Share" data-tip="Share"><span class="icon" data-icon="share"></span></button>
           <button class="btn" aria-label="Print" data-tip="Print"><span class="icon" data-icon="print"></span></button>
         </div></header>
-      <div class="body sample"><p><i>Make this window narrower: the tools that don't fit move into the "more" button.</i></p><h4>Shopping list</h4><p>Bread, olive oil, oranges, coffee.</p><p>Call the plumber on Thursday morning about the kitchen tap.</p></div>
+      <div class="body sample"><p><i>Make this window narrower: the tools that don't fit move into the More menu.</i></p><h4>Shopping list</h4><p>Bread, olive oil, oranges, coffee.</p><p>Call the plumber on Thursday morning about the kitchen tap.</p></div>
     </section>
   </main>
 
@@ -107,6 +108,8 @@
     <button class="btn primary" popovertarget="apps" aria-label="Applications" data-tip="Applications"><span class="icon" data-icon="apps"></span></button>
     <div class="chips" role="group" aria-label="Open windows"></div>
     <div class="widgets" role="group" aria-label="Widgets">
+      <button class="widget" popovertarget="w-month" aria-label="This month" data-tip="This month"><span class="icon" data-icon="calendar"></span></button>
+      <button class="widget" popovertarget="w-set" aria-label="Taskbar settings" data-tip="Taskbar settings"><span class="icon" data-icon="settings"></span></button>
       <div class="widget clock"></div>
     </div>
   </nav>
@@ -117,6 +120,15 @@
   <div class="body"><div class="input-group search-field"><input id="find-q" class="input" type="search" placeholder="Part of a file name" aria-label="Find"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button><button class="btn" type="button" tabindex="-1" aria-label="Find" data-tip="Find"><span class="icon" data-icon="search"></span></button></div>
     <p class="sample">A modeless dialog: it belongs to the Files window, floats above it, moves by its title row, hides when Files is minimised and closes with it.</p></div>
 </dialog>
+
+<div class="panel popup controls" popover id="w-month" aria-label="This month"><div class="cal" id="month-view" data-weeks></div></div>
+
+<div class="panel popup controls tall" popover id="w-set" aria-label="Taskbar settings">
+  <h4>Taskbar</h4>
+  <div class="field"><label for="bar-size">Size</label><input id="bar-size" type="range" min="36" max="72" step="2" value="48"></div>
+  <h4>A tall popup</h4>
+  <p class="sample">A popup of settings may grow to the height of the screen. Taller than the room it has, it scrolls, and it never covers the bar.</p>
+</div>
 
 <div class="panel popup launcher" popover id="apps" role="dialog" aria-label="Applications">
   <div class="input-group search-field"><input id="app-q" class="input" type="search" placeholder="Search apps" aria-label="Search apps"><button class="btn" type="button" data-clear aria-label="Clear" data-tip="Clear (Esc)" hidden><span class="icon" data-icon="close"></span></button></div>
@@ -141,6 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
     table: ['Spreadsheet', 'table', [['new', 'New sheet'], ['save', 'Save'], ['print', 'Print']], '<p>Sheet 1 is empty.</p>'],
   };
   const area = document.querySelector('.desktop > .area');
+  Ayni.ready.then(() => Ayni.calendar(document.getElementById('month-view')));
+  document.getElementById('bar-size').addEventListener('input', (e) => document.querySelector('.desktop').style.setProperty('--bar-h', e.target.value + 'px'));
   document.getElementById('files-find').addEventListener('click', () => { const d = document.getElementById('dlg-find'); if (!d.open) d.show(); document.getElementById('find-q').focus(); });
   document.getElementById('find-close').addEventListener('click', () => document.getElementById('dlg-find').close());
   document.getElementById('apps').addEventListener('ayni:launch', (e) => {
