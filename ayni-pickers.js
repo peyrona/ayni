@@ -22,18 +22,21 @@ const { makeTypeAhead } = Ayni.core.lists;
 let seq = 0;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-/* An item of the list: { value, text, short } (a plain string is all three), or a heading { heading } */
+/* An item of the list: { value, text, short, disabled } (a plain string is value and text), or a heading { heading }.
+   A disabled item shows, faded, but cannot be picked; the keys pass over it */
 const norm = (o) => {
   if (o == null) return null;
   if (typeof o !== 'object') return { value: String(o), text: String(o) };
   if (o.heading != null) return { heading: String(o.heading) };
-  const value = String(o.value ?? o.text ?? ''), text = String(o.text ?? value);
-  return o.short != null && o.short !== '' ? { value, text, short: String(o.short) } : { value, text };
+  const value = String(o.value ?? o.text ?? ''), text = String(o.text ?? value), it = { value, text };
+  if (o.short != null && o.short !== '') it.short = String(o.short);
+  if (o.disabled) it.disabled = true;
+  return it;
 };
 /* The items written in the page: li[role=option] (data-value when the value is not the text, data-short), li.heading */
 const fromMarkup = (list) => $$(':scope > li', list).map((li) => (li.classList.contains('heading')
   ? { heading: li.textContent.trim() }
-  : norm({ value: li.dataset.value ?? li.textContent.trim(), text: li.textContent.trim(), short: li.dataset.short })));
+  : norm({ value: li.dataset.value ?? li.textContent.trim(), text: li.textContent.trim(), short: li.dataset.short, disabled: li.getAttribute('aria-disabled') === 'true' })));
 
 /* The parts a .picker needs and the page may leave out: the hidden input, the field and the popup with its list */
 const build = (root, mode) => {
@@ -105,11 +108,20 @@ const initPicker = (root, opts = {}) => {
   if (typing && field.dataset.placeholder) field.placeholder = field.dataset.placeholder;
 
   let items = [], all = [], cur = { value: hidden.value, text: null };
+  /* A page-wide listener that leaves once the picker has left the page (a list redrawn with new pickers) */
+  let seen = root.isConnected;
+  const onPage = (target, type, fn, capture) => {
+    const h = (e) => {
+      if (root.isConnected) seen = true; else if (seen) { target.removeEventListener(type, h, capture); return; }
+      fn(e);
+    };
+    target.addEventListener(type, h, capture);
+  };
   /* Draw the list from items; the rows are the list box's (ayni-lists.css) */
   const draw = () => {
     list.innerHTML = items.map((o, i) => (o.heading != null
       ? `<li class="heading" role="presentation">${esc(o.heading)}</li>`
-      : `<li role="option" id="${field.id}-o${i}" data-value="${esc(o.value)}"${o.short ? ` data-short="${esc(o.short)}"` : ''}>${esc(o.text)}</li>`)).join('');
+      : `<li role="option" id="${field.id}-o${i}" data-value="${esc(o.value)}"${o.short ? ` data-short="${esc(o.short)}"` : ''}${o.disabled ? ' aria-disabled="true"' : ''}>${esc(o.text)}</li>`)).join('');
     all = $$('[role="option"]', list);
     const its = options(); all.forEach((li, i) => { li.ayniItem = its[i]; });
   };
@@ -149,7 +161,7 @@ const initPicker = (root, opts = {}) => {
     if (b && b.isConnected && b !== document.body && !root.contains(b)) b.focus({ preventScroll: true });
     else if (root.contains(document.activeElement)) document.activeElement.blur();
   };
-  const shown = () => all.filter((o) => !o.hidden);
+  const shown = () => all.filter((o) => !o.hidden && o.getAttribute('aria-disabled') !== 'true');
   const isOpen = () => pop.matches(':popover-open');
   const activeOpt = () => all.find((o) => o.classList.contains('active'));
   const setActive = (o) => {
@@ -196,7 +208,7 @@ const initPicker = (root, opts = {}) => {
     all.forEach((o) => { o.hidden = false; }); $$('li.heading', list).forEach((h) => { h.hidden = false; });
     if (empty) empty.hidden = true;
   };
-  const pick = (o) => { choose(o.ayniItem.value); close(); done(); };
+  const pick = (o) => { if (o.getAttribute('aria-disabled') === 'true') return; choose(o.ayniItem.value); close(); done(); };
   /* Typed text when the field is left or Enter is pressed: a combo box keeps it; a filtered list takes the item it
      names (case and accents aside) and refuses anything else with its "!". True when the text is fine */
   const keepTyped = () => {
@@ -214,7 +226,7 @@ const initPicker = (root, opts = {}) => {
   /* Type-ahead (typing off), shared helper; works while closed too */
   const ta = makeTypeAhead((o) => o.ayniItem.text);
   const typeAhead = (ch) => {
-    const hit = ta.find(ch, all, isOpen() ? activeOpt() : all.find((o) => o.ayniItem.value === cur.value));
+    const hit = ta.find(ch, shown(), isOpen() ? activeOpt() : all.find((o) => o.ayniItem.value === cur.value));
     if (hit && !isRO(field)) isOpen() ? setActive(hit) : choose(hit.ayniItem.value);
   };
   root.addEventListener('click', (e) => { if (pop.contains(e.target)) return; if (!isOpen()) open(); else if (!typing) close(); });
@@ -225,15 +237,15 @@ const initPicker = (root, opts = {}) => {
     field.addEventListener('focusin', (e) => { if (e.relatedTarget && !root.contains(e.relatedTarget)) back = e.relatedTarget; });
   }
   /* The menu, popup or dialog holding the picker closes: so does its list */
-  document.addEventListener('toggle', (e) => { if (e.newState === 'closed' && e.target !== pop && e.target.contains?.(root)) close(); }, true);
+  onPage(document, 'toggle', (e) => { if (e.newState === 'closed' && e.target !== pop && e.target.contains?.(root)) close(); }, true);
   label?.addEventListener('click', () => field.focus());
   list.addEventListener('click', (e) => { const o = e.target.closest('[role="option"]'); if (o) pick(o); });
-  list.addEventListener('pointermove', (e) => { const o = e.target.closest('[role="option"]'); if (o && e.pointerType === 'mouse') setActive(o); });
+  list.addEventListener('pointermove', (e) => { const o = e.target.closest('[role="option"]:not([aria-disabled="true"])'); if (o && e.pointerType === 'mouse') setActive(o); });
   pop.addEventListener('mousedown', (e) => e.preventDefault()); // the focus stays in the field
-  document.addEventListener('pointerdown', (e) => { if (isOpen() && !root.contains(e.target)) { close(); keepTyped(); } }, true);
+  onPage(document, 'pointerdown', (e) => { if (isOpen() && !root.contains(e.target)) { close(); keepTyped(); } }, true);
   field.addEventListener('blur', () => setTimeout(() => { if (!root.contains(document.activeElement)) { close(); keepTyped(); } }));
-  addEventListener('resize', () => isOpen() && place()); visualViewport?.addEventListener('resize', () => isOpen() && place());
-  addEventListener('scroll', (e) => { if (isOpen() && !pop.contains(e.target)) place(); }, true);
+  onPage(window, 'resize', () => isOpen() && place()); if (window.visualViewport) onPage(visualViewport, 'resize', () => isOpen() && place());
+  onPage(window, 'scroll', (e) => { if (isOpen() && !pop.contains(e.target)) place(); }, true);
   field.addEventListener('keydown', (e) => {
     const opts2 = shown(), at = opts2.indexOf(activeOpt()), go = (i) => setActive(opts2[Math.max(0, Math.min(opts2.length - 1, i))]);
     if ((e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) || e.key === 'F4') { e.preventDefault(); isOpen() ? close() : open(); return; }
@@ -284,6 +296,8 @@ const initPicker = (root, opts = {}) => {
     /* The items with their headings, as given */
     get items() { return items.map((o) => ({ ...o })); },
     set,
+    /* Picks a value as the user would (a menu that mirrors the picker): ayni:change and onChange, as on a pick */
+    choose: (v, text) => choose(v == null ? '' : String(v), text),
     get disabled() { return field.getAttribute('aria-disabled') === 'true'; },
     set disabled(on) { setDisabled(on); },
     get isOpen() { return isOpen(); },
@@ -294,7 +308,7 @@ const initPicker = (root, opts = {}) => {
     menuRow: () => ({
       id: root.id || '', label: name(), disabled: api.disabled,
       sub: () => items.map((o) => (o.heading != null ? { caption: o.heading }
-        : { label: o.text, checked: o.value === cur.value, run: () => choose(o.value) })),
+        : { label: o.text, checked: o.value === cur.value, disabled: !!o.disabled, run: () => choose(o.value) })),
     }),
   };
   root.ayniMenuRow = api.menuRow;

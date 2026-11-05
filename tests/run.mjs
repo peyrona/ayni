@@ -309,7 +309,6 @@ try {
   await t.evaluate(`Ayni.setTip(document.getElementById('plain'), 'Pause'), true`);
   check('setTip: the tooltip and the round button\'s name change together', (await t.evaluate(`[document.getElementById('plain').dataset.tip, document.getElementById('plain').getAttribute('aria-label')].join()`)) === 'Pause,Pause');
   await t.evaluate(`Ayni.setTip(document.getElementById('plain'), 'Search'), true`);
-  check('a round tab button that is chosen looks like a toggle that is on', await t.evaluate(`(() => { const b = document.createElement('button'); b.className = 'btn'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'true'); document.body.append(b); const r = getComputedStyle(b).color === getComputedStyle(document.body).getPropertyValue('--accent') || getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)'; b.remove(); return r; })()`));
   check('setBusy on a button with no tooltip: none again afterwards', await t.evaluate(`(() => { const b = document.createElement('button'); b.className = 'btn text'; document.body.append(b); Ayni.setBusy(b, 'Saving…'); const busy = b.dataset.tip; Ayni.setBusy(b, false); const r = busy === 'Saving…' && !('tip' in b.dataset) && !('idleTip' in b.dataset); b.remove(); return r; })()`));
   check('over a picture: a dark glass disc with a white icon', (await cs('media', 'color')) === 'rgb(255, 255, 255)' && (await cs('media', 'backgroundColor')).startsWith('rgba(0, 0, 0'));
   check('a text button is a pill with its label', (await t.evaluate(`[document.getElementById('text').textContent.trim(), getComputedStyle(document.getElementById('text')).borderTopLeftRadius].join()`)) === 'Extract here,999px');
@@ -819,9 +818,11 @@ try {
     check('under a button in the right half, the menu ends where the button ends', await ev(`Math.abs(document.getElementById('ayni-menu').getBoundingClientRect().right - document.getElementById('anc').getBoundingClientRect().right) < 1.5`));
     await ev(`(document.getElementById('anc').style.cssText = '', true)`); await reset();
     check('Ayni.keyLabel', (await ev(`[Ayni.keyLabel('Ctrl+C'), Ayni.keyLabel(['Shift+Del', 'x']), Ayni.keyLabel('F2'), Ayni.keyLabel('Esc')].join('|')`)) === (await ev('Ayni.isMac')) ? '⌘C|⇧Del|F2|Esc' : 'Ctrl+C|Shift+Del|F2|Esc');
-    await ev(`Ayni.i18n.setLang('de')`); await wait(150);
+    /* setLang reloads the page: wait for the new one, however long a busy machine takes */
+    const lang = async (code) => { await ev(`Ayni.i18n.setLang('${code}')`).catch(() => {}); for (let i = 0; i < 100; i++) { await new Promise((r) => setTimeout(r, 50)); if (await ev(`window.Ayni?.keyLabel && document.documentElement.lang === '${code}' ? Ayni.ready.then(() => true) : false`).catch(() => false)) return; } };
+    await lang('de');
     check('…in the page\'s language', (await ev(`Ayni.keyLabel('Ctrl+Del')`)) === (await ev('Ayni.isMac') ? '⌘Entf' : 'Strg+Entf'), await ev(`Ayni.keyLabel('Ctrl+Del')`));
-    await ev(`Ayni.i18n.setLang('en')`); await wait(150);
+    await lang('en');
 
     /* Pop-up menu and long tap */
     await click('#ctx', 'right'); await wait(60);
@@ -2122,6 +2123,15 @@ try {
     check('set never fires the event', (await log()) === '');
     await ev(`(cur.options = [{ value: 'SEK', text: 'SEK · Swedish krona', short: 'SEK' }, 'NOK'], cur.value = 'NOK', true)`);
     check('options replaced at any time', (await ev(`[...document.querySelectorAll('#cur [role=option]')].map((o) => o.textContent).join()`)) === 'SEK · Swedish krona,NOK' && (await fieldText('cur')) === 'NOK');
+    await ev(`(L.length = 0, cur.options = [{ value: 'A', text: 'Alpha' }, { value: 'B', text: 'Beta', disabled: true }, { value: 'C', text: 'Gamma' }], cur.set('A'), true)`);
+    await focus('#cur > .input'); await key('ArrowDown'); await key('ArrowDown');
+    check('a disabled item shows faded and the keys pass over it', (await active('cur')) === 'Gamma' && (await css('#cur [aria-disabled="true"]', 'opacity')) === '0.45');
+    await ev(`(document.querySelector('#cur [aria-disabled="true"]').click(), true)`);
+    check('…a click on it picks nothing', (await ev(`cur.value`)) === 'A' && (await log()) === '');
+    await key('Escape');
+    await ev(`(cur.choose('C'), true)`);
+    check('choose(value) picks as the user would: the event and onChange', (await ev(`cur.value`)) === 'C' && (await log()) === 'cur:C/Gamma/Currency|onChange C/Gamma', await log());
+    await ev(`(L.length = 0, true)`);
     await reset();
 
     /* States */
@@ -2205,6 +2215,7 @@ try {
     /* Touch and phones */
     await ev(`(Ayni.setTouchPreview(true), true)`);
     check('touch: the field is 44 px, a toolbar picker stays 30 px', (await height('#dd-f')) === 44 && (await height('#font > .input')) === 30);
+    check('touch: a toolbar picker takes a press 6 px above and below it (44 px hit area)', await ev(`(() => { const f = document.querySelector('#font > .input'); f.scrollIntoView({ block: 'center' }); const r = f.getBoundingClientRect(), x = r.left + r.width / 2; return [r.top - 6, r.bottom + 6].every((y) => document.elementFromPoint(x, y) === f); })()`));
     await click('#dd-f');
     check('touch: rows are 44 px', (await height('#dd [role="option"]')) >= 44);
     await reset();
@@ -2226,6 +2237,409 @@ try {
     check('es: the empty lines and the message follow the page\'s language', await ev(`[document.querySelector('#city .picker-empty').textContent, document.querySelector('#tz .picker-empty').textContent, document.getElementById('tz-field-err').textContent].join('|')`) === 'Nada coincide. Intro guarda lo que has escrito.|Nada coincide.|Elige uno de la lista.');
     check('es: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
     await ev(`(localStorage.removeItem('ayni-lang'), true)`);
+  }
+
+  section('Layout family (base + buttons + notifications + dialogs + layout)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    const PAGE = BASE + '/tests/layout-only.html';
+    await t.open(PAGE); await t.evaluate(`(localStorage.clear(), true)`); await t.open(PAGE);
+    check('a page with the layout family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    check('no ayni.css, no ayni.js', await t.evaluate(`![...document.scripts].some((s) => /\\/ayni\\.js$/.test(s.src)) && ![...document.styleSheets].some((s) => /\\/ayni\\.css$/.test(s.href || ''))`));
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const KEYS = { Enter: 13, Delete: 46, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35, PageUp: 33, PageDown: 34 };
+    const CTRL = 2;
+    const key = async (k, mods = 0) => {
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: KEYS[k], modifiers: mods });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: KEYS[k], modifiers: mods });
+      await wait(30);
+    };
+    let held = false;   /* A move while the button is down says so, or Chromium ends the drag */
+    const mouse = (kind, x, y, button = 'left') => {
+      if (kind === 'mousePressed') held = true; if (kind === 'mouseReleased') held = false;
+      return t.send('Input.dispatchMouseEvent', { type: kind, x, y, button: kind === 'mouseMoved' && !held ? 'none' : button, buttons: held ? (button === 'middle' ? 4 : 1) : 0, clickCount: 1 });
+    };
+    const into = async (sel) => { await ev(`(document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center' }), true)`); await wait(60); };
+    const mid = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+    const click = async (sel, button = 'left') => { await into(sel); const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y, button); await mouse('mouseReleased', x, y, button); await wait(30); };
+    const log = () => ev(`L.splice(0).join('|')`);
+    const sel = (list) => ev(`Ayni.tabs(${JSON.stringify(list)}).tabs.find((t) => t.getAttribute('aria-selected') === 'true')?.textContent.trim()`);
+    const focused = () => ev(`document.activeElement.textContent.trim()`);
+    const TAB = (list, i) => `${list} > [role="tab"]:nth-of-type(${i})`;
+    const tip = (sel2) => ev(`document.querySelector(${JSON.stringify(sel2)}).dataset.tip ?? null`);
+
+    /* ---------- Tabs written in the page ---------- */
+    check('load: the first tab is selected, the others\' panels hidden', (await sel('#t1')) === 'One' && await ev(`!p1.hidden && p2.hidden && p3.hidden`));
+    check('load: nothing is told (only a user\'s pick is)', (await log()) === '');
+    check('load: panels get their role and name their tab', await ev(`p1.getAttribute('role') === 'tabpanel' && p1.getAttribute('aria-labelledby') === document.querySelector('#t1 > [role="tab"]').id`));
+    check('load: one Tab stop in the row', await ev(`[...document.querySelectorAll('#t1 > [role="tab"]')].map((t) => t.tabIndex).join()`) === '0,-1,-1,-1,-1,-1');
+    check('a name sits in .tab-text, the icon stays out of it', await ev(`(() => { const t = document.querySelector('#t1 > [role="tab"]'); return t.querySelector('.tab-text').textContent === 'One' && t.querySelector('.tab-text .icon') === null && t.querySelector('.icon') !== null; })()`));
+    await click(TAB('#t1', 3));
+    check('a click selects, shows its panel and focuses the tab', (await sel('#t1')) === 'Three' && await ev(`!p3.hidden && p1.hidden`) && (await focused()) === 'Three');
+    check('…and tells it once', (await log()) === 'select t1:Three');
+    await click(TAB('#t1', 3));
+    check('a click on the selected tab tells nothing', (await log()) === '');
+    await click(TAB('#t1', 2));
+    check('a click on a disabled tab does nothing', (await sel('#t1')) === 'Three' && (await log()) === '');
+    check('a disabled tab says why', (await tip(TAB('#t1', 2))) === 'Needs an account');
+    check('a disabled tab is faded', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(TAB('#t1', 2))})).opacity`)) === '0.45');
+    await click(TAB('#t1', 1)); await log();
+    await key('ArrowRight');
+    check('Right skips the disabled tab', (await sel('#t1')) === 'Three' && (await focused()) === 'Three');
+    await key('ArrowLeft');
+    check('Left comes back', (await sel('#t1')) === 'One');
+    await key('ArrowLeft');
+    check('Left wraps to the last', (await sel('#t1')) === 'Six');
+    await key('ArrowRight');
+    check('Right wraps to the first', (await sel('#t1')) === 'One');
+    await key('End'); check('End = the last', (await sel('#t1')) === 'Six');
+    await key('Home'); check('Home = the first', (await sel('#t1')) === 'One');
+    await key('ArrowRight', CTRL);
+    check('Ctrl+Right is left alone', (await sel('#t1')) === 'One');
+    await log();
+    await click('#in1'); await key('ArrowRight');
+    check('arrows in a field of the panel stay in the field', (await sel('#t1')) === 'One');
+    await key('PageDown', CTRL);
+    check('Ctrl+Page Down from a field in the panel: next tab', (await sel('#t1')) === 'Three');
+    await key('PageUp', CTRL);
+    check('Ctrl+Page Up: previous tab', (await sel('#t1')) === 'One');
+    await key('PageUp', CTRL);
+    check('Ctrl+Page Up wraps', (await sel('#t1')) === 'Six');
+    await ev(`(Ayni.tabs('#t1').select('p3'), true)`);
+    await click('#in2'); await key('PageDown', CTRL);
+    check('tabs inside tabs: the innermost set wins', (await sel('#t5')) === 'In two' && (await sel('#t1')) === 'Three');
+    await log();
+
+    await ev(`(Ayni.tabs('#t1').select('p4'), document.querySelector(${JSON.stringify(TAB('#t1', 4))}).focus(), true)`);
+    await key('Delete');
+    check('Delete closes a closable tab: the neighbour takes over, with the focus', (await sel('#t1')) === 'Five' && (await focused()) === 'Five' && await ev(`document.querySelector(${JSON.stringify(TAB('#t1', 4))}).hidden && p4.hidden`));
+    check('…and tells both', (await log()) === 'select t1:Five|close t1:Four');
+    await ev(`(document.querySelector(${JSON.stringify(TAB('#t1', 4))}).hidden = false, Ayni.tabs('#t1').select('p1'), true)`);
+    await click(TAB('#t1', 5) + ' .tab-close');
+    check('the (x) closes a tab that is not selected; the selection stays and has the focus', (await sel('#t1')) === 'One' && (await focused()) === 'One' && await ev(`document.querySelector(${JSON.stringify(TAB('#t1', 5))}).hidden`));
+    await log();
+    await click(TAB('#t1', 6), 'middle');
+    check('a middle click closes a closable tab', await ev(`document.querySelector(${JSON.stringify(TAB('#t1', 6))}).hidden`) && (await log()) === 'close t1:Six');
+    await ev(`(document.querySelector(${JSON.stringify(TAB('#t1', 3))}).focus(), true)`);
+    await key('Delete');
+    check('Delete leaves a tab that is not closable', await ev(`!document.querySelector(${JSON.stringify(TAB('#t1', 3))}).hidden`));
+    await click(TAB('#t1', 1), 'middle');
+    check('a middle click leaves a tab that is not closable', await ev(`!document.querySelector(${JSON.stringify(TAB('#t1', 1))}).hidden`));
+    await log();
+
+    /* ---------- The controller ---------- */
+    await ev(`(window.c1 = Ayni.tabs('#t1'), true)`);
+    check('Ayni.tabs on a wired row gives the same controller', await ev(`Ayni.tabs(document.getElementById('t1')) === c1`));
+    check('value = the panel\'s id; a tab with no panel its data-value', (await ev(`c1.value`)) === 'p1' && (await ev(`sheets.value`)) === 'a');
+    await ev(`(c1.select('p3'), true)`);
+    check('select() changes the tab and tells nothing', (await sel('#t1')) === 'Three' && (await log()) === '');
+    await ev(`(c1.value = 'p1', true)`);
+    check('value = does the same', (await sel('#t1')) === 'One' && (await log()) === '');
+    await ev(`(c1.setTabEnabled('p3', false, 'Not now'), true)`);
+    check('setTabEnabled(false, why): disabled, the tooltip says why', await ev(`document.querySelector(${JSON.stringify(TAB('#t1', 3))}).getAttribute('aria-disabled') === 'true'`) && (await tip(TAB('#t1', 3))) === 'Not now');
+    await ev(`(c1.setTabEnabled('p3', true), true)`);
+    check('setTabEnabled(true): back, and the tooltip goes', await ev(`!document.querySelector(${JSON.stringify(TAB('#t1', 3))}).hasAttribute('aria-disabled')`) && (await tip(TAB('#t1', 3))) === null);
+    await ev(`(c1.setTabEnabled('p2', true), c1.setTabEnabled('p2', false, 'Other'), c1.setTabEnabled('p2', true), true)`);
+    check('a tab\'s own tooltip comes back after "why"', (await tip(TAB('#t1', 2))) === 'Needs an account');
+    await ev(`(c1.select('p3'), c1.setTabEnabled('p3', false), true)`);
+    check('disabling the selected tab moves off it', (await sel('#t1')) !== 'Three');
+    await ev(`(c1.setTabEnabled('p3', true), c1.close('p1'), true)`);
+    check('close() closes it', await ev(`document.querySelector(${JSON.stringify(TAB('#t1', 1))}).hidden`));
+    await log();
+
+    /* ---------- Hash, many tabs ---------- */
+    await into('#t4'); await click(TAB('#t4', 2));
+    check('data-hash: the tab goes in the address', (await ev(`location.hash`)) === '#h2');
+    await ev(`(document.getElementById('t4').scrollLeft = 0, true)`);
+    await key('End'); await wait(60);
+    check('the selected tab scrolls into view', await ev(`(() => { const l = document.getElementById('t4').getBoundingClientRect(), r = document.querySelector(${JSON.stringify(TAB('#t4', 5))}).getBoundingClientRect(); return r.right <= l.right + 1; })()`));
+    await ev(`(document.getElementById('t4').scrollLeft = 0, true)`);
+    { const [x, y] = await mid('#t4');
+      await t.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x, y, deltaX: 0, deltaY: 120 }); await wait(120); }
+    check('the mouse wheel scrolls the row sideways', (await ev(`document.getElementById('t4').scrollLeft`)) > 0);
+    check('the row never wraps', await ev(`(() => { const t = [...document.querySelectorAll('#t4 > [role="tab"]')].map((x) => x.getBoundingClientRect().top); return t.every((v) => v === t[0]); })()`));
+    await t.send('Page.navigate', { url: 'about:blank' }); await new Promise((r) => setTimeout(r, 150));   // the same page with another hash fires no load
+    await t.open(PAGE + '#h3');
+    check('data-hash: the address picks the tab at load', (await sel('#t4')) === 'Third tab' && await ev(`!h3.hidden && h1.hidden`));
+    await t.open(PAGE); await wait(30);
+
+    /* ---------- Tabs from a list ---------- */
+    check('items: every tab is built, in order, with no panel of its own', await ev(`sheets.tabs.map((t) => t.textContent.trim()).join('|')`) === 'Summary|Sales|A sheet whose name is far too long for one tab|Off|Temp' && await ev(`sheets.tabs.every((t) => t.getAttribute('role') === 'tab' && !t.hasAttribute('aria-controls') && t.type === 'button')`));
+    check('items: the first is selected and nothing is told', (await sel('#sheets')) === 'Summary' && (await log()) === '' && (await ev(`S.length`)) === 0);
+    check('items: an icon, a tip', await ev(`!!sheets.tabs[0].querySelector('.icon') && sheets.tabs[0].dataset.tip === 'The summary'`));
+    check('items: disabled says why', await ev(`sheets.tabs[3].getAttribute('aria-disabled') === 'true' && sheets.tabs[3].dataset.tip === 'Needs an account'`));
+    check('items: closable has its (x), named after the tab', await ev(`sheets.tabs[4].hasAttribute('data-closable') && sheets.tabs[4].querySelector('.tab-close[data-close]').dataset.tip === 'Close Temp'`));
+    await click('#sheets > [role="tab"]:nth-of-type(2)');
+    check('a pick on a tab with no panel: onSelect gets its value', (await ev(`S.join()`)) === 'pick b' && (await sel('#sheets')) === 'Sales');
+    await log(); await ev(`(S.length = 0, true)`);
+    await click('#page'); await key('PageDown', CTRL);
+    check('scope: Ctrl+Page Down works from the page around the row', (await sel('#sheets')) !== 'Sales');
+    await ev(`(() => { const box = document.createElement('div'); box.id = 'lateBox'; box.tabIndex = 0; box.innerHTML = '<span><i id="late"></i></span>'; document.body.append(box); window.late = Ayni.tabs('#late', { scope: box, items: [{ value: '1', label: 'One' }, { value: '2', label: 'Two' }] }); box.focus(); return true; })()`);
+    await key('PageDown', CTRL);
+    check('scope: a row first wired from code takes it too', (await ev(`late.value`)) === '2');
+    await ev(`(document.getElementById('lateBox').innerHTML = '<div role="tablist" id="divs"><div role="tab" data-value="1">One</div><div role="tab" data-value="2" aria-disabled="true">Two</div></div>', Ayni.init(document.getElementById('lateBox')), document.querySelector('#divs > [data-value="2"]').click(), true)`);
+    check('a disabled tab that is no button stays unpicked too', (await ev(`Ayni.tabs('#divs').value`)) === '1');
+    await ev(`(document.getElementById('lateBox').remove(), true)`); await log();
+    await ev(`(sheets.select('b'), sheets.tabs[1].focus(), window.was = sheets.tabs[1], true)`);
+    await ev(`(document.getElementById('sheets').scrollLeft = 40, true)`);
+    await ev(`(sheets.set([{ value: 'a', label: 'Summary' }, { value: 'b', label: 'Renamed' }, { value: 'c', label: 'A sheet whose name is far too long for one tab' }, { value: 'd', label: 'Off' }, { value: 'e', label: 'Temp' }, { value: 'f', label: 'New' }]), true)`);
+    check('set(): a tab that stays keeps its element, the focus and its selection', await ev(`sheets.tabs[1] === was && document.activeElement === was`) && (await sel('#sheets')) === 'Renamed');
+    check('set(): the row keeps its scroll', (await ev(`document.getElementById('sheets').scrollLeft`)) === 40);
+    check('set(): the name is new, and a removed disabled mark goes', await ev(`sheets.tabs[3].getAttribute('aria-disabled') === null && sheets.tabs[5].textContent === 'New'`));
+    await ev(`(sheets.set([{ value: 'f', label: 'New' }, { value: 'a', label: 'Summary' }], 'a'), true)`);
+    check('set(items, value): order, removed tabs and the selection follow', await ev(`sheets.tabs.map((t) => t.dataset.value).join()`) === 'f,a' && (await sel('#sheets')) === 'Summary');
+    await ev(`(sheets.set([{ value: 'f', label: 'New' }]), true)`);
+    check('set(): the selected tab left, the first one takes over', (await sel('#sheets')) === 'New');
+    await log(); await ev(`(window.nt = sheets.add({ value: 'z', label: 'Zed', closable: true }, 0), true)`);
+    check('add(item, index) puts it there, leaving the selection', await ev(`sheets.tabs[0] === nt`) && (await sel('#sheets')) === 'New' && (await log()) === '' );
+    await ev(`(nt.querySelector('[data-close]').click(), true)`);
+    check('onClose gets the value', (await ev(`S.at(-1)`)) === 'closed z');
+    await ev(`(window.xp = document.createElement('div'), document.getElementById('sheetbox').append(xp), sheets.add({ value: 'p', label: 'With page', panel: xp }), true)`);
+    check('add with a panel: linked, named and hidden until picked', await ev(`(() => { const t = sheets.tabs.at(-1); return t.getAttribute('aria-controls') === xp.id && xp.getAttribute('role') === 'tabpanel' && xp.getAttribute('aria-labelledby') === t.id && xp.hidden; })()`));
+    await ev(`(sheets.select('p'), true)`);
+    check('…and shown when selected', await ev(`!xp.hidden`));
+    await ev(`(sheets.set([{ value: 'f', label: 'New' }]), true)`);
+    check('set(): the panel of a removed tab is hidden', await ev(`xp.hidden`));
+    await ev(`(Ayni.tabs('#sheets', { items: [{ value: 'a', label: 'Summary' }, { value: 'c', label: 'A sheet whose name is far too long for one tab' }], value: 'c' }), true)`);
+    check('Ayni.tabs(row, { items, value }) again: same controller, new tabs', await ev(`Ayni.tabs('#sheets') === sheets`) && (await sel('#sheets')) === 'A sheet whose name is far too long for one tab');
+    check('a tab is 190 px wide at most', (await ev(`sheets.tabs[1].getBoundingClientRect().width`)) === 190);
+    check('a long name ends in an ellipsis', await ev(`(() => { const x = sheets.tabs[1].querySelector('.tab-text'); return x.scrollWidth > x.clientWidth && getComputedStyle(x).textOverflow === 'ellipsis'; })()`));
+    await into('#sheets'); { const [x, y] = await mid('#sheets > [role="tab"]:nth-of-type(2)'); await mouse('mouseMoved', x, y); await wait(40); }
+    check('the tooltip of a name cut short gives it in full', (await tip('#sheets > [role="tab"]:nth-of-type(2)')) === 'A sheet whose name is far too long for one tab');
+    { const [x, y] = await mid('#sheets > [role="tab"]:nth-of-type(1)'); await mouse('mouseMoved', x, y); await wait(40); }
+    check('a short name has no such tooltip', (await tip('#sheets > [role="tab"]:nth-of-type(1)')) === null);
+    await ev(`(sheets.set([{ value: 'a', label: 'Summary' }, { value: 'c', label: 'A sheet whose name is far too long for one tab', tip: 'Double-click to rename' }]), true)`);
+    { const [x, y] = await mid('#sheets > [role="tab"]:nth-of-type(2)'); await mouse('mouseMoved', x, y); await wait(40); await mouse('mouseMoved', 1, 1); }
+    check('a tab\'s own tooltip stays over the full name', (await tip('#sheets > [role="tab"]:nth-of-type(2)')) === 'Double-click to rename');
+
+    /* ---------- Under the page, in the status bar ---------- */
+    const S2 = '#sheets > [role="tab"][aria-selected="true"]';
+    check('.bottom: the tabs hang from the page, no top border', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(S2)})).borderTopWidth`)) === '0px');
+    check('.bottom: the Accent edge is below', /0px -3px 0px 0px inset/.test(await ev(`getComputedStyle(document.querySelector(${JSON.stringify(S2)})).boxShadow`)), await ev(`getComputedStyle(document.querySelector(${JSON.stringify(S2)})).boxShadow`));
+    check('.bottom: no scrollbar takes room', (await ev(`getComputedStyle(document.getElementById('sheets')).scrollbarWidth`)) === 'none');
+    check('the row is the first thing in the status bar, the cells follow', await ev(`document.getElementById('bar1').firstElementChild.id === 'sheets' && document.getElementById('sheets').getBoundingClientRect().right <= document.getElementById('totals').getBoundingClientRect().left + 1`));
+    check('the selected tab covers the bar\'s line, joining the page', await ev(`document.querySelector(${JSON.stringify(S2)}).getBoundingClientRect().top === document.getElementById('bar1').getBoundingClientRect().top`));
+    check('--tab-page tints the selected tab', await ev(`(() => { const b = document.getElementById('sheetbox'), o = getComputedStyle(document.querySelector(${JSON.stringify(S2)})).backgroundColor; b.style.setProperty('--tab-page', 'rgb(1, 2, 3)'); const n = getComputedStyle(document.querySelector(${JSON.stringify(S2)})).backgroundColor; b.style.removeProperty('--tab-page'); return n === 'rgb(1, 2, 3)' && o !== n; })()`));
+    await ev(`(document.getElementById('sheets').hidden = true, true)`);
+    check('with the row hidden the cells stay on the right, with no line', await ev(`(() => { const b = document.getElementById('bar1').getBoundingClientRect(), c = document.getElementById('totals'), r = c.getBoundingClientRect(); return Math.abs(b.right - r.right) < 1 && r.left > b.left + 50 && getComputedStyle(c).borderLeftWidth === '0px'; })()`));
+    await ev(`(document.getElementById('sheets').hidden = false, true)`);
+    check('status bar: the first cell takes the room, the others keep theirs and a line', await ev(`(() => { const [a, b, c] = document.getElementById('bar2').children; const w = getComputedStyle(a); return w.flexGrow === '1' && w.borderLeftWidth === '0px' && getComputedStyle(b).borderLeftWidth === '1px' && getComputedStyle(b).flexGrow === '0' && c.getBoundingClientRect().right <= document.getElementById('bar2').getBoundingClientRect().right + 1; })()`));
+    await ev(`(Ayni.status('Saved'), true)`);
+    check('Ayni.status writes in the marked cell', (await ev(`document.querySelector('[data-ayni-status]').textContent`)) === 'Saved');
+
+    /* ---------- In a dialog ---------- */
+    await ev(`(document.getElementById('dlg').showModal(), true)`); await wait(60);
+    await ev(`(Ayni.tabs('#t3').select('d2'), true)`); await wait(30);
+    check('dialog: the row runs edge to edge of the body', await ev(`(() => { const r = document.getElementById('t3').getBoundingClientRect(), b = document.querySelector('#dlg .body').getBoundingClientRect(); return Math.abs(r.left - b.left) < 1 && Math.abs(r.right - b.right) < 1; })()`));
+    check('dialog: the row touches the title row', await ev(`Math.abs(document.getElementById('t3').getBoundingClientRect().top - document.querySelector('#dlg .body').getBoundingClientRect().top) < 1`));
+    await ev(`(() => { const p = document.getElementById('d2'), b = document.querySelector('#dlg .body'); window.rowY = () => document.getElementById('t3').getBoundingClientRect().top - document.getElementById('dlg').getBoundingClientRect().top; window.t0 = rowY(); p.scrollTop = 300; b.scrollTop = 300; return true; })()`); await wait(30);
+    check('dialog: a long page scrolls, the row stays', await ev(`(document.getElementById('d2').scrollTop > 0 || document.querySelector('#dlg .body').scrollTop > 0) && Math.abs(rowY() - t0) < 1`), await ev(`[rowY(), t0]`));
+    check('dialog: the page has no padding of its own (the body has it)', (await ev(`getComputedStyle(document.getElementById('d2')).paddingLeft`)) === '0px');
+    await ev(`(document.getElementById('dlg').close(), true)`);
+
+    /* ---------- Splitter: panes the bar owns ---------- */
+    await log();
+    const size = (id) => ev(`Ayni.splitter('#${id}').size`);
+    const drag = async (sel2, dx, dy = 0) => { await into(sel2); const [x, y] = await ev(`(() => { const r = document.querySelector(${JSON.stringify(sel2)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + 6 + (r.height > 100 ? 0 : 0)]; })()`);
+      await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseMoved', x + dx, y + dy); await mouse('mouseReleased', x + dx, y + dy); await wait(30); };
+    const BAR = '#s1 > .splitter';
+    check('a bar needs no ARIA or tooltip in the page', await ev(`(() => { const b = document.querySelector(${JSON.stringify(BAR)}); return b.getAttribute('role') === 'separator' && b.tabIndex === 0 && b.getAttribute('aria-orientation') === 'vertical' && b.getAttribute('aria-label') === 'Drag to resize' && b.dataset.tip === 'Drag to resize' && b.getAttribute('aria-valuemin') === '15' && b.getAttribute('aria-valuemax') === '85' && b.getAttribute('aria-valuenow') === '35'; })()`));
+    check('the top and bottom bar says so', await ev(`document.querySelector('#s2 > .splitter').getAttribute('aria-orientation') === 'horizontal' && document.querySelector('#s2 > .splitter').classList.contains('rows')`));
+    check('three glyphs, each named', await ev(`[...document.querySelectorAll(${JSON.stringify(BAR + ' .split-ctl button')})].map((b) => b.getAttribute('aria-label')).join('|')`) === 'Collapse left pane|Reset sizes|Collapse right pane');
+    check('.split: data-default is the first pane\'s size', (await size('s1')) === 35 && (await size('s2')) === 50);
+    check('the bar is 7 px', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '7px');
+    { await into('#s1'); const w = await ev(`document.getElementById('s1').getBoundingClientRect().width`);
+      const [x, y] = await ev(`(() => { const r = document.querySelector(${JSON.stringify(BAR)}).getBoundingClientRect(); return [r.left + 3, r.top + 6]; })()`);
+      await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseMoved', x + w * .2, y);
+      check('a drag marks the page: no selecting, frames ignore the pointer', await ev(`document.documentElement.classList.contains('ayni-dragging') && getComputedStyle(document.documentElement).userSelect === 'none' && getComputedStyle(document.getElementById('frame')).pointerEvents === 'none'`));
+      check('…and the bar', await ev(`document.querySelector(${JSON.stringify(BAR)}).classList.contains('dragging')`));
+      await mouse('mouseReleased', x + w * .2, y); await wait(30);
+      check('a drag moves the bar', Math.abs(await size('s1') - 55) < 1.5, await size('s1'));
+      check('after it the marks go', await ev(`!document.documentElement.classList.contains('ayni-dragging') && !document.querySelector(${JSON.stringify(BAR)}).classList.contains('dragging') && getComputedStyle(document.getElementById('frame')).pointerEvents !== 'none'`)); }
+    await drag(BAR, 3000);
+    check('a drag stops at the limit', (await size('s1')) === 85);
+    await drag(BAR, -3000);
+    check('…at both ends', (await size('s1')) === 15);
+    await ev(`Ayni.splitter('#s1').reset()`);
+    check('a drag tells nothing (no event)', (await log()) === '', await ev(`L.join()`));
+    await click(BAR + ' [data-to="first"]');
+    check('the arrow collapses that pane; the other takes the room', await ev(`(() => { const [a, b] = document.querySelectorAll('#s1 > .pane'), h = document.getElementById('s1').getBoundingClientRect().width; return a.hidden && b.getBoundingClientRect().width > h - 10; })()`));
+    check('…the arrow is disabled, the other is not', await ev(`document.querySelector(${JSON.stringify(BAR + ' [data-to="first"]')}).getAttribute('aria-disabled') === 'true' && document.querySelector(${JSON.stringify(BAR + ' [data-to="last"]')}).getAttribute('aria-disabled') === 'false'`));
+    check('…and it is told', (await log()) === 'split collapse/left/Left pane collapsed');
+    check('collapsed = first', (await ev(`Ayni.splitter('#s1').collapsed`)) === 'first');
+    await click(BAR + ' [data-to="first"]');
+    check('a disabled arrow does nothing', (await log()) === '');
+    await click(BAR + ' [data-to="reset"]');
+    check('the dot resets both', await ev(`[...document.querySelectorAll('#s1 > .pane')].every((p) => !p.hidden && !p.classList.contains('split-fill'))`) && (await size('s1')) === 35);
+    check('…and is told', (await log()) === 'split reset/null/Panes reset');
+    await ev(`(Ayni.splitter('#s1').size = 40, true)`);
+    await ev(`(document.querySelector(${JSON.stringify(BAR)}).focus(), true)`);
+    await key('Enter');
+    check('Enter collapses the first pane', await ev(`document.querySelector('#s1 > .pane').hidden`) && (await log()) === 'split collapse/left/Pane collapsed');
+    await key('Enter');
+    check('Enter brings it back, at its size', await ev(`!document.querySelector('#s1 > .pane').hidden`) && (await size('s1')) === 40 && (await log()) === 'split restore/left/Pane restored');
+    await key('ArrowRight'); check('Right moves the bar', (await size('s1')) === 45);
+    await key('ArrowLeft'); await key('ArrowLeft'); check('Left moves it back', (await size('s1')) === 35);
+    await key('ArrowUp'); check('Up does nothing on a side-by-side bar', (await size('s1')) === 35);
+    await key('Home'); check('Home = the small limit', (await size('s1')) === 15);
+    await key('End'); check('End = the large limit', (await size('s1')) === 85);
+    await click(BAR + ' [data-to="last"]'); await log();
+    await key('ArrowLeft');
+    check('a key on a collapsed bar brings the pane back', await ev(`document.querySelectorAll('#s1 > .pane')[1].hidden === false`));
+    await ev(`(document.querySelector('#s2 > .splitter').focus(), true)`);
+    await key('ArrowDown'); check('a top and bottom bar: Down moves it', (await size('s2')) === 55);
+    await key('ArrowRight'); check('…Right does nothing', (await size('s2')) === 55);
+    await click('#s2 > .splitter [data-to="last"]');
+    check('…the bottom pane collapses', await ev(`document.querySelectorAll('#s2 > .pane')[1].hidden`) && (await log()) === 'split collapse/bottom/Bottom pane collapsed');
+    await ev(`(Ayni.splitter('#s1').size = 60, Ayni.splitter('#s2').restore(), true)`);
+    await ev(`document.querySelector(${JSON.stringify(BAR)}).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`);
+    check('a double-click on the bar resets', (await size('s1')) === 35 && (await log()) === 'split reset/null/Panes reset');
+    await ev(`(Ayni.splitter('#s1').size = 60, document.querySelector(${JSON.stringify(BAR + ' [data-to="last"]')}).dispatchEvent(new MouseEvent('dblclick', { bubbles: true })), true)`);
+    check('a double-click on a glyph does not', (await size('s1')) === 60);
+    await ev(`(window.touchTap = (b) => { for (const type of ['pointerdown', 'pointerup']) b.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, pointerType: 'touch', pointerId: 7 })); }, touchTap(document.querySelector(${JSON.stringify(BAR)})), touchTap(document.querySelector(${JSON.stringify(BAR)})), true)`);
+    check('a double tap on the bar resets', (await size('s1')) === 35 && (await log()) === 'split reset/null/Panes reset');
+    await ev(`(touchTap(document.querySelector(${JSON.stringify(BAR)})), true)`); await wait(350);
+    await ev(`(Ayni.splitter('#s1').size = 60, touchTap(document.querySelector(${JSON.stringify(BAR)})), true)`);
+    check('two slow taps do not', (await size('s1')) === 60);
+    check('a bar too short for three glyphs shows only the dot', await ev(`(() => { const c = document.querySelector('#short .split-ctl'); return c.classList.contains('short') && getComputedStyle(c.querySelector('[data-to="first"]')).display === 'none' && getComputedStyle(c.querySelector('[data-to="reset"]')).display !== 'none'; })()`));
+    check('a class of the same name with no bar is left alone', await ev(`!document.querySelector('#notours .split-ctl') && !document.getElementById('notours').hasAttribute('style')`));
+
+    /* ---------- Splitter: a bar in the page's own layout ---------- */
+    await ev(`(localStorage.clear(), L.length = 0, true)`);
+    await ev(`(window.m = mk({ min: 200, max: 500, def: 300, key: 'w1' }), true)`);
+    check('nothing saved: the page\'s CSS keeps the size', await ev(`m.c.size === null && m.a.style.width === '' && m.a.getBoundingClientRect().width === 300`));
+    check('bar alone: ARIA in pixels', await ev(`m.bar.getAttribute('aria-valuemin') === '200' && m.bar.getAttribute('aria-valuemax') === '500' && m.bar.getAttribute('aria-valuenow') === '300'`));
+    await drag('#host1 > .splitter', 50);
+    check('a drag sizes the pane in px', await ev(`m.c.size === 350 && m.a.style.width === '350px'`), await ev(`m.c.size`));
+    check('…and it is saved when it ends', (await ev(`localStorage.getItem('w1')`)) === '350');
+    { await into('#host1 > .splitter'); const [x, y] = await ev(`(() => { const r = m.bar.getBoundingClientRect(); return [r.left + 3, r.top + 6]; })()`);
+      await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseMoved', x + 20, y);
+      check('while dragging nothing is saved', (await ev(`localStorage.getItem('w1')`)) === '350');
+      await mouse('mouseReleased', x + 20, y); await wait(30); }
+    await drag('#host1 > .splitter', 2000);
+    check('px limits hold', await ev(`m.c.size === 500`));
+    await click('#host1 > .splitter [data-to="last"]');
+    check('collapse on a bare bar: hidden, the other fills whatever the page sized it to', await ev(`m.b.hidden && m.a.classList.contains('split-fill') && Math.abs(m.a.getBoundingClientRect().width - m.host.clientWidth + 7) < 2`), await ev(`m.a.getBoundingClientRect().width`));
+    check('the collapsed pane is saved beside the size', (await ev(`localStorage.getItem('w1.fold')`)) === 'last');
+    await ev(`(window.m2 = mk({ min: 200, max: 500, def: 300, key: 'w1' }), true)`);
+    check('a new page puts both back', await ev(`m2.c.size === 500 && m2.c.collapsed === 'last' && m2.b.hidden`));
+    await click('#host1 > .splitter [data-to="reset"]');
+    check('a reset goes to def, saved; the mark goes', await ev(`m.c.size === 300 && localStorage.getItem('w1') === '300' && localStorage.getItem('w1.fold') === null`));
+    await ev(`(localStorage.setItem('w2', 'junk'), localStorage.setItem('w3', '9999'), localStorage.setItem('w2.fold', 'x'), window.j = mk({ min: 200, max: 500, key: 'w2' }), window.k = mk({ min: 200, max: 500, key: 'w3' }), true)`);
+    check('a bad saved value is ignored', await ev(`j.c.size === null && j.c.collapsed === null && k.c.size === null`));
+    await ev(`(window.r = mk({ side: 'last', min: 200, max: 500, def: 300 }, true), true)`);
+    check('side last: the pane is after the bar', await ev(`r.b.getBoundingClientRect().width === 300`));
+    await drag('#' + await ev(`r.host.id`) + ' > .splitter', -50);
+    check('side last: a drag left widens it', await ev(`r.c.size === 350`), await ev(`r.c.size`));
+    await ev(`(r.bar.focus(), true)`);
+    await key('ArrowLeft'); check('side last: Left widens it too', await ev(`r.c.size === 370`));
+    await key('Home'); check('side last: Home takes the bar to the start, the pane to its largest', await ev(`r.c.size === 500`));
+    await key('End'); check('side last: End = the smallest', await ev(`r.c.size === 200`));
+    await click('#' + await ev(`r.host.id`) + ' > .splitter [data-to="first"]');
+    check('side last: first is still the pane before the bar', await ev(`r.a.hidden && !r.b.hidden && r.b.classList.contains('split-fill')`));
+    await ev(`(r.c.restore(), true)`);
+    await ev(`(window.saves = [], window.sets = [], window.ch = [], window.z = mk({ min: 100, max: 600, size: 240, save: (s, f) => saves.push(s + '/' + f), set: (s, f) => sets.push(s + '/' + f), onChange: (s, f) => ch.push(s + '/' + f) }), true)`);
+    check('size: where to start from; set gets it', await ev(`z.c.size === 240 && sets.at(-1) === '240/null'`));
+    check('set: the page sizes it, Ayni leaves its style alone', await ev(`z.a.style.width === ''`));
+    await ev(`(z.c.collapse('first'), true)`);
+    check('save and set hear a collapse; onChange does not (code)', await ev(`saves.at(-1) === '240/first' && sets.at(-1) === '240/first' && ch.length === 0`));
+    check('with set, Ayni still hides the pane', await ev(`z.a.hidden`));
+    await ev(`(z.c.restore(), true)`);
+    await click('#' + await ev(`z.host.id`) + ' > .splitter [data-to="reset"]');
+    check('no def: a reset gives null to the page', await ev(`sets.at(-1) === 'null/null' && saves.at(-1) === 'null/null'`));
+    check('onChange hears the user', await ev(`ch.join()`) === 'null/null');
+    await ev(`(window.free = mk({ min: 100, max: 600, size: 240, key: 'w4' }), free.c.reset(), true)`);
+    check('no def: the saved size goes and the CSS takes over', await ev(`free.a.style.width === '' && localStorage.getItem('w4') === null`));
+    await ev(`(window.off = false, window.o = mk({ min: 100, max: 500, off: () => off }), window.oid = o.host.id, true)`);
+    await ev(`(o.c.collapse('first'), true)`);
+    check('off(): collapsed while there is a layout to collapse', await ev(`o.a.hidden`));
+    await ev(`(off = true, dispatchEvent(new Event('resize')), true)`);
+    check('off(): a phone layout shows no collapsed pane', await ev(`!o.a.hidden && o.c.collapsed === 'first'`));
+    await ev(`(o.c.size = 300, true)`);
+    await drag('#' + await ev(`oid`) + ' > .splitter', 40);
+    await ev(`(o.bar.focus(), true)`); await key('ArrowRight');
+    check('off(): no drag, no keys', await ev(`o.c.size === 300`));
+    await ev(`(off = false, o.c.collapse('first'), dispatchEvent(new Event('resize')), true)`);
+    check('off() over: it comes back', await ev(`o.a.hidden`));
+    await ev(`(window.n = mk({ min: 100, max: 500, def: 300, glyphs: false }), true)`);
+    check('glyphs: false: no glyphs', await ev(`!n.bar.querySelector('.split-ctl')`));
+    await drag('#' + await ev(`n.host.id`) + ' > .splitter', 40);
+    check('…the drag stays', await ev(`n.c.size === 340`));
+    await ev(`(n.bar.focus(), true)`); await key('ArrowRight');
+    check('…the keys stay', await ev(`n.c.size === 360`));
+    await ev(`n.bar.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))`);
+    check('…the double-click stays', await ev(`n.c.size === 300`));
+    await ev(`(n.bar.focus(), true)`); await key('Enter');
+    check('…Enter folds nothing: the view has its own button', await ev(`!n.a.hidden && n.c.collapsed === null`));
+    await ev(`(window.own = mk({ min: 100, max: 500, size: 200 }), own.b.hidden = true, own.c.size = 250, true)`);
+    check('a pane the page hides itself stays hidden', await ev(`own.b.hidden`));
+    await ev(`(own.c.collapse('first'), own.c.restore(), true)`);
+    check('…and only what the fold hid comes back', await ev(`!own.a.hidden && own.b.hidden && !own.a.classList.contains('split-fill') && !own.b.classList.contains('split-fill')`));
+    await ev(`(window.scr = 'p', localStorage.setItem('k.p', '220'), localStorage.setItem('k.l', '400'), window.f = mk({ min: 100, max: 500, def: 300, key: () => 'k.' + scr }), true)`);
+    check('key may be a function', await ev(`f.c.size === 220`));
+    await ev(`(scr = 'l', f.c.reload(), true)`);
+    check('reload(): the saved size of the new key', await ev(`f.c.size === 400`));
+    await ev(`(scr = 'x', f.c.reload(), true)`);
+    check('reload(): nothing saved there: back to def', await ev(`f.c.size === 300`));
+    await ev(`(window.p = mk({ unit: '%', min: 20, max: 80, def: 30 }), p.c.reset(), true)`);
+    check('unit %: the pane in percent', await ev(`p.a.style.width === '30%'`));
+    await drag('#' + await ev(`p.host.id`) + ' > .splitter', 80);
+    check('unit %: a drag in percent of the parent', await ev(`Math.abs(p.c.size - 40) < 1.5`), await ev(`p.c.size`));
+    check('Ayni.splitter twice: same controller, one set of glyphs', await ev(`Ayni.splitter(p.bar) === p.c && p.bar.querySelectorAll('.split-ctl').length === 1`));
+    await ev(`(localStorage.setItem('w9', '250'), Ayni.splitter(p.bar, { key: 'w9', unit: '%', min: 20, max: 300 }), true)`);
+    check('Ayni.splitter again with a key reads it', await ev(`p.c.size === 250`));
+    await ev(`(window.rw = mk({ rows: true, min: 50, max: 150 }), rw.host.style.flexDirection = 'column', rw.host.style.width = '300px', rw.a.style.width = 'auto', rw.c.size = 80, true)`);
+    check('rows: the pane\'s height, a horizontal bar', await ev(`rw.a.style.height === '80px' && rw.bar.getAttribute('aria-orientation') === 'horizontal' && rw.bar.classList.contains('rows')`));
+    check('a bar stays where it is on no storage', await ev(`(() => { const s = Object.getOwnPropertyDescriptor(Storage.prototype, 'getItem'); Storage.prototype.getItem = () => { throw new Error('blocked'); }; let ok = true; try { const b = mk({ key: 'w7', size: 222 }); ok = b.c.size === 222; } catch { ok = false; } Object.defineProperty(Storage.prototype, 'getItem', s); return ok; })()`));
+
+    /* ---------- More fields ---------- */
+    check('More fields: Ayni writes its parts and names it', await ev(`mf1.querySelector('.more-pill .more-chevron') && mf1.querySelector('.more-line') && mf1.textContent.includes('More fields')`));
+    check('folded at first: its part is hidden', await ev(`document.getElementById('mf1-box').hidden`));
+    await log();
+    await click('#mf1');
+    check('pressed: open, Fewer fields, the chevron turns', await ev(`!document.getElementById('mf1-box').hidden && mf1.getAttribute('aria-expanded') === 'true' && mf1.textContent.includes('Fewer fields') && getComputedStyle(mf1.querySelector('.more-chevron')).transform !== 'none'`));
+    check('…and tells it', (await log()) === 'more true');
+    await click('#mf1');
+    check('pressed again: closed', await ev(`document.getElementById('mf1-box').hidden`) && (await log()) === 'more false');
+    await ev(`(more.set(false), true)`);
+    check('set() from code folds it and tells nothing', await ev(`document.getElementById('mf2-box').hidden && !more.open`) && (await log()) === '' && (await ev(`S.filter((x) => x.startsWith('toggle')).length`)) === 0);
+    check('Ayni.moreFields adds the class and takes its own words', await ev(`mf2.classList.contains('more-toggle') && mf2.textContent.includes('Show extras')`));
+    await click('#mf2');
+    check('onToggle hears the user; its own word for open', (await ev(`S.at(-1)`)) === 'toggle true' && await ev(`mf2.textContent.includes('Hide extras')`));
+    check('a line written open stays open at load', await ev(`more.open`));
+
+    /* ---------- Choice rows, tags ---------- */
+    check('a choice row wraps', (await ev(`getComputedStyle(document.getElementById('ch')).flexWrap`)) === 'wrap');
+    check('on is the soft tint, not a fill', await ev(`(() => { const a = getComputedStyle(ch1), b = getComputedStyle(ch2); return a.backgroundColor !== b.backgroundColor && a.color !== b.color; })()`) && await ev(`(() => { const p = document.createElement('i'); p.style.background = 'var(--accent-soft)'; document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return getComputedStyle(ch1).backgroundColor === c; })()`));
+    check('a tag is no control', await ev(`(() => { const c = getComputedStyle(tag); return tag.tabIndex === -1 && c.cursor !== 'pointer'; })()`));
+
+    /* ---------- Touch ---------- */
+    await ev(`(Ayni.setTouchPreview(true), true)`); await wait(40);
+    check('touch: tabs are 44 px high', (await ev(`document.querySelector('#t4 > [role="tab"]').getBoundingClientRect().height`)) >= 44);
+    check('touch: the bar keeps 7 px, with a 19 px hit area each way', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '7px' && (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)}), '::before').left`)) === '-19px');
+    check('touch: a top and bottom bar the same, across', (await ev(`getComputedStyle(document.querySelector('#s2 > .splitter'), '::before').top`)) === '-19px');
+    check('touch: the arrows reach 34 px past the ends', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR + ' [data-to="first"]')}), '::before').top`)) === '-34px');
+    check('touch: a choice row keeps 8 px between targets', (await ev(`getComputedStyle(document.getElementById('ch')).gap`)) === '8px');
+    check('touch: a choice button has a 44 px hit area', (await ev(`(() => { const r = ch2.getBoundingClientRect(), s = getComputedStyle(ch2, '::before'); return r.height + 2 * Math.max(0, -parseFloat(s.top)); })()`)) >= 44);
+    await ev(`(Ayni.setTouchPreview(false), true)`);
+
+    /* ---------- Languages ---------- */
+    check('no untranslated keys in the layout family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('no errors or warnings in the layout family', t.logs.length === 0, t.logs.slice());
+    const NEW = ['ayni.split.drag', 'ayni.more.show', 'ayni.more.hide', 'ayni.tab.close'];
+    for (const lang of ['en', 'es', 'pt', 'fr', 'de']) {
+      const j = JSON.parse(fs.readFileSync(path.join(ROOT, 'i18n', lang + '.json'), 'utf8'));
+      check(`${lang}: the layout family's texts are all there`, NEW.every((k) => j[k]), NEW.filter((k) => !j[k]));
+    }
+    await ev(`(localStorage.clear(), localStorage.setItem('ayni-lang', 'es'), true)`); await t.open(PAGE);
+    check('es: the bar and More fields follow the page\'s language', await ev(`document.querySelector('#s1 > .splitter').dataset.tip === 'Arrastra para cambiar el tamaño' && mf1.textContent.includes('Más campos')`));
+    check('es: the (x) of a tab', await ev(`(sheets.set([{ value: 'a', label: 'Hoja', closable: true }]), sheets.tabs[0].querySelector('.tab-close').dataset.tip === 'Cerrar Hoja')`));
+    check('es: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    await ev(`(localStorage.removeItem('ayni-lang'), true)`);
+    await t.open(GALLERY);
+    check('the gallery shows the new parts', await ev(`Ayni.tabs('#sheets').tabs.length === 3 && !!document.querySelector('.choices') && !!document.querySelector('.tag') && document.getElementById('mf-btn').textContent.includes('More fields')`));
   }
 
   section('Desktop page');

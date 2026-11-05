@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="../ayni-help.css">
 <link rel="stylesheet" href="../ayni-fields.css">
 <link rel="stylesheet" href="../ayni-pickers.css">
+<link rel="stylesheet" href="../ayni-layout.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -30,6 +31,7 @@
 <script src="../ayni-help.js" defer></script>
 <script src="../ayni-fields.js" defer></script>
 <script src="../ayni-pickers.js" defer></script>
+<script src="../ayni-layout.js" defer></script>
 <script src="../ayni.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
@@ -642,6 +644,43 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
           <div role="tabpanel" id="sp-9" aria-labelledby="st-9" hidden><label class="switch">Keep offline copy<input type="checkbox" role="switch"></label></div>
         </div>
         <div class="row"><button class="btn" id="tabs-reopen" aria-label="Reopen closed tabs" data-tip="Reopen closed tabs: no tab is closed" aria-disabled="true"><span class="icon" data-icon="refresh"></span></button></div></div>
+      <div class="spec"><h3>Tabs under the page</h3>
+        <p class="rule">The sheets of a document: one view drawn again for the selected tab. The row sits at the start of the status bar and hangs from the page. Built from a list, so tabs can come and go; a long name ends in an ellipsis, and the tooltip gives it in full.</p>
+        <div class="sheet-demo">
+          <div class="sheet-page" id="sheet-page"></div>
+          <div class="statusbar">
+            <div role="tablist" class="bottom" id="sheets" aria-label="Sheets"></div>
+            <span id="sheet-sum"></span>
+          </div>
+        </div>
+        <div class="row"><button class="btn text sm bordered" id="sheet-add">Add sheet</button></div></div>
+      <div class="spec"><h3>Tabs in a dialog</h3>
+        <p class="rule">The row stays at the top, edge to edge, under the title; only the page below it scrolls.</p>
+        <div class="row"><button class="btn" data-open-dialog="dlg-tabs" aria-label="Open settings…" data-tip="Open settings…"><span class="icon" data-icon="settings"></span></button></div></div>
+      <div class="spec"><h3>Choice rows</h3>
+        <p class="rule">Small bordered toggles for the filters of a list, one of a few choices or several of a few. The page stays where it is: tabs change the page.</p>
+        <div class="stack">
+          <div class="choices" role="group" aria-label="Show" data-one>
+            <button class="btn text sm bordered" aria-pressed="true">All</button>
+            <button class="btn text sm bordered" aria-pressed="false">Unread</button>
+            <button class="btn text sm bordered" aria-pressed="false">Groups</button>
+          </div>
+          <div class="choices" role="group" aria-label="Days">
+            <button class="btn text sm bordered" aria-pressed="true">Mon</button>
+            <button class="btn text sm bordered" aria-pressed="false">Tue</button>
+            <button class="btn text sm bordered" aria-pressed="true">Wed</button>
+            <button class="btn text sm bordered" aria-pressed="false">Thu</button>
+            <button class="btn text sm bordered" aria-pressed="false">Fri</button>
+          </div>
+        </div></div>
+      <div class="spec"><h3>More fields</h3>
+        <p class="rule">One line folds away the rarely used half of a long form. A form that holds something there opens unfolded.</p>
+        <div class="field"><label for="mf-name">Name</label><input id="mf-name" class="input" value="Ana Morales"></div>
+        <button type="button" class="more-toggle" id="mf-btn" aria-expanded="false" aria-controls="mf-more"></button>
+        <div id="mf-more" hidden><div class="field"><label for="mf-web">Web site</label><input id="mf-web" class="input"></div></div></div>
+      <div class="spec"><h3>Tags</h3>
+        <p class="rule">A small read-only word on an item. A tag that can be pressed is a text button.</p>
+        <div class="row"><span class="tag">Drama</span><span class="tag">1994</span><span class="tag">Today</span></div></div>
       <div class="spec"><h3>Group boxes</h3>
         <p class="rule">A border and a title that group related controls.</p>
         <fieldset class="group"><legend>Shipping address</legend>
@@ -821,6 +860,17 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
       <label class="switch">Play a sound for new messages<input type="checkbox" role="switch"></label>
     </div>
   </form>
+</dialog>
+<dialog class="panel" id="dlg-tabs" aria-labelledby="dt-t">
+  <header><h2 id="dt-t">Settings</h2><button class="btn" data-close aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body">
+    <div role="tablist" aria-label="Settings">
+      <button role="tab" aria-controls="dtp-1">Profile</button>
+      <button role="tab" aria-controls="dtp-2">Auto-delete</button>
+    </div>
+    <div role="tabpanel" id="dtp-1"><div class="field"><label for="dt-name">Name</label><input id="dt-name" class="input" value="Ana Morales"></div></div>
+    <div role="tabpanel" id="dtp-2" hidden><p class="static" style="height:130vh">Old messages go after <b>30 days</b>. This page scrolls under the tab row.</p></div>
+  </div>
 </dialog>
 <dialog class="panel" id="dlg-msg" aria-labelledby="dm-t">
   <form method="dialog" style="display:contents">

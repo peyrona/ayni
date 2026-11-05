@@ -15,7 +15,7 @@ class ListPicker extends Field {
    * @param {HTMLElement} element  The `.picker` element: empty (Ayni writes its parts) or written in the page.
    * @param {object}  [options]  Same as Field, plus:
    * @param {'list'|'filter'|'combo'} [options.mode='list']  Drop-down list, filtered list or combo box.
-   * @param {Array<string|{value: string, text: string, short?: string}|{heading: string}>} [options.options]  The
+   * @param {Array<string|{value: string, text: string, short?: string, disabled?: boolean}|{heading: string}>} [options.options]  The
    *   items, with optional headings; replaces the items in the markup.
    * @param {string}  [options.value]  The value to show at first.
    * @param {string}  [options.placeholder]  Shown dim while nothing is chosen.
@@ -46,6 +46,14 @@ class ListPicker extends Field {
    * @param {string} [text]
    */
   set(value, text) {}
+
+  /**
+   * Picks a value as the user would, for a menu that mirrors the picker (a Format menu's Font): fires `ayni:change`
+   * and `onChange`, as a pick in the list does.
+   * @param {string} value
+   * @param {string} [text]
+   */
+  choose(value, text) {}
 
   /** @type {boolean} Faded, not focusable, never opens. */
   get disabled() {}

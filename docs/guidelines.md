@@ -278,11 +278,12 @@ A button that sits on a photo or a video (an editor's tools, a player's controls
 
 ### 3.9 Text buttons
 
-A text button carries a short label, with an optional icon before it. It is only for a wide call to action whose meaning an icon cannot carry: "Extract here", "Add stage", "Show all 240 photos". It never goes in a toolbar or a title row, where every button is round.
+A text button carries a short label, with an optional icon before it. It is for a wide call to action whose meaning an icon cannot carry ("Extract here", "Add stage", "Show all 240 photos") and for a choice row (below). It never goes in a toolbar or a title row, where every button is round.
 
 - **Look:** a pill (fully round ends) with the same states as a round button: no fill at rest, grey tint on hover, a fill only when it is the default button.
 - **Kinds:** plain (`.btn.text`), with a border (`.bordered`), with a dashed border for "add one more" rows (`.dashed`), and small (`.sm`).
 - **Label:** a verb first, two or three words, no full stop. It is the accessible name, so no tooltip is needed unless it adds something.
+- **Choice row:** a row of small bordered text buttons that are toggles (3.2): the filters of a list (All, Unread, Groups), one of a few choices (Equal, Shares, Percent), several of a few (the days of a week). Their labels are nouns. On is the soft Accent tint of a toggle, never a fill. For one of a few, pressing one turns the others off. The row wraps. It stays on the page and the view does not change: tabs change the page (12.1), and a longer list of choices is a list picker (7).
 
 ### 3.10 For developers
 
@@ -301,6 +302,7 @@ A text button carries a short label, with an optional icon before it. It is only
 | New tooltip | `Ayni.setTip(button, "Pause")`: the tooltip and the button's name change together |
 | Over a picture | `.btn.on-media` |
 | Text button | `button.btn.text` with an optional icon and the label |
+| Choice row | `.choices` (`role="group"` with a name) holding `button.btn.text.sm.bordered` with `aria-pressed` |
 | A dialog's buttons | written in the page with their class and icon (`.btn.primary` + check, `.btn` + close, `.btn.danger` + bin); nothing rewrites them when the page loads |
 
 ## 4. Text, number and search fields
@@ -533,6 +535,7 @@ A list whose pick runs an action at once (open one of the recent files) is not a
 - **Inside the list:** arrows move, Enter picks, Esc closes; type-ahead as in lists (8.3). Rows are 44 px high on touch.
 - **Headings:** a long list can be split under headings (Frequent, All currencies). A heading is not an item: it cannot be picked, and arrows and type-ahead skip it.
 - **Short text:** an item can show a shorter text in the closed field than in the list (the field says "USD", the list says "USD · US dollar"), where the field has little room.
+- **An item that cannot be picked now** (a style the document lacks) shows faded; the pointer and the keys pass over it.
 - **Nothing chosen:** the field shows a dim placeholder ("Pick a folder"), or nothing at all where nothing fits (a selection of text in several fonts).
 - **A value the list does not hold:** the page can show one (a font the document uses but the list does not name); it is shown in the field, never added to the list.
 - **Form value:** a hidden input carries the picked value, so forms submit it like a normal field.
@@ -550,8 +553,8 @@ A list whose pick runs an action at once (open one of the recent files) is not a
 | Need | Markup or code |
 | --- | --- |
 | A picker in the page | `.picker` with `data-picker="list"`, `"filter"` or `"combo"`: a hidden `input`, a `div.input[role="combobox"]` (an `input.input` for typing modes) and a `.panel.popup.picker-pop[popover]` holding `ul[role="listbox"]` with `li[role="option"]` (`data-value` when the value is not the text, `data-short` for the short text, `li.heading` for a heading) |
-| A picker built in code | `Ayni.picker(element, { mode, options, value, placeholder, onChange })` on an empty `.picker`, or on one written in the page; `options` is a list of `{ value, text, short }`, `{ heading }`, or plain strings |
-| The controller | `value`, `text`, `options` (setting it replaces the items at any time), `set(value, text)` (a `text` shows a value the list does not hold), `disabled`, `isOpen`, `open()`, `close()` |
+| A picker built in code | `Ayni.picker(element, { mode, options, value, placeholder, onChange })` on an empty `.picker`, or on one written in the page; `options` is a list of `{ value, text, short, disabled }`, `{ heading }`, or plain strings |
+| The controller | `value`, `text`, `options` (setting it replaces the items at any time), `set(value, text)` (a `text` shows a value the list does not hold), `choose(value)` (as a user pick: the event fires; for a menu that mirrors the picker), `disabled`, `isOpen`, `open()`, `close()` |
 | What was picked | `ayni:change { value, text, name, field, input }` on the `.picker`, and `onChange(value, text)`; never fired by `set()` |
 | Its name | `label[for]` on the field, or on the `.picker` (Ayni points it at the field it makes), or `aria-label` / `data-tip` on the `.picker` |
 | Saved as it changes | `Ayni.autoSave(picker, save)`: each pick saves; a failed save puts the old value back |
@@ -699,7 +702,7 @@ Open menus and popups close when the page, or any container outside them, scroll
 
 The title row of a view or window shows what you look at on the left and what you do on the right:
 
-- **Left:** Back (←, only in a sub-view), the app's icon, the title, the open file's name, the view switch (Day / Week / Month as toggles) and a pager.
+- **Left:** Back (←, only in a sub-view), the app's icon, the title, the open file's name, the view switch (Day / Week / Month as toggles) and a pager. The view switch is toggle buttons with one pressed (`aria-pressed`), never tabs: a tab needs its page right below it, so tabs do not sit in a title row.
 - **Right**, in groups, in this order: the actions for the picked items (8.5), Search (folded, 4.5), New (+), the app's tools, then the system group: More (⋮), Settings, Help (?).
 - A view opened by a toggle in the title row (a bin) is left with that same toggle, not with Back.
 
@@ -851,7 +854,9 @@ A long job that is not tied to one button (uploads, downloads, work on many item
 
 ### 11.4 Status bar
 
-A strip along the bottom of a Panel. It shows the last action ("Saved ana-morales.json"), the selection, and where the user is ("Ln 12, Col 4", "UTF-8").
+A strip along the bottom of a Panel. It shows what stays true: the selection and its totals ("Sum 1,240", "Count 8") and where the user is ("Ln 12, Col 4", "UTF-8"). Cells are parted by thin lines, and the bar scrolls sideways when they do not fit. A tab row at the bottom of a document (12.1) sits at the start of the bar, on the same line.
+
+The result of an action is a notification (11.2), because the eye is rarely on the bottom edge. A page may also keep its last action in the first cell ("Saved ana-morales.json"), but never as the only word about it.
 
 ### 11.5 Shared messages
 
@@ -872,15 +877,21 @@ Every control uses the same three messages: a spinner row while loading, a short
 
 The page needs no element for notifications: Ayni makes its own layer, above dialogs.
 
-## 12. Tabs and group boxes
+## 12. Tabs, group boxes and More fields
 
-Tabs split one Panel into pages; group boxes put a border and a title around related controls.
+Tabs split one Panel into pages; group boxes put a border and a title around related controls; a More fields line folds away the rarely used half of a long form.
 
 ### 12.1 Tabs
 
+- **When:** tabs change the page below them. A filter or a choice that leaves the page in place is a choice row (3.9); another look at the same content is the view switch (9.8).
 - **Look:** folder-style tabs. Tabs are outlined; the selected one joins its page and has an Accent edge at its top.
 - **Icon:** a tab may have one icon at its left, before its text.
-- **Many tabs:** when they do not fit, the tab row scrolls sideways, and the selected tab always scrolls into view. The mouse wheel over the row scrolls it sideways. There is no overflow list button.
+- **Many tabs:** when they do not fit, the tab row scrolls sideways, and the selected tab always scrolls into view. The mouse wheel over the row scrolls it sideways. There is no overflow list button, and the row never wraps to a second line.
+- **Long names:** a tab is 190 px wide at most. A longer name ends in an ellipsis, and the tooltip gives it in full.
+- **In a dialog:** the tab row stays at the top of the dialog's body, under the title row; only the page below it scrolls.
+- **At the bottom:** the sheets of a document may sit in a tab row under the page, at the start of the status bar (11.4). The row hangs from the page: the tabs are upside down, and the Accent edge of the selected one is at its bottom.
+- **One view, many tabs:** a tab may have no panel of its own, when one view is drawn again for the selected tab (the sheets of a workbook).
+- **Renaming and moving:** a page may let the user rename a tab in place with a double-click, and drag it along the row. A mouse drags at once; a finger holds still first, so a swipe still scrolls the row.
 - **Keys:** Left and Right switch pages inside the tab row. Ctrl+Page Down and Ctrl+Page Up go to the next and previous tab (wrapping) from anywhere inside that Panel; with tabs inside tabs, the innermost tab set around the focus wins. Ctrl+Tab is left to the browser.
 - **Closable tabs:** a small round close button (×) at the right of the tab, with a tooltip ("Close Details"). Delete (on the focused tab) or a middle click also closes it. The neighbour tab takes over. After any tab closes, even one that was not selected, focus goes to the selected tab.
 - **Disabled tab:** faded, arrow keys skip it, tooltip says why ("Billing: needs an account").
@@ -890,19 +901,57 @@ Tabs split one Panel into pages; group boxes put a border and a title around rel
 
 A border with a title (Shipping address, Delivery) around related controls. Radio and check groups always sit in one. A disabled group box fades everything inside at once. An error on the group colours its border Danger, with the red "!" next to its title (4.6).
 
+### 12.3 More fields
+
+A long form folds its rarely used half behind one line: a small pill with a chevron at the start of a thin rule ("More fields"). Pressed, the fields open below it, the chevron turns and the pill reads "Fewer fields". A form that holds something in the folded half opens unfolded, so nothing is hidden. It is not for one or two fields, which simply stay in the form.
+
+### 12.4 For developers
+
+| Need | Markup or call |
+| --- | --- |
+| Tabs in the page | `[role="tablist"]` with `[role="tab"]` and `[role="tabpanel"]`, linked by `aria-controls`; Ayni wires them when the page loads |
+| Tabs from code | `Ayni.tabs(list, { items, value, onSelect, onClose, scope, hash })` returns `{ value, tabs, select(value), set(items, value), add(item, index), close(value), setTabEnabled(value, on, why) }`. An item is `{ value, label, icon, tip, panel, closable, disabled, why }` |
+| No panel of its own | leave `panel` (or `aria-controls`) out; the page draws its one view in `onSelect` |
+| Keys from a wider place | `scope`: the element whose Ctrl+Page Down and Ctrl+Page Up move the tabs (the panel around the row by default) |
+| Tab row under the page | `.bottom` on the tablist; inside `.statusbar` it is the first child |
+| From code, no event | `select()`, `set()` and `value = ` fire nothing; a user's pick fires `ayni:tabselect` and `onSelect(value, tab)` |
+| Group box | `fieldset.group` with a `legend` |
+| More fields | `button.more-toggle` with `aria-expanded` and `aria-controls` (Ayni writes its parts); `Ayni.moreFields(button, { more, less, onToggle })` returns `{ open, set(on) }`; a user's press fires `ayni:more` |
+
 ## 13. Splitter
 
 A splitter is a bar between two panes, side by side or top and bottom, that the user drags to resize them; three small glyphs in its middle collapse either pane or reset both.
 
+- **Look:** a 7 px bar in the title-row colour, soft Accent under the pointer and while dragged. Every bar looks the same.
+- **Sizes:** a side pane is sized in pixels, so it keeps its width as the window grows and the other pane takes the rest. Two panes that share the room are sized in percent. Each pane has limits the bar stops at, and either pane can be the sized one.
+- **Remembered:** the size and the collapsed pane are kept on this device, saved when the drag ends. Each bar in the page has its own.
 - **Glyphs:** centred on the bar, three small solid glyphs with no circle, no background and no button styling. On a side-by-side bar, ◂ and ▸ are stacked with the dot between them; on a top/bottom bar, ▴ and ▾ sit in a row with the dot between. Glyph boxes are 10 px with a 1 px gap (about 3 px between the glyphs); triangles 7 × 9 px, dot 7 px.
-- **Arrows** send the bar to that end, collapsing that pane ("Collapse left pane"). An arrow is disabled when its pane is already collapsed.
+- **Arrows** send the bar to that end, collapsing that pane ("Collapse left pane"). An arrow is disabled when its pane is already collapsed. The bar stays, with its glyphs, to bring the pane back.
 - **Dot** resets both panes to their default sizes ("Reset sizes"). It is a solid dot here even though a dot on a button means second action: on the splitter it is not a button.
 - **Rest of the bar** is dragged to resize.
 - **Short bar:** when the bar is too short for three glyphs, only the dot shows.
+- **No glyphs:** a view with its own button that shows or hides the pane has a bar without glyphs: one action, one control. The drag, the keys and the double-click stay.
 - **Keyboard:** focus the bar; arrow keys move it (Left and Right side by side, Up and Down top and bottom), Home and End go to the limits, Enter collapses or restores the first pane.
 - **Mouse:** double-click on the bar resets both panes.
 - **Touch:** the glyphs keep their close spacing. Invisible hit areas reach 19 px across the bar and the arrows reach 34 px past the ends (44 px in all); the dot's area stays small. A double tap on the bar also resets.
 - **Tooltips:** the bar says "Drag to resize"; each glyph names what it does.
+- **Phones:** one pane at a time and no bar. The other pane is a view of its own or a sheet (16.9).
+- **Embedded pages:** while the bar is dragged, frames in the page ignore the pointer, so the drag never gets lost over them.
+
+### 13.1 For developers
+
+| Need | Markup or call |
+| --- | --- |
+| Panes the bar owns | `.split` (`.split.rows` for top and bottom) with two `.pane` and a `.splitter` between them; `data-default` is the first pane's size in percent. Ayni wires it when the page loads |
+| A bar in the page's own layout | `Ayni.splitter(bar, options)`: for a grid, or a pane that leaves for a sheet on a phone. `.split` is built on it |
+| What to size | `pane`, and `other` for the pane across the bar; `side: 'last'` when `pane` is after the bar (a drag right narrows it); `rows: true` for a top and bottom bar |
+| Size | `unit: 'px'` (default) or `'%'`, `min`, `max`, `def`; `size` and `collapsed` to start from when nothing is saved. Without `def`, a reset gives `null`, and the page's CSS decides |
+| Applying it | Ayni gives a collapsed pane `hidden` and lets the other fill the room. `set(size, collapsed)`, where `collapsed` is `'first'`, `'last'` or `null`, applies the size the page's way (a custom property, a grid); without it Ayni sets the pane's width or height |
+| Remembering | `key`: a localStorage key, or a function that returns one. The size is stored as a plain number and the collapsed pane under `key + '.fold'`. Or `save(size, collapsed)` when the page keeps them itself |
+| When there is nothing to drag | `off()` returns true (a phone layout) |
+| Without glyphs | `glyphs: false` |
+| After a user action | `onChange(size, collapsed)`, and `ayni:split` on the bar with `{ action, pane, message }` |
+| The controller | `{ size, collapsed, collapse(pane), restore(), reset(), reload() }`; `reload()` reads the saved size again (the device turned and `key` changed) |
 
 ## 14. Labels and info label
 
@@ -926,6 +975,10 @@ Every control has a visible label, and any control can have a small "i" that ope
 - Inside a dialog the popup belongs to that dialog, so it can be read and its links pressed.
 - On touch it keeps its small look with a 44 px invisible hit area. Its accessible name is "What is this?"; it has no tooltip (the popup is the tip).
 - Use it for help that does not fit in a placeholder; anything longer belongs in a dialog.
+
+### 14.3 Tags
+
+A tag is a small read-only word on an item: a genre, a label, "Today". Pill shape, no hover, not a Tab stop. A tag that can be pressed is a text button (3.9). The markup is `span.tag`.
 
 ## 15. Help, guided tour and first-visit marks
 
@@ -1155,6 +1208,12 @@ These were considered and turned down; they are listed so they are not proposed 
 | Dragging a dialog from any free spot | Not taken: by its title row only |
 | Tinted title and button strips on floating dialogs | Not taken: plain on the dialog; strips only on full-screen dialogs |
 | Moving a lone Close button into the title row when the page loads | Dropped: it is written there in the page |
+| Pills as tabs | Not taken: a row of pills reads as a filter; tabs change the page and look like folder tabs (12.1) |
+| A tab row that wraps to a second line | Not taken: the row scrolls sideways, and tabs keep their place (12.1) |
+| Tabs in a title row | Not taken: a tab needs its page right below it; the title row has the view switch (9.8) |
+| A full Accent fill on a pressed choice | Replaced: the soft tint of a toggle; a fill means the default button (3.9) |
+| The status bar as the place for the result of an action | Replaced: a notification; the bar shows what stays true (11.4) |
+| Glyphs on a bar and a button that folds the same pane | Not taken: one action, one control (13) |
 | The status bar saying why a dialog's input was not applied | Replaced: the field's error (4.7), or a line at the bottom of the dialog when no single field is wrong (a dialog has no status bar) |
 | A line under a field for its error | Replaced: a Danger border and a "!" inside the field, with a popup (4.7) |
 | A grey hint line under a field | Replaced: the placeholder for a short hint, the info "i" for a longer one (4.1) |

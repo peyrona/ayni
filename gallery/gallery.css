@@ -20,6 +20,9 @@ body { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .doc { border: var(--panel-border); border-radius: var(--ctl-radius); padding: 10px; min-height: 60px; }
 .statusbar.demo { border: var(--panel-border); border-radius: var(--ctl-radius); flex-wrap: wrap; }
 .spec .split + .split { margin-top: 10px; }
+.sheet-demo { border: var(--panel-border); border-radius: var(--ctl-radius); overflow: hidden; }
+.sheet-page { height: 90px; padding: 12px; background: var(--panel-bg); font-size: .85rem; }
+.sheet-demo + .row { margin-top: 8px; }
 .scroll-demo { height: 190px; box-shadow: none; }
 .scroll-demo table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .scroll-demo td, .scroll-demo th { padding: 4px 10px; white-space: nowrap; text-align: right; border-bottom: var(--panel-border); font-size: 13px; }

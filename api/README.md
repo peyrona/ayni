@@ -43,9 +43,9 @@ save.on('press', async () => { save.busy('Saving…'); await store(); save.idle(
 | `DateField` | TextField | `date-field.js` | Date, typed or picked |
 | `TimeField` | TextField | `time-field.js` | Time, typed or set with two spinners |
 | `DateTimeField` | DateField | `date-time-field.js` | Date and time |
-| `Tabs` | Component | `tabs.js` | Tabs and their panels |
+| `Tabs` | Component | `tabs.js` | Tabs and their panels, from the markup or from code (`Ayni.tabs`) |
 | `Dialog` | Component | `dialog.js` | Dialog, modal or not |
-| `Splitter` | Component | `splitter.js` | Splitter between two panes |
+| `Splitter` | Component | `splitter.js` | Splitter between two panes (`Ayni.splitter`) |
 | `Menu` | Component | `menu.js` | Popup menu and pop-up (context) menu |
 | `MenuBar` | Component | `menu-bar.js` | Menu bar |
 | `Toolbar` | Component | `toolbar.js` | Toolbar |

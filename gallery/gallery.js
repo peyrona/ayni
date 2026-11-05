@@ -20,6 +20,22 @@ $$('.tabs-local').forEach((l) => {
   reopen?.addEventListener('click', () => { $$('[role="tab"][hidden]', l).forEach((t) => { t.hidden = false; }); reopen.setAttribute('aria-disabled', 'true'); reopen.dataset.tip = 'Reopen closed tabs: no tab is closed'; status('Tabs reopened'); });
 });
 
+/* Tabs under the page: one view, drawn again for the selected sheet */
+const sheetNames = ['Summary', 'Sales', 'A sheet whose name is far too long for one tab'];
+const drawSheet = (v) => { $('#sheet-page').textContent = v; $('#sheet-sum').textContent = `Sheet ${sheetNames.indexOf(v) + 1} of ${sheetNames.length}`; };
+const sheets = Ayni.tabs('#sheets', { items: sheetNames.map((n) => ({ value: n, label: n })), onSelect: drawSheet, scope: $('.sheet-demo') });
+drawSheet(sheets.value);
+$('#sheet-add').addEventListener('click', () => {
+  const name = 'Sheet ' + (sheetNames.length + 1); sheetNames.push(name);
+  sheets.set(sheetNames.map((n) => ({ value: n, label: n })), name); drawSheet(name); status('Added ' + name);
+});
+/* Choice rows: toggles; with data-one, pressing one turns the others off */
+$$('.choices').forEach((row) => row.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (row.hasAttribute('data-one')) $$('button', row).forEach((x) => x.setAttribute('aria-pressed', x === b));
+  else b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
+}));
+
 /* Demo: Save is busy for 1.5 s; every third save fails and shows the usual error notification */
 let saves = 0;
 $('#save-demo').addEventListener('click', (e) => {

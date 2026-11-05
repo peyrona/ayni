@@ -9,8 +9,8 @@
    ayni:action, ayni:press, ...), listed in README.md. Everything else the app uses lives on window.Ayni. */
 (() => {
 'use strict';
-const { $, $$, isMac, icon, setIcon } = Ayni;
-const { fire, wired, once, each, tx, iconName, drawIcons, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip, fold } = Ayni.core;
+const { $, $$, icon, setIcon } = Ayni;
+const { fire, wired, once, each, tx, iconName, layer, retip } = Ayni.core;
 /* Menus, pop-up menus, toolbars and placing popups come from ayni-menus.js, which loads before this file */
 const { initMenu, initToolbar, contextMenu, place } = Ayni.core.menus;
 const invoker = () => Ayni.core.menus.invoker();
@@ -18,119 +18,8 @@ const invoker = () => Ayni.core.menus.invoker();
 /* A cancelable event: false when the page called preventDefault() */
 const ask = (el, type, detail) => el.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, cancelable: true }));
 
-/* Status bar: Ayni.status(text) writes the last action into the element marked data-ayni-status */
-const status = (msg) => { const el = $('[data-ayni-status]'); if (el) el.textContent = msg; };
-
 /* Shared layers, created when the page does not have them yet */
 
-/* ---------- Tabs: roving focus, arrows, Home/End, #hash (data-hash on the tablist) ---------- */
-const initTabs = (list) => {
-  const hash = list.hasAttribute('data-hash');
-  let tabs = $$(':scope > [role="tab"]', list);
-  const select = (tab, focus = true) => {
-    tabs = $$(':scope > [role="tab"]:not([hidden])', list);
-    tabs.forEach((t) => {
-      const on = t === tab;
-      t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1;
-      $('#' + t.getAttribute('aria-controls')).hidden = !on;
-    });
-    tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    if (focus) tab.focus();
-    if (hash) try { history.replaceState(null, '', '#' + tab.getAttribute('aria-controls')); } catch {}
-    fire(list, 'ayni:tabselect', tab);
-  };
-  /* Closable tabs: the round (x), Delete, or a middle click. The neighbour takes over. */
-  const close = (tab) => {
-    tabs = $$(':scope > [role="tab"]:not([hidden])', list);
-    const i = tabs.indexOf(tab), next = tabs[i + 1] || tabs[i - 1];
-    const was = tab.getAttribute('aria-selected') === 'true';
-    tab.hidden = true; tab.setAttribute('aria-selected', false); $('#' + tab.getAttribute('aria-controls')).hidden = true;
-    /* Focus always goes to the selected tab after a close (item 65) */
-    if (was && next) select(next); else { tabs = tabs.filter((t) => t !== tab); $(':scope > [role="tab"][aria-selected="true"]', list)?.focus(); }
-    fire(list, 'ayni:tabclose', tab);
-  };
-  tabs.forEach((t) => {
-    t.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) { e.stopPropagation(); close(t); } else select(t); });
-    t.addEventListener('auxclick', (e) => { if (e.button === 1 && t.hasAttribute('data-closable')) { e.preventDefault(); close(t); } });
-  });
-  list.addEventListener('keydown', (e) => {
-    tabs = $$(':scope > [role="tab"]:not([hidden]):not([aria-disabled="true"])', list);
-    const i = tabs.indexOf(document.activeElement);
-    if (e.key === 'Delete' && tabs[i]?.hasAttribute('data-closable')) { e.preventDefault(); close(tabs[i]); return; }
-    const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
-    if (n !== undefined) { e.preventDefault(); select(tabs[(n + tabs.length) % tabs.length]); }
-  });
-  /* Many tabs (item 64): the mouse wheel over the tab row scrolls it sideways */
-  list.addEventListener('wheel', (e) => {
-    if (list.scrollWidth <= list.clientWidth || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
-    e.preventDefault(); list.scrollLeft += e.deltaY;
-  }, { passive: false });
-  /* Ctrl+Page Down / Ctrl+Page Up switch to the next / previous tab from anywhere inside this Panel (item 66).
-     The innermost tab set around the focus wins; Ctrl+Tab stays with the browser. */
-  const scope = list.parentElement; scope.classList.add('tabscope');
-  scope.addEventListener('keydown', (e) => {
-    if (!e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || (e.key !== 'PageDown' && e.key !== 'PageUp')) return;
-    if (e.target.closest('.tabscope') !== scope || e.target.closest('[popover]')) return;
-    const live = $$(':scope > [role="tab"]:not([hidden]):not([aria-disabled="true"])', list);
-    const i = live.findIndex((t) => t.getAttribute('aria-selected') === 'true');
-    e.preventDefault(); e.stopPropagation();
-    select(live[(i + (e.key === 'PageDown' ? 1 : -1) + live.length) % live.length]);
-  }, true);
-  const start = hash && tabs.find((t) => '#' + t.getAttribute('aria-controls') === location.hash);
-  select(start || tabs[0], false);
-};
-
-
-/* ---------- Splitter (item 69): drag, arrows, Home/End; Enter collapses/restores the first pane; double-click resets ---------- */
-/* Fires ayni:split with { action: 'reset' | 'collapse' | 'restore', pane, message } after a user action */
-const initSplit = (split) => {
-  const bar = $('.splitter', split), rows = split.classList.contains('rows'), def = +(split.dataset.default || 35);
-  const [first, last] = rows ? ['top', 'bottom'] : ['left', 'right'];
-  const tri = (dir) => `<span class="tri ${dir}"></span>`;
-  const ctl = document.createElement('span'); ctl.className = 'split-ctl';
-  ctl.innerHTML = `<button type="button" tabindex="-1" data-to="0" aria-label="${tx('split.collapse.' + first)}" data-tip="${tx('split.collapse.' + first)}">${tri(rows ? 'up' : 'left')}</button>`
-    + `<button type="button" tabindex="-1" data-to="reset" aria-label="${tx('split.reset')}" data-tip="${tx('split.resetTip')}"><span class="dot"></span></button>`
-    + `<button type="button" tabindex="-1" data-to="100" aria-label="${tx('split.collapse.' + last)}" data-tip="${tx('split.collapse.' + last)}">${tri(rows ? 'down' : 'right')}</button>`;
-  bar.append(ctl);
-  const [toStart, , toEnd] = $$('button', ctl);
-  let before = def;
-  const setSplit = (v, keep) => {
-    v = v <= 0 ? 0 : v >= 100 ? 100 : Math.max(15, Math.min(85, Math.round(v)));
-    if (v > 0 && v < 100 && !keep) before = v;
-    split.style.setProperty('--split', v + '%');
-    split.classList.toggle('collapsed', v === 0); split.classList.toggle('collapsed-end', v === 100);
-    bar.setAttribute('aria-valuenow', v);
-    toStart.setAttribute('aria-disabled', v === 0); toEnd.setAttribute('aria-disabled', v === 100);
-  };
-  const tell = (action, pane, message) => fire(split, 'ayni:split', { action, pane, message });
-  const reset = () => { before = def; setSplit(def); tell('reset', null, tx('split.wasReset')); };
-  /* Too short a bar for three targets: only the reset ring shows */
-  new ResizeObserver(() => {
-    const len = rows ? bar.clientWidth : bar.clientHeight, need = isTouch() ? 3 * 10 + 68 + 16 : 3 * 10 + 16;
-    ctl.classList.toggle('short', len < need);
-  }).observe(bar);
-  ctl.addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.to === 'reset') reset();
-    else { const pane = b.dataset.to === '0' ? first : last; setSplit(+b.dataset.to, true); tell('collapse', pane, tx('split.collapsed.' + pane)); }
-  });
-  ctl.addEventListener('dblclick', (e) => e.stopPropagation());
-  bar.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || e.target.closest('.split-ctl button')) return;
-    e.preventDefault(); bar.setPointerCapture(e.pointerId);
-    const move = (ev) => { const r = split.getBoundingClientRect(); setSplit(rows ? ((ev.clientY - r.top) / r.height) * 100 : ((ev.clientX - r.left) / r.width) * 100); };
-    bar.addEventListener('pointermove', move);
-    bar.addEventListener('pointerup', () => bar.removeEventListener('pointermove', move), { once: true });
-  });
-  bar.addEventListener('dblclick', reset);
-  bar.addEventListener('keydown', (e) => {
-    const v = +bar.getAttribute('aria-valuenow');
-    if (e.key === 'Enter') { e.preventDefault(); if (v === 0) setSplit(before); else setSplit(0, true); tell(v === 0 ? 'restore' : 'collapse', first, tx(v === 0 ? 'split.restored' : 'split.collapsed')); return; }
-    const n = (rows ? { ArrowUp: v - 5, ArrowDown: v + 5 } : { ArrowLeft: v - 5, ArrowRight: v + 5 })[e.key] ?? { Home: 15, End: 85 }[e.key];
-    if (n !== undefined) { e.preventDefault(); setSplit(v === 0 && n < 15 ? 15 : v === 100 && n > 85 ? 85 : n); }
-  });
-  setSplit(def);
-};
 
 
 /* ---------- Desktop: taskbar and windows ---------- */
@@ -362,8 +251,6 @@ const initClock = (el) => {
 
 /* ---------- Ayni.init(root): wire up every control inside root (the whole page on load) ---------- */
 const init = (root = document) => {
-  each(root, '[role="tablist"]', 'tabs', initTabs);
-  each(root, '.split', 'split', initSplit);
   each(root, '.desktop', 'desktop', initDesktop);
   each(root, '.desktop > .area > .panel.window', 'window', initWindow);
   each(root, '.panel.popup.launcher', 'launcher', initLauncher);
@@ -372,7 +259,6 @@ const init = (root = document) => {
 };
 
 Object.assign(Ayni, {
-  status,
   windows: { select: (w) => selectWin(w.closest('.desktop'), w), minimise: minimiseWin, maximise: (w) => maximiseWin(w, true),
     restore: (w) => maximiseWin(w, false), close: closeWin },
   setTaskbarEdge: (desk, edge) => setEdge(desk, edge), isDesktop,

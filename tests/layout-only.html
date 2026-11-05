@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni layout family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs and layout families, and nothing else (no ayni.css,
+     no ayni.js). window.L holds everything the controls tell, in order; mk(options) makes a bare splitter bar. -->
+<script src="../ayni-i18n.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-layout.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-layout.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  document.addEventListener('ayni:tabselect', (e) => L.push(`select ${e.target.id}:${e.detail.textContent.trim()}`));
+  document.addEventListener('ayni:tabclose', (e) => L.push(`close ${e.target.id}:${e.detail.textContent.trim()}`));
+  document.addEventListener('ayni:split', (e) => L.push(`split ${e.detail.action}/${e.detail.pane}/${e.detail.message}`));
+  document.addEventListener('ayni:more', (e) => L.push(`more ${e.detail.open}`));
+  window.S = [];
+  window.sheets = Ayni.tabs('#sheets', { scope: $('#sheetbox'), onSelect: (v) => S.push('pick ' + v), onClose: (v) => S.push('closed ' + v), items: [
+    { value: 'a', label: 'Summary', icon: 'file', tip: 'The summary' }, { value: 'b', label: 'Sales' },
+    { value: 'c', label: 'A sheet whose name is far too long for one tab' }, { value: 'd', label: 'Off', disabled: true, why: 'Needs an account' }, { value: 'e', label: 'Temp', closable: true }] });
+  window.more = Ayni.moreFields('#mf2', { more: 'Show extras', less: 'Hide extras', onToggle: (on) => S.push('toggle ' + on) });
+  let n = 0;
+  /* A bare bar in a page's own layout: flip puts the sized pane after the bar */
+  window.mk = (opts = {}, flip = false) => {
+    const host = document.createElement('div'); host.className = 'host'; host.id = 'host' + (++n);
+    host.innerHTML = flip ? '<div class="grow">A</div><div class="splitter"></div><div class="side">B</div>' : '<div class="side">A</div><div class="splitter"></div><div class="grow">B</div>';
+    $('#bars').append(host);
+    const [a, bar, b] = host.children;
+    return { host, a, bar, b, c: Ayni.splitter(bar, opts) };
+  };
+</script>
+<style>
+  body { background: var(--bg); color: var(--text); font: .9rem/1.45 var(--font-sans); padding: 20px; margin: 0; min-height: 150vh; }
+  .host { display: flex; width: 800px; height: 200px; margin-bottom: 10px; border: var(--panel-border); }
+  .host .side { flex: none; width: 300px; overflow: auto; } .host .grow { flex: 1; min-width: 0; overflow: auto; }
+  #short { height: 30px; } #narrow { width: 200px; }
+  #sheetbox { width: 500px; border: var(--panel-border); }
+  #t1box { width: 600px; } #t4 { width: 180px; }
+  #frame { width: 200px; height: 40px; }
+</style>
+</head>
+<body>
+<div id="t1box" class="panel">
+  <div role="tablist" id="t1" aria-label="Properties">
+    <button role="tab" aria-controls="p1"><span class="icon" data-icon="file"></span>One</button>
+    <button role="tab" aria-controls="p2" aria-disabled="true" data-tip="Needs an account">Two</button>
+    <button role="tab" aria-controls="p3">Three</button>
+    <button role="tab" aria-controls="p4" data-closable aria-keyshortcuts="Delete">Four<span class="tab-close" data-close data-tip="Close Four"></span></button>
+    <button role="tab" aria-controls="p5" data-closable aria-keyshortcuts="Delete">Five<span class="tab-close" data-close data-tip="Close Five"></span></button>
+    <button role="tab" aria-controls="p6" data-closable aria-keyshortcuts="Delete">Six<span class="tab-close" data-close data-tip="Close Six"></span></button>
+  </div>
+  <div id="p1"><input id="in1" class="input" aria-label="Name"></div>
+  <div id="p2" hidden></div>
+  <div id="p3" hidden>
+    <div class="subtabs">
+      <div role="tablist" id="t5" aria-label="Inner"><button role="tab" aria-controls="q1">In one</button><button role="tab" aria-controls="q2">In two</button></div>
+      <div id="q1"><input id="in2" class="input" aria-label="Inner"></div><div id="q2" hidden></div>
+    </div>
+  </div>
+  <div id="p4" hidden></div><div id="p5" hidden></div><div id="p6" hidden></div>
+</div>
+<div role="tablist" id="t4" data-hash aria-label="Many">
+  <button role="tab" aria-controls="h1">First tab</button><button role="tab" aria-controls="h2">Second tab</button><button role="tab" aria-controls="h3">Third tab</button><button role="tab" aria-controls="h4">Fourth tab</button><button role="tab" aria-controls="h5">Fifth tab</button>
+</div>
+<div id="h1"></div><div id="h2" hidden></div><div id="h3" hidden></div><div id="h4" hidden></div><div id="h5" hidden></div>
+<div id="sheetbox">
+  <div id="page" style="height:50px; background: var(--panel-bg)" tabindex="0">Page</div>
+  <div class="statusbar" id="bar1">
+    <div role="tablist" class="bottom" id="sheets" aria-label="Sheets"></div>
+    <div id="totals"><span>Sum <b>12</b></span><span>Count <b>3</b></span></div>
+  </div>
+</div>
+<div class="statusbar" id="bar2" style="width:500px"><span data-ayni-status>Ready</span><span>Ln 12</span><span>UTF-8</span></div>
+<div class="split" id="s1" data-default="35">
+  <div class="pane">Left</div><div class="splitter"></div><div class="pane">Right</div>
+</div>
+<div class="split rows" id="s2" data-default="50">
+  <div class="pane">Top</div><div class="splitter"></div><div class="pane">Bottom</div>
+</div>
+<div class="split" id="short"><div class="pane">L</div><div class="splitter"></div><div class="pane">R</div></div>
+<section class="split" id="notours">A class of the same name, with no bar: not ours.</section>
+<iframe id="frame" title="A frame" src="about:blank"></iframe>
+<div id="bars"></div>
+<div class="field"><label for="mf-name">Name</label><input id="mf-name" class="input"></div>
+<button type="button" class="more-toggle" id="mf1" aria-expanded="false" aria-controls="mf1-box"></button>
+<div id="mf1-box" hidden>More</div>
+<button type="button" id="mf2" aria-expanded="true" aria-controls="mf2-box"></button>
+<div id="mf2-box">Extras</div>
+<div class="choices" id="ch" role="group" aria-label="Show">
+  <button class="btn text sm bordered" id="ch1" aria-pressed="true">All</button>
+  <button class="btn text sm bordered" id="ch2" aria-pressed="false">Unread</button>
+</div>
+<span class="tag" id="tag">Drama</span>
+<dialog class="panel" id="dlg" aria-labelledby="dlg-t">
+  <header><h2 id="dlg-t">Settings</h2><button class="btn" data-close aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button></header>
+  <div class="body">
+    <div role="tablist" id="t3" aria-label="Settings"><button role="tab" aria-controls="d1">Profile</button><button role="tab" aria-controls="d2">Long</button></div>
+    <div id="d1"><input id="in3" class="input" aria-label="Name"></div>
+    <div id="d2" hidden><p style="height:200vh; margin:0">A long page.</p></div>
+  </div>
+</dialog>
+</body>
+</html>

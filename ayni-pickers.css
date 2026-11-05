@@ -19,6 +19,8 @@
 .picker-pop [role="option"].active:not([aria-selected="true"]) { background: var(--card-head); box-shadow: none; }
 /* The chosen item of a list picker is full Accent (a picked row in a list is only tinted) */
 .picker-pop [role="option"][aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+/* A disabled item shows, faded, and cannot be picked */
+.picker-pop [role="option"][aria-disabled="true"] { opacity: .45; cursor: default; background: none; }
 /* A heading splits a long list (Frequent, All currencies); it is not an item */
 .picker-pop li.heading { list-style: none; padding: 8px 8px 2px; font-size: .75rem; font-weight: 600; color: var(--text-dim); cursor: default; user-select: none; }
 .picker-pop li.heading:first-child { padding-top: 2px; }
@@ -42,3 +44,5 @@
 html:not(.touch) [role="toolbar"] .picker > .input { font-size: .82rem; }
 [role="toolbar"] .picker::after { right: 8px; }
 [role="toolbar"] .picker:hover > .input:not([aria-disabled="true"]):not(:focus) { background: color-mix(in srgb, var(--text) 9%, transparent); }
+/* On touch it keeps its drawn 30 px and gets a 44 px hit area, as the toolbar's buttons do */
+html.touch [role="toolbar"] .picker > div.input::before { content: ""; position: absolute; inset: -7px 0; }
