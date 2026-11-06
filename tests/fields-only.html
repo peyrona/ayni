@@ -8,6 +8,7 @@
      families, and nothing else (no ayni.css, no ayni.js). #demo opens the birthday's popup and shows a field error
      (for screenshots). -->
 <script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
@@ -96,7 +97,7 @@
     <div class="field"><label for="dis-vol">Volume, disabled</label><div class="slider-row"><input id="dis-vol" type="range" value="40" disabled><output for="dis-vol">40%</output></div></div>
     <div role="toolbar" aria-label="Sheet" id="tb">
       <input class="input" id="tb-cell" value="B4" style="width:88px" aria-label="Cell" data-tip="Cell">
-      <div class="input-group spin" id="tb-spin" style="width:120px">
+      <div class="input-group spin" id="tb-spin">
         <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
         <input class="input" id="tb-num" role="spinbutton" inputmode="numeric" data-min="0" data-max="50" data-step="1" value="20" aria-label="Right margin">
         <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>

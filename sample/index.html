@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Notes</title>
+<!-- A small app made of Ayni alone: the proof that Ayni needs nothing else. node sample/server.mjs, then open http://127.0.0.1:8080/sample/ -->
+<link rel="manifest" href="manifest.json">
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch{}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-lists.css">
+<link rel="stylesheet" href="../ayni-layout.css">
+<link rel="stylesheet" href="../ayni-status.css">
+<link rel="stylesheet" href="../ayni-pwa.css">
+<link rel="stylesheet" href="../ayni-shell.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-icons-more.js" defer></script>
+<script src="../ayni-shell.js" defer></script>
+<script src="../ayni-status.js" defer></script>
+<script src="../ayni-pwa.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-lists.js" defer></script>
+<script src="../ayni-layout.js" defer></script>
+<script src="../ayni-net.js" defer></script>
+<script src="../ayni-boot.js" defer></script>
+<script src="../ayni-store.js" defer></script>
+<script src="notes.js" defer></script>
+<style>
+  html, body { height: 100%; margin: 0; }
+  .note { display: flex; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: default; }
+  #notes { flex: 1 1 auto; overflow: auto; margin: 0; padding: 0; list-style: none; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <span class="icon app-icon" data-icon="file-text"></span>
+    <h1>Notes</h1>
+    <div class="topbar-actions" role="toolbar" aria-label="Tools">
+      <div class="tb-group" id="selActions" hidden></div>
+      <div class="tb-group">
+        <button class="btn" id="newBtn" type="button" data-tip="New note" aria-label="New note"><span class="icon" data-icon="plus"></span></button>
+        <button class="btn" id="installBtn" type="button" data-tip="Install" aria-label="Install"><span class="icon" data-icon="add-home"></span></button>
+      </div>
+    </div>
+    <button id="syncIndicator" class="sync-indicator" type="button"></button>
+  </header>
+  <ul id="notes"></ul>
+  <p class="empty-state" id="none" hidden>No notes yet.</p>
+</div>
+</body>
+</html>

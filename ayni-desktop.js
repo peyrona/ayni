@@ -1,4 +1,4 @@
-/* Ayni library 0.1.0, desktop family: the taskbar, windows and their modeless dialogs, the applications launcher and
+/* Ayni library 0.2.0, desktop family: the taskbar, windows and their modeless dialogs, the applications launcher and
    the clock widget. Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-menus.js:
      <script src="ayni-menus.js" defer></script>
      <script src="ayni-desktop.js" defer></script>
@@ -132,7 +132,7 @@ const adoptDialog = (d) => {
 const initWindow = (w) => {
   const desk = w.closest('.desktop'), area = w.parentElement, head = $(':scope > header', w);
   if (!desk || !head) return;
-  const name = $('h2', head)?.textContent.trim() || tx('win.name'), appIcon = $('.app .icon', head);
+  const name = $('h2', head)?.textContent.trim() || tx('win.name'), appIcon = $('.win-app .icon', head);
   const chip = document.createElement('div');
   chip.className = 'chip'; chip.setAttribute('role', 'group'); chip.setAttribute('aria-label', name);
   const ctl = (k, label, ic) => `<button class="btn" data-win="${k}" aria-label="${label}" data-tip="${label}">${icon(ic)}</button>`;

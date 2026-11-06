@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ayni frame report</title>
+<!-- Inside a frame: tells the host what Ayni.frame says here. A foreign host can learn it no other way. -->
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<link rel="stylesheet" href="../ayni-base.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script>
+addEventListener('DOMContentLoaded', () => Ayni.ready.then(() => {
+  parent.postMessage({ name: location.hash.slice(1), embedded: Ayni.frame.embedded, windowed: Ayni.frame.windowed,
+    self: Ayni.frame.owner() === window, classes: document.documentElement.className.split(/\s+/).filter((c) => c.startsWith('is-')).sort() }, '*');
+}));
+</script>
+</head>
+<body></body>
+</html>

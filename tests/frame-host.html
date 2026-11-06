@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ayni frame host</title>
+<!-- A page that frames others: a pane, a window, and (#foreign) one from another address -->
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<link rel="stylesheet" href="../ayni-base.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script>
+window.reports = {};
+addEventListener('message', (e) => { window.reports[e.data.name] = e.data; });
+window.wait = (name) => new Promise((r) => { const t = () => (window.reports[name] ? r(window.reports[name]) : setTimeout(t, 20)); t(); });
+window.frame = (name, src, marked) => {
+  const f = document.createElement('iframe');
+  if (marked) f.setAttribute('data-ayni-window', '');
+  f.id = name; f.src = `${src}#${name}`;
+  document.body.append(f);
+  return wait(name);
+};
+</script>
+</head>
+<body></body>
+</html>

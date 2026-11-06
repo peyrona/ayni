@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni shell only</title>
+<!-- The app shell, on the base alone -->
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-shell.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-shell.js" defer></script>
+</head>
+<body>
+<div class="app" id="app"><div class="topbar"><svg class="app-icon" id="ic" width="20" height="20"></svg><h1 id="name">Name</h1><div class="topbar-actions"><button id="act" type="button">x</button></div></div></div>
+<div id="printRoot"></div>
+</body>
+</html>

@@ -548,3 +548,6 @@ $('#hm-menu').addEventListener('beforetoggle', (e) => {
 const coarse = matchMedia('(pointer: coarse)'), sim = $('#sim-touch');
 const syncSim = () => { if (coarse.matches) sim.checked = true; sim.disabled = coarse.matches; Ayni.setTouchPreview(sim.checked); };
 coarse.addEventListener('change', syncSim); sim.addEventListener('change', () => Ayni.setTouchPreview(sim.checked)); syncSim();
+
+/* Colour schemes */
+document.getElementById('schemes-btn').addEventListener('click', () => Ayni.schemeDialog());

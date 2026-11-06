@@ -6,7 +6,7 @@
  */
 const Ayni = {
   /** @type {string} Library version. */
-  version: '0.1.0',
+  version: '0.2.0',
 
   Component, Button, Field, TextField, PasswordField, SearchField, TextArea, NumberField,
   CheckBox, Switch, RadioGroup, Slider, ListBox, ListPicker, Tree,
@@ -177,6 +177,131 @@ const Ayni = {
    *   count: (at: number, total: number) => void}}  count: at = the current match (1-based, 0 = none picked).
    */
   findBar(bar, options) {},
+
+  /**
+   * Builds a node (ayni-util.js).
+   * @param {string} tag
+   * @param {object|string|null} [props]  { class, text, html, on, attrs, data, anyProperty }, or just the class.
+   * @param {...(Node|string|number|Array|null|false)} kids
+   * @returns {HTMLElement}
+   */
+  h(tag, props, ...kids) {},
+
+  /** @param {*} text  @returns {string} Safe inside HTML and quoted attributes (ayni-util.js). */
+  esc(text) {},
+  /** @param {string} text  @returns {string} Safe inside a double-quoted CSS string. */
+  cssEsc(text) {},
+  /** @param {string} url  @returns {string} url("...") */
+  cssUrl(url) {},
+  /** @param {string} name  @returns {string} "sheet.XLSX" -> "xlsx", '' when there is none. */
+  extOf(name) {},
+  /** @param {string} path  @returns {string} "a/b.txt" -> "b.txt" */
+  baseName(path) {},
+  /** @param {string} path  @returns {string} "a/b.txt" -> "a", '' when there is no folder. */
+  dirOf(path) {},
+  /** @param {string} name  @returns {string} "b.txt" -> "b" */
+  stripExt(name) {},
+  /**
+   * @param {string} path
+   * @param {Array<[string, string]>} pairs  [old, new] moves.
+   * @returns {string} Where the path is after the moves: the same one, or the new one when it is or lives inside a moved item.
+   */
+  followPath(path, pairs) {},
+  /**
+   * @param {string} name
+   * @param {Set<string>} taken  The names in that folder.
+   * @returns {string} "photo.jpg", or "photo (2).jpg", "photo (3).jpg"...
+   */
+  uniqueName(name, taken) {},
+  /**
+   * @param {string} text
+   * @param {string} [fallback='item']  For a text with nothing left.
+   * @param {number} [max]
+   * @returns {string} "Córdoba 2026" -> "cordoba-2026"
+   */
+  slugify(text, fallback, max) {},
+  /** @param {number} bytes  @returns {string} "1.5 KB", "15 MB", with the page's decimal mark. */
+  fmtBytes(bytes) {},
+  /** @param {number} seconds  @returns {string} "1:05", "1:02:05" */
+  fmtClock(seconds) {},
+  /** @param {number} seconds  @returns {string} "1 h 30 min", '' for nothing. */
+  fmtRuntime(seconds) {},
+  /**
+   * @param {string} text  @param {number} [mod=2**32]
+   * @returns {number} The same text always gives the same number (ayni-util.js).
+   */
+  hash(text, mod) {},
+  /** @param {string} text  @returns {number} A hue, 0-359, for a name. */
+  hueOf(text) {},
+  /** @param {string} text  @returns {string} One of eight tile colours for a name, #RRGGBB. */
+  colorFor(text) {},
+  /**
+   * The app's icon and name go home (ayni-shell.js, optional).
+   * @param {{go: (e: Event) => void, tip?: string, heads?: string, not?: string, onIcon?: (el: Element) => void}} options
+   * @returns {(root?: ParentNode) => void}  Marks them, on the page or on a part drawn later.
+   */
+  homeLinks(options) {},
+  /**
+   * Export to PDF through the print dialog (ayni-shell.js, optional).
+   * @param {string} html  Fills #printRoot.  @param {string} title  Seeds the file name.  @param {string} hintKey  Text key.
+   */
+  printPage(html, title, hintKey) {},
+  /** @type {{draw: Function, set: Function, listener: Function, bars: string}} The connection plug (ayni-status.js, optional). */
+  plug: {},
+  /** @param {{title: string, used: string, how: string, items: string[], action?: object}} options  @returns {HTMLElement} (ayni-status.js) */
+  spaceCard(options) {},
+  /** @param {string} selector  The app's icon.  @returns {{set: Function, place: Function, showing: Function}} (ayni-status.js) */
+  badge(selector) {},
+  /** @param {Array} items  @param {Function} onPick  @returns {HTMLElement} The clip's panel (ayni-dialogs.js). */
+  attachPanel(items, onPick) {},
+  /** The share dialog (ayni-share.js, optional). @param {object} options  See the head of that file. @returns {Promise<void>} */
+  share(options) {},
+  /** @param {{event: string, onBurst?: (bytes: number) => void}} options  (ayni-upload.js, optional) */
+  uploads(options) {},
+  /** @param {number} need  @param {{space: Function, binIds: Function, empty: Function}} options  @returns {Promise<boolean>} */
+  ensureRoom(need, options) {},
+  /** @type {{parse: Function, strip: Function, urls: Function}} Marks of a short message (ayni-compose.js, optional). */
+  marks: {},
+  /** @param {(emoji: string) => void} pick  @returns {HTMLElement} */
+  emojiPanel(pick) {},
+  /** @param {() => HTMLTextAreaElement} textarea  @returns {{input: Function, undo: Function, tail: Function}} */
+  smileys(textarea) {},
+  /** Opens the colour scheme dialog (ayni-schemes.js, optional). */
+  schemeDialog() {},
+  /** @param {number} ms  @returns {Promise<void>} */
+  sleep(ms) {},
+  /**
+   * Runs `worker` over `items`, at most `n` at a time.
+   * @param {Array} items  @param {number} n  @param {(item: *) => Promise} worker
+   * @returns {Promise<void>}
+   */
+  pool(items, n, worker) {},
+  /** @param {string} text  @returns {Promise<void>} Fails when neither way of copying worked. */
+  copyText(text) {},
+  /**
+   * To this device as a download.
+   * @param {Blob|string} data  @param {string} name  @param {string} [type]  For a text.
+   */
+  saveFile(data, name, type) {},
+  /** @param {string} url  @param {string} name  The browser fetches it itself. */
+  saveUrl(url, name) {},
+  /** @type {boolean} Shortcuts take ⌘, not Ctrl. */
+  isMac: false,
+  /** @returns {boolean} An iPhone, or an iPad, which may call itself a Mac. */
+  isIOS() {},
+  /**
+   * A page inside a frame (ayni-base.js).
+   * @type {{embedded: boolean, windowed: boolean, owner: () => Window}}
+   *   embedded: inside any frame; windowed: inside a frame marked data-ayni-window, a window of a desktop;
+   *   owner(): the window with the address bar.
+   */
+  frame: {},
+  /**
+   * Hangs each shortcut on its button's tooltip, " (Ctrl+P)", or takes it off on a phone (ayni-menus.js). Safe to run again.
+   * @param {Array<{el: string, label: () => string}>} list  The buttons' ids.
+   * @param {boolean} phone
+   */
+  keyHints(list, phone) {},
 
   /**
    * The search rule as a test (ayni-base.js): words in any order, "an exact phrase", -word to leave out; accents,
@@ -364,6 +489,18 @@ const Ayni = {
      * @returns {Date|null} Null when it is not a valid date.
      */
     parseIso(text) {},
+
+    /** @returns {string} The device's day as YYYY-MM-DD, never the UTC day. */
+    today() {},
+
+    /**
+     * @param {string} [fallback='UTC']
+     * @returns {string} The device's time zone.
+     */
+    zone(fallback) {},
+
+    /** @returns {string[]} Every time zone the browser knows; a short list on an old browser. */
+    zones() {},
 
     /**
      * @param {Date} date

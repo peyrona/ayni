@@ -7,6 +7,7 @@
 <!-- An app with its own window engine (guideline 17.4): it takes ayni-desktop.css and not ayni-desktop.js, writes the bar
      and its chips itself, and has its own rule for when the desktop shows (data-mode="app"). -->
 <script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">

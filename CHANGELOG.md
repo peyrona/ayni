@@ -2,8 +2,37 @@
 
 All notable changes to Ayni are listed here. Versions follow [Semantic Versioning](https://semver.org/); until 1.0 the markup and the API may still change.
 
-## Unreleased
+## 0.2.0
 
+Everything an app needs beyond the controls, so Ayni serves any project; `sample/` is the proof, a small app made of Ayni alone.
+
+- `AyniPhoto.camera`: a computer with a camera gets a live view and a shutter (`ayni-photo.js`, `ayni-image.css`, `ayni.camera.*` strings).
+- Text button: the word is no longer bold.
+- Item lists: a grid of cards (`grid` option) always shows its ticks, with a mouse or on touch, except in a desktop window.
+- List picker: the items in its popup take the size of the text in its field, in a toolbar too.
+- Title row: on a phone the fixed app name is hidden and the icon stays; screen readers still get the name (guidelines 18.2).
+- Window chips: rectangles with rounded corners (`--radius-s`), and the selected chip loses its Accent edge: the card colour alone marks it (guidelines 17.3).
+- Splitter: the bar is 13 px, wide enough to hold its glyphs; on touch each glyph has its own 44 px along the bar.
+- A popup button's triangle takes the colour of the button's icon, no longer Accent (guidelines 3.3).
+- Large button, `.btn.large`: a big Accent icon with its name under it, for launchers and home screens (guidelines 3.10). `.btn.large.bordered` adds an edge; the desktop's window switcher uses it.
+- Number field: as wide as − value + and no more. Ayni sizes it from its limits (`--spin-ch`), 24 px buttons, no padding or gaps; the hour and minute boxes of the time popups too. A page no longer sets a width.
+- From Nayive, all optional: `Ayni.deskPage` (a desktop of whole pages), `ayni-tiling.js`, `ayni-desk-rule.js`; `Ayni.media`, `AyniPlayOn`, `ayni-media.css`; `AyniPhoto`, `AyniImageEditor` (needs Fabric); `AyniBaseMap`, `ayni-map.css` (needs Leaflet); `AyniMenus`, `ayni-doc.css`; `AyniCrypt`; `AyniFx`; `formats/ical.js` (needs luxon and rrule), `formats/vcard.js`.
+- From Nayive, the data side, all optional: `AyniNet` (fetch with retry, the file API), `AyniStore` (offline cache, outbox, conflicts), `AyniBoot`, `AyniDoc` (documents with autosave and drafts). `window.AyniNames` sets what they call what they keep: keys, cookies, the API's address, its headers.
+- `tools/`: `cdp.mjs`, `rules.mjs`, `check-i18n`, `build-gzip`, `build-precache` (reads `precache.json`).
+
+- From Nayive, optional: `Ayni.pwa` (`ayni-pwa.css`, `.js`); the screen locker (`ayni-locker.css`, `.js`, `lockers/`).
+- From Nayive, all optional: `Ayni.share` (`ayni-share.css`, `.js`); `Ayni.uploads`, `Ayni.ensureRoom` (`ayni-upload.js`); `Ayni.marks`, `Ayni.emojiPanel`, `Ayni.smileys` (`ayni-compose.css`, `.js`); FullCalendar's look (`ayni-calview.css`).
+- Status, from Nayive: `ayni-status.css` and `ayni-status.js`, optional: `Ayni.plug`, `Ayni.spaceCard`, `Ayni.badge`. `Ayni.attachPanel` in the dialogs family.
+- App shell, from Nayive: `ayni-shell.css` and `ayni-shell.js`, optional: the tool and card shells, the title row (`.topbar`, `.header`), `.view-bar`, a page inside a frame, the phone break, finger pads in the title row, `Ayni.homeLinks`, `Ayni.printPage`.
+- A window's icon and name are `.win-app` now: `.app` is the tool shell.
+- `ayni-icons-more.js`, from Nayive: about 400 more icons, optional. `Ayni.icon(name, cls, size)` takes a size in px, and works from the first script, before the base has loaded.
+- `.popup-row`, `.btn.pop-btn`, `.tb-modes`, `.tb-actions`, `.tb-sep` in them, `.tb-tools`, from Nayive, in `ayni-menus.css`.
+- The colour scheme dialog, from Nayive, with the schemes it ships (Oscuro, Noche, Beige, Niebla): `ayni-schemes.css` and `ayni-schemes.js`, optional, `Ayni.schemeDialog()`.
+- Identity colours, from Nayive: `data-c="0"` to `"7"` sets `--id-color`. `Ayni.hash`, `Ayni.hueOf`, `Ayni.colorFor`: a colour from a name.
+- `Ayni.theme.askPlace()` and `.refreshPlace()`, from Nayive: where the device is, for Sun mode.
+- `ayni-util.js`, from Nayive: the small jobs every app writes again (`Ayni.h`, `esc`, `cssEsc`, `cssUrl`, `extOf`, `baseName`, `dirOf`, `stripExt`, `followPath`, `uniqueName`, `slugify`, `fmtBytes`, `fmtClock`, `fmtRuntime`, `sleep`, `pool`, `copyText`, `saveFile`, `saveUrl`, `isIOS`). Load it right after `ayni-i18n.js`, without `defer`: every page needs it. `Ayni.dates` starts here (`pad`, `iso`, `parseIso`, new `today`, `zone`, `zones`) and `ayni-fields.js` adds its formatters, so dates work on a page without fields. `Ayni.isMac` moved here too, and now also knows the iPod and a browser that gives no platform.
+- `Ayni.frame`, from Nayive: is this page inside a frame (`embedded`), is it a window of a desktop (`windowed`), and `owner()`, the window with the address bar. `<html>` gets `.is-embedded`, `.is-embedded-wide` or `.is-windowed`. A host marks a frame that is a window with `data-ayni-window`.
+- `Ayni.keyHints(list, phone)`, from Nayive: hangs the shortcut on a button's tooltip, and takes it off on a phone.
 - `Ayni.pickFolder` and `Ayni.pickFile`, from Nayive: the dialogs to choose a folder (with delete, rename and new folder in the corner) and a file; the app gives the data. Icon `folder-plus`.
 - `Ayni.menuBar(bar, { menus })` builds a menu bar from a list, filling each menu as it opens; `.menu .mi-char` shows a character in the icon slot. Both from Nayive.
 - `Ayni.ask({ password: true, lead, verify, min })` asks for a password (twice and at least `min` characters for a new one, with the eye when the fields family is there), from Nayive. `.empty-state`, `.section-label` and `.card-row` moved in from Nayive (guideline 12.4; the developers' section is now 12.5).

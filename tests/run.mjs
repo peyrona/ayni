@@ -91,8 +91,8 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - 
 /* Texts that are keys nobody translated: "ayni.something" anywhere in the page, text or attribute */
 const RAW_KEYS = `(() => { const out = new Set(), re = /\\bayni\\.[a-z][\\w.]*/g;
   for (const m of document.body.innerText.matchAll(re)) out.add(m[0]);
-  document.querySelectorAll('*').forEach((el) => [...el.attributes].forEach((a) => { if (a.name !== 'class' && a.name !== 'id' && a.name !== 'src' && a.name !== 'href') for (const m of a.value.matchAll(re)) out.add(m[0] + ' @' + a.name); }));
-  document.querySelectorAll('[popover], dialog').forEach((el) => { for (const m of el.innerHTML.matchAll(re)) out.add(m[0]); });
+  document.querySelectorAll('*').forEach((el) => [...el.attributes].forEach((a) => { if (a.name !== 'class' && a.name !== 'id' && a.name !== 'src' && !a.name.startsWith('data-i18n') && a.name !== 'href') for (const m of a.value.matchAll(re)) out.add(m[0] + ' @' + a.name); }));
+  document.querySelectorAll('[popover], dialog').forEach((el) => { for (const m of el.innerHTML.replace(/\\sdata-i18n[\\w-]*="[^"]*"/g, '').matchAll(re)) out.add(m[0]); });
   return [...out]; })()`;
 const scheme = (t, value) => t.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value }] });
 const clearStore = (t) => t.evaluate('localStorage.clear(), true');
@@ -272,6 +272,137 @@ try {
   check('…and its theme button works', !!(await t.evaluate('document.documentElement.dataset.theme')));
   await t.evaluate(`Ayni.setTheme(null), true`);
 
+  section('Helpers (ayni-util.js)');
+  t.logs.length = 0;
+  await t.open(BASE + '/tests/base-only.html');
+  const eq = async (name, expr, want) => { const got = await t.evaluate(expr); check(name, JSON.stringify(got) === JSON.stringify(want), got); };
+  await eq('h: props, class, text, attrs, data', `(() => { const e = Ayni.h('a', { class: 'x', text: 'hi', attrs: { title: 't', hidden: false, lang: null }, data: { id: 7 }, href: '#z', id: null }); return [e.tagName, e.className, e.textContent, e.title, e.hasAttribute('hidden'), e.hasAttribute('lang'), e.dataset.id, e.getAttribute('href'), e.hasAttribute('id')]; })()`,
+    ['A', 'x', 'hi', 't', false, false, '7', '#z', false]);
+  await eq('h: "" is kept, null and false are skipped', `(() => { const e = Ayni.h('div', { class: '', title: '', hidden: false, id: null }); return [e.hasAttribute('class'), e.hasAttribute('title'), e.hidden]; })()`, [true, true, false]);
+  await eq('h: kids are nodes, text, numbers, lists; null and false are skipped', `Ayni.h('p', null, 'a', 1, null, false, [Ayni.h('b', { text: 'c' }), ['d']]).innerHTML`, 'a1<b>c</b>d');
+  await eq('h: a string is the class, the rest are kids', `(() => { const e = Ayni.h('div', 'box', 'text'); return [e.className, e.textContent]; })()`, ['box', 'text']);
+  await eq('h: "" as the class leaves no class', `Ayni.h('div', '', 'x').outerHTML`, '<div>x</div>');
+  await eq('h: el(tag, cls, text) with nothing to say', `(() => { const e = Ayni.h('div', null, undefined); return [e.className, e.childNodes.length]; })()`, ['', 0]);
+  await eq('h: a click handler runs', `(() => { let n = 0; Ayni.h('i', { on: { click: () => n++ } }).click(); return n; })()`, 1);
+  await eq('h: html is put as markup, text is not', `[Ayni.h('i', { html: '<b>1</b>' }).children.length, Ayni.h('i', { text: '<b>1</b>' }).children.length]`, [1, 0]);
+  await eq('esc: all five, null is empty', `[Ayni.esc('<a href="x">\\'&'), Ayni.esc(null), Ayni.esc(0)]`, ['&lt;a href=&quot;x&quot;&gt;&#39;&amp;', '', '0']);
+  await eq('cssUrl: quotes and backslashes', `Ayni.cssUrl('a"b\\\\c')`, 'url("a\\"b\\\\c")');
+  await eq('extOf', `[Ayni.extOf('hoja.XLSX'), Ayni.extOf('a/b'), Ayni.extOf(''), Ayni.extOf(null), Ayni.extOf('x.tar.gz')]`, ['xlsx', '', '', '', 'gz']);
+  await eq('baseName', `[Ayni.baseName('files/a/b.txt'), Ayni.baseName('b'), Ayni.baseName(null)]`, ['b.txt', 'b', '']);
+  await eq('dirOf', `[Ayni.dirOf('files/a/b.txt'), Ayni.dirOf('b'), Ayni.dirOf('/b'), Ayni.dirOf(null)]`, ['files/a', '', '', '']);
+  await eq('stripExt', `[Ayni.stripExt('a/b.txt'), Ayni.stripExt('b'), Ayni.stripExt('x.tar.gz')]`, ['a/b', 'b', 'x.tar']);
+  await eq('followPath: same, moved, inside a moved one, a look-alike', `(() => { const m = [['a/b', 'c/b'], ['x', 'y']]; return [Ayni.followPath('q', m), Ayni.followPath('a/b', m), Ayni.followPath('a/b/d.txt', m), Ayni.followPath('a/bc', m)]; })()`, ['q', 'c/b', 'c/b/d.txt', 'a/bc']);
+  await eq('uniqueName', `[Ayni.uniqueName('a.jpg', new Set()), Ayni.uniqueName('a.jpg', new Set(['a.jpg'])), Ayni.uniqueName('a.jpg', new Set(['a.jpg', 'a (2).jpg'])), Ayni.uniqueName('noext', new Set(['noext'])), Ayni.uniqueName('.hid', new Set(['.hid']))]`, ['a.jpg', 'a (2).jpg', 'a (3).jpg', 'noext (2)', '.hid (2)']);
+  await eq('slugify', `[Ayni.slugify('Córdoba 2026'), Ayni.slugify(' ¡Hola! '), Ayni.slugify('¿?'), Ayni.slugify('¿?', 'x'), Ayni.slugify('abcdef', '', 3), Ayni.slugify(null)]`, ['cordoba-2026', 'hola', 'item', 'x', 'abc', 'item']);
+  await eq('fmtBytes', `[Ayni.fmtBytes(0), Ayni.fmtBytes(null), Ayni.fmtBytes(-5), Ayni.fmtBytes(512), Ayni.fmtBytes(1536), Ayni.fmtBytes(15 * 1048576 + 300000), Ayni.fmtBytes(5 * 1073741824), Ayni.fmtBytes(1023), Ayni.fmtBytes(1024 ** 4 * 2000)]`,
+    ['0 B', '0 B', '0 B', '512 B', '1.5 KB', '15 MB', '5.0 GB', '1023 B', '2000 TB']);
+  await eq('fmtBytes: the decimal mark follows the language, the unit does not', `(() => { const was = Ayni.i18n.lang, out = ['es', 'fr', 'de', 'pt', 'en'].map((l) => { Ayni.i18n.lang = () => l; return Ayni.fmtBytes(1536); }); Ayni.i18n.lang = was; return out; })()`,
+    ['1,5 KB', '1,5 KB', '1,5 KB', '1,5 KB', '1.5 KB']);
+  await eq('fmtClock', `[Ayni.fmtClock(0), Ayni.fmtClock(5), Ayni.fmtClock(65.9), Ayni.fmtClock(3725), Ayni.fmtClock(-1), Ayni.fmtClock(NaN), Ayni.fmtClock(Infinity)]`, ['0:00', '0:05', '1:05', '1:02:05', '0:00', '0:00', '0:00']);
+  await eq('fmtRuntime', `[Ayni.fmtRuntime(5400), Ayni.fmtRuntime(300), Ayni.fmtRuntime(0), Ayni.fmtRuntime(-1), Ayni.fmtRuntime(NaN)]`, ['1 h 30 min', '5 min', '', '', '']);
+  await eq('sleep waits', `(async () => { const a = performance.now(); await Ayni.sleep(60); return performance.now() - a >= 55; })()`, true);
+  await eq('pool: all done, in order, never more than n at a time', `(async () => { let on = 0, most = 0; const seen = []; await Ayni.pool([1, 2, 3, 4, 5, 6, 7], 3, async (x) => { seen.push(x); most = Math.max(most, ++on); await Ayni.sleep(5); on--; }); return [seen, most]; })()`, [[1, 2, 3, 4, 5, 6, 7], 3]);
+  await eq('pool: nothing to do, and more workers than items', `(async () => { let n = 0; await Ayni.pool([], 3, async () => n++); await Ayni.pool([1], 5, async () => n++); return n; })()`, 1);
+  /* Copying by hand: what a plain-HTTP page does. The browser's copy command is watched, not run. */
+  const COPY = `window.copyBy = (ok) => { window.cmd = null; document.execCommand = (c) => { const a = document.activeElement; window.cmd = { c, value: a.value, inside: a.parentElement.tagName, opacity: a.style.opacity }; return ok; }; };
+    window.spare = window.spare || Object.getOwnPropertyDescriptor(Navigator.prototype, 'clipboard');
+    window.noClip = () => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    window.clip = (write) => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: write } });`;
+  await t.evaluate(COPY + 'true');
+  await eq('copyText: the browser\'s clipboard first', `(async () => { let got; clip(async (v) => { got = v; }); copyBy(true); await Ayni.copyText('abc'); return [got, window.cmd]; })()`, ['abc', null]);
+  await eq('copyText: the clipboard refuses, the hidden field takes over', `(async () => { clip(() => Promise.reject(new Error('no'))); copyBy(true); await Ayni.copyText('abc'); return window.cmd; })()`, { c: 'copy', value: 'abc', inside: 'BODY', opacity: '0' });
+  await eq('copyText: no clipboard, by hand, and no field is left', `(async () => { noClip(); copyBy(true); await Ayni.copyText('xyz'); return [window.cmd.value, document.querySelectorAll('textarea').length]; })()`, ['xyz', 0]);
+  await eq('copyText: neither way works, it fails', `(async () => { noClip(); copyBy(false); try { await Ayni.copyText('x'); return 'resolved'; } catch (e) { return [e.message, document.querySelectorAll('textarea').length]; } })()`, ['copy failed', 0]);
+  await eq('copyText: inside an open modal dialog the field goes in it, and the focus comes back', `(async () => { noClip(); copyBy(true); const d = document.createElement('dialog'); d.innerHTML = '<input id="in">'; document.body.append(d); d.showModal(); const i = d.querySelector('input'); i.focus(); await Ayni.copyText('m'); const out = [window.cmd.inside, window.cmd.value, document.activeElement === i]; d.close(); d.remove(); return out; })()`, ['DIALOG', 'm', true]);
+  await eq('copyText: the focus comes back outside a dialog too', `(async () => { noClip(); copyBy(true); const i = document.body.appendChild(document.createElement('input')); i.focus(); await Ayni.copyText('m'); const ok = document.activeElement === i; i.remove(); return ok; })()`, true);
+  await t.evaluate(`delete navigator.clipboard, true`);
+  const LINK = `window.links = []; HTMLAnchorElement.prototype.click = function () { window.links.push([this.href.slice(0, 5), this.download, this.isConnected]); };`;
+  await t.evaluate(LINK + 'true');
+  await eq('saveFile: a text and a Blob, through a blob link', `(async () => { Ayni.saveFile('hello', 'a.txt', 'text/plain'); Ayni.saveFile(new Blob(['x']), 'b.bin'); return window.links; })()`, [['blob:', 'a.txt', true], ['blob:', 'b.bin', true]]);
+  await eq('saveFile: the throwaway links go after a second', `(async () => { await Ayni.sleep(1150); return document.querySelectorAll('a[download]').length; })()`, 0);
+  await eq('saveUrl: a link, clicked and gone', `(() => { window.links.length = 0; Ayni.saveUrl('/x.zip', 'x.zip'); return [window.links, document.querySelectorAll('a[download]').length]; })()`, [[['http:', 'x.zip', true]], 0]);
+  check('isMac is a yes or no', typeof (await t.evaluate('Ayni.isMac')) === 'boolean');
+  await eq('isIOS: not on this machine', 'Ayni.isIOS()', false);
+  await eq('isIOS: an iPad that calls itself a Mac', `(() => { Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' }); Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 5 }); const y = Ayni.isIOS(); Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 0 }); const n = Ayni.isIOS(); delete navigator.platform; delete navigator.maxTouchPoints; return [y, n]; })()`, [true, false]);
+  await eq('dates: pad, iso, parseIso', `[Ayni.dates.pad(5), Ayni.dates.pad(12), Ayni.dates.iso(new Date(2026, 0, 5)), Ayni.dates.iso(Ayni.dates.parseIso(' 2026-03-09 ')), Ayni.dates.parseIso('2026-02-31'), Ayni.dates.parseIso('hello')]`, ['05', '12', '2026-01-05', '2026-03-09', null, null]);
+  await eq('dates: zone and its fallback', `(() => { const z = Ayni.dates.zone(), F = Intl.DateTimeFormat; Intl.DateTimeFormat = () => { throw new Error('old'); }; const out = [Ayni.dates.zone(), Ayni.dates.zone('')]; Intl.DateTimeFormat = () => ({ resolvedOptions: () => ({}) }); out.push(Ayni.dates.zone()); Intl.DateTimeFormat = F; return [z === F().resolvedOptions().timeZone, ...out]; })()`, [true, 'UTC', '', 'UTC']);
+  await eq('dates: every zone, and a short list on an old browser', `(() => { const all = Ayni.dates.zones(), S = Intl.supportedValuesOf; Intl.supportedValuesOf = undefined; const few = Ayni.dates.zones(); Intl.supportedValuesOf = S; return [all.length > 300, few.length, few.includes('Europe/Madrid')]; })()`, [true, 21, true]);
+  await eq('the date formatters come with the fields, not before', `typeof Ayni.dates.formatLong`, 'undefined');
+  check('helpers: no errors or warnings', t.logs.length === 0, t.logs.slice());
+  {
+    /* Near midnight the device's day and the UTC day differ */
+    const t2 = await tab();
+    await t2.send('Emulation.setTimezoneOverride', { timezoneId: 'Pacific/Auckland' });
+    await fakeClock(t2, Date.UTC(2026, 0, 1, 11, 30));
+    await t2.open(BASE + '/tests/base-only.html');
+    check('dates.today: the device\'s day, not the UTC day', (await t2.evaluate('[Ayni.dates.today(), new Date().toISOString().slice(0, 10)]')).join() === '2026-01-02,2026-01-01', await t2.evaluate('Ayni.dates.today()'));
+    await t2.close();
+    /* What an iPod, or a browser with no platform, says on loading */
+    const t3 = await tab();
+    await t3.send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(navigator, 'platform', { get: () => '' }); Object.defineProperty(navigator, 'userAgentData', { get: () => undefined }); Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPod touch; CPU iPhone OS 12_0 like Mac OS X)' });` });
+    await t3.open(BASE + '/tests/base-only.html');
+    check('isMac: no platform, the user agent says', (await t3.evaluate('Ayni.isMac')) === true);
+    await t3.close();
+    await t.send('Page.bringToFront');   // a tab behind gets no dialog close events
+  }
+  await eq('a service worker can load the helpers (no page, no base)', `new Promise((res) => { const src = "importScripts('" + location.origin + "/ayni-util.js'); postMessage([Ayni.fmtClock(65), Ayni.fmtBytes(1536), Ayni.esc('<'), Ayni.dates.today().length, typeof Ayni.isMac]);"; const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' }))); w.onmessage = (e) => { w.terminate(); res(e.data); }; w.onerror = (e) => { w.terminate(); res(String(e.message)); }; })`, ['1:05', '1.5 KB', '&lt;', 10, 'boolean']);
+  await t.open(BASE + '/tests/fields-only.html');
+  await eq('with the fields, Ayni.dates is whole', `[Ayni.dates.iso(new Date(2026, 0, 5)), Ayni.dates.today().length, typeof Ayni.dates.formatLong, Ayni.dates.formatDateTime(new Date(2026, 0, 5, 9, 7)), Ayni.dates.iso(Ayni.dates.parseDateTime('2026-01-05 09:07'))]`, ['2026-01-05', 10, 'function', '2026-01-05 09:07', '2026-01-05']);
+  await t.open(BASE + '/tests/menus-only.html');
+  await eq('keyHints: adds the shortcut, again changes nothing, a phone takes it off', `(() => { const b = document.body.appendChild(Ayni.h('button', { id: 'hintBtn', type: 'button' })); Ayni.setTip(b, 'Print'); const l = [{ el: 'hintBtn', label: () => 'Ctrl+P' }, { el: 'nothing', label: () => 'x' }]; Ayni.keyHints(l, false); const a = b.dataset.tip; Ayni.keyHints(l, false); const c = b.dataset.tip; Ayni.keyHints(l, true); const d = b.dataset.tip; b.remove(); return [a, c, d]; })()`, ['Print (Ctrl+P)', 'Print (Ctrl+P)', 'Print']);
+  await eq('keyHints: a button with no tooltip yet is left alone', `(() => { const b = document.body.appendChild(Ayni.h('button', { id: 'hintBtn', type: 'button' })); Ayni.keyHints([{ el: 'hintBtn', label: () => 'Ctrl+P' }], false); const out = b.dataset.tip; b.remove(); return out === undefined; })()`, true);
+
+  section('A page inside a frame (Ayni.frame)');
+  t.logs.length = 0;
+  await t.open(BASE + '/tests/frame-host.html');
+  const FAR = BASE.replace('127.0.0.1', 'localhost');
+  await eq('a whole page: not embedded, no class, its own owner', `[Ayni.frame.embedded, Ayni.frame.windowed, Ayni.frame.owner() === window, document.documentElement.className.includes('is-')]`, [false, false, true, false]);
+  await eq('a plain frame is a pane', `frame('pane', 'frame-report.html')`, { name: 'pane', embedded: true, windowed: false, self: false, classes: ['is-embedded', 'is-embedded-wide'] });
+  await eq('a marked frame is a window', `frame('win', 'frame-report.html', true)`, { name: 'win', embedded: true, windowed: true, self: false, classes: ['is-windowed'] });
+  await eq('their owner is the top window', `[document.getElementById('pane').contentWindow.Ayni.frame.owner() === window, document.getElementById('win').contentWindow.Ayni.frame.owner() === window]`, [true, true]);
+  await eq('a pane inside a window is a pane', `(() => { const w = document.getElementById('win').contentWindow, f = w.document.createElement('iframe'); f.id = 'in'; f.src = 'frame-report.html#in'; w.addEventListener('message', (e) => { window.reports[e.data.name] = e.data; }); w.document.body.append(f); return wait('in'); })()`, { name: 'in', embedded: true, windowed: false, self: false, classes: ['is-embedded', 'is-embedded-wide'] });
+  await t.send('Emulation.setDeviceMetricsOverride', { width: 600, height: 800, deviceScaleFactor: 1, mobile: false });
+  await eq('a phone-wide top window: the pane loses -wide', `(async () => { await Ayni.sleep(100); return document.getElementById('pane').contentDocument.documentElement.classList.contains('is-embedded-wide'); })()`, false);
+  await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  await eq('wide again: it comes back', `(async () => { await Ayni.sleep(100); return document.getElementById('pane').contentDocument.documentElement.classList.contains('is-embedded-wide'); })()`, true);
+  await eq('a foreign host: a pane, even with the mark, and the owner is the page itself', `frame('far', ${JSON.stringify(FAR + '/tests/frame-report.html')}, true)`, { name: 'far', embedded: true, windowed: false, self: true, classes: ['is-embedded'] });
+  check('frames: no errors or warnings', t.logs.length === 0, t.logs.slice());
+
+  section('Colours: identity, names, the scheme dialog');
+  t.logs.length = 0;
+  await t.open(BASE + '/tests/schemes-only.html');
+  await eq('identity colours: data-c gives --id-color', `getComputedStyle(document.getElementById('who')).getPropertyValue('--id-color').trim()`, 'hsl(35 55% 46%)');
+  await eq('hash: as the five old loops gave', `(() => { const u = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }, m = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }, o = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; };
+    const P = ['#2E6B8A', '#3E86AE', '#6B5B95', '#8A3E3E', '#2E8A78', '#8A6A2E', '#5E4B8A', '#3E6B4A'];
+    return ['', 'a', 'Ana Sofía', 'example.com', 'The Long and Winding Road ‡ Let It Be', 'x'.repeat(500)].every((s) => Ayni.hash(s) === u(s) && Ayni.hueOf(s) === u(s) % 360 && Ayni.hash(s, 360) === m(s) && Ayni.colorFor(s) === P[Math.abs(o(s)) % 8]); })()`, true);
+  await eq('colorFor: nothing is a colour too', `[Ayni.colorFor(undefined), Ayni.colorFor('')]`, ['#2E6B8A', '#2E6B8A']);
+  await eq('the dialog is on the page, closed, translated', `(() => { const d = document.getElementById('scmBackdrop'); return [d.open, d.querySelector('h2').textContent]; })()`, [false, 'Colour schemes']);
+  await eq('it opens on the four schemes Ayni ships', `(Ayni.schemeDialog(), [document.getElementById('scmBackdrop').open, [...document.querySelectorAll('#scmList .scm-name')].map((e) => e.textContent)])`, [true, ['Oscuro', 'Noche', 'Beige', 'Niebla']]);
+  await eq('opening stores nothing', `localStorage.getItem('ayni-schemes')`, null);
+  await eq('a tone previews on the whole page', `(() => { const i = document.querySelector('#scmTokens input[type=text][data-k="--bg"]'); i.value = '#112233'; i.dispatchEvent(new Event('input', { bubbles: true })); return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(); })()`, '#112233');
+  await eq('saved as new, there are five, and stored', `(document.getElementById('scmSaveNew').click(), [document.querySelectorAll('#scmList .scm-row').length, JSON.parse(localStorage.getItem('ayni-schemes')).schemes.length])`, [5, 5]);
+  await eq('deleted, it goes, with an Undo', `(document.getElementById('scmDelete').click(), [document.querySelectorAll('#scmList .scm-row').length, !!document.querySelector('.toast .btn')])`, [4, true]);
+  await t.evaluate(`(document.getElementById('scmBackdrop').close(), localStorage.removeItem('ayni-schemes'), true)`);
+  check('colours: no errors or warnings', t.logs.length === 0, t.logs.slice());
+  check('colours: no untranslated keys', (await t.evaluate(RAW_KEYS)).length === 0, await t.evaluate(RAW_KEYS));
+
+  section('More icons');
+  t.logs.length = 0;
+  await t.open(BASE + '/gallery/index.html');
+  await eq('Ayni.icon takes a size', `Ayni.icon('plus', 'x', 18).includes('--icon:18px') && Ayni.icon('plus', 'x', 18).includes('icon x')`, true);
+  await eq('the more icons draw like any other', `(() => { const d = document.body.appendChild(document.createElement('div')); d.innerHTML = Ayni.icon('bold'); const u = d.querySelector('use'), ok = !!document.querySelector(u.getAttribute('href')); d.remove(); return ok; })()`, true);
+  await eq('a popup row is a row', `(() => { const d = document.body.appendChild(document.createElement('div')); d.className = 'popup-row'; const v = getComputedStyle(d).display; d.remove(); return v; })()`, 'flex');
+  check('more icons: no errors or warnings', t.logs.length === 0, t.logs.slice());
+
+  section('App shell');
+  t.logs.length = 0;
+  await t.open(BASE + '/tests/shell-only.html');
+  await eq('the title row is a row, the actions on its right', `[getComputedStyle(document.querySelector('.topbar')).display, getComputedStyle(document.querySelector('.topbar-actions')).marginLeft !== '0px']`, ['flex', true]);
+  await eq('home links: the icon and the name are marked, the go runs', `(() => { let n = 0; const apply = Ayni.homeLinks({ go: () => n++ }); apply(); apply(); document.getElementById('ic').dispatchEvent(new MouseEvent('click', { bubbles: true })); document.getElementById('name').click(); return [document.querySelectorAll('.home-link').length, n, document.getElementById('ic').getAttribute('role')]; })()`, [2, 2, 'button']);
+  await eq('a control in the row keeps its own job', `(() => { const h = document.getElementById('name'); let n = 0; const b = h.appendChild(document.createElement('button')); Ayni.homeLinks({ go: () => n++ })(); b.click(); b.remove(); return n; })()`, 0);
+  await eq('printPage: the sheet, then all undone', `new Promise((res) => { window.print = () => { const a = [document.getElementById('printRoot').textContent, document.title, document.documentElement.classList.contains('printing')]; dispatchEvent(new Event('afterprint')); res(a.concat(document.getElementById('printRoot').textContent, document.documentElement.classList.contains('printing'))); }; Ayni.toast ??= () => {}; Ayni.printPage('<p>sheet</p>', 'file', 'ayni.undo'); })`, ['sheet', 'file', true, '', false]);
+  check('shell: no errors or warnings', t.logs.length === 0, t.logs.slice());
+
   section('Buttons family (base + buttons, no other controls)');
   t.logs.length = 0;
   await t.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
@@ -281,6 +412,13 @@ try {
   const colourOf = (v) => t.evaluate(`(() => { const p = document.createElement('i'); p.style.color = '${v}'; document.body.append(p); const c = getComputedStyle(p).color; p.remove(); return c; })()`);
   check('at rest: no fill and no border', (await cs('plain', 'backgroundColor')) === 'rgba(0, 0, 0, 0)' && (await cs('plain', 'borderTopColor')) === 'rgba(0, 0, 0, 0)');
   check('at rest: the icon is Text dim', (await cs('plain', 'color')) === (await colourOf('var(--text-dim)')));
+  check('large: a box with the 40 px icon over its name', (await t.evaluate(`(() => { const b = document.getElementById('big'), i = b.querySelector('svg').getBoundingClientRect(), n = b.lastElementChild.getBoundingClientRect(); return i.width === 40 && n.top >= i.bottom && getComputedStyle(b).borderTopLeftRadius === '16px'; })()`)));
+  check('large: the icon is Accent and the name Text dim at rest', (await t.evaluate(`getComputedStyle(document.querySelector('#big svg')).color`)) === (await colourOf('var(--accent)')) && (await cs('big', 'color')) === (await colourOf('var(--text-dim)')));
+  check('large: a link has no underline', (await cs('big', 'textDecorationLine')) === 'none');
+  check('large: a popup one has the triangle inside its corner', (await cs('bigpop', 'right', '::after')) === '6px' && (await cs('bigpop', 'bottom', '::after')) === '6px');
+  check('popup triangle: the colour of the icon', (await cs('popup', 'borderTopColor', '::after')) === (await cs('popup', 'color')));
+  check('popup triangle on a large button: its Accent icon\'s colour', (await cs('bigpop', 'borderTopColor', '::after')) === (await colourOf('var(--accent)')));
+  check('large: disabled fades like any button', (await cs('bigoff', 'opacity')) === '0.45');
   const r = await t.evaluate(`(() => { const b = document.getElementById('plain').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; })()`);
   await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: r[0], y: r[1] });
   await t.evaluate('new Promise((r) => setTimeout(r, 250))');
@@ -1967,6 +2105,10 @@ try {
     await reset();
 
     check('a bare number group: Ayni made − and + (tooltips), a text box, spinbutton role', await ev(`(() => { const g = document.querySelector('#bare-g'), [a, b] = g.querySelectorAll('button[data-step]'); const i = document.querySelector('#bare'); return a?.dataset.tip === 'Decrease' && b?.dataset.tip === 'Increase' && !!a.querySelector('svg') && i.type === 'text' && i.getAttribute('role') === 'spinbutton' && i.inputMode === 'numeric'; })()`));
+    await ev(`[['#copies', '2'], ['#kg', '2,5']].forEach(([s, v]) => { const i = document.querySelector(s); i.value = v; i.dispatchEvent(new Event('input')); })`); await new Promise((r) => setTimeout(r, 50));   // the "!" goes a moment later
+    check('a number field is only − value +: 24 px buttons, room for its limits, no more', await ev(`['#copies-g', '#kg-g'].every((s, n) => { const g = document.querySelector(s), i = g.querySelector('.input'), w = (e) => e.getBoundingClientRect().width, [a, b] = g.querySelectorAll('button[data-step]'); return w(a) === 24 && w(b) === 24 && g.style.getPropertyValue('--spin-ch') === ['2', '4'][n] && Math.abs(w(g) - 2 - 48 - w(g.querySelector('.input'))) < .1 && w(g) < 82; })`));
+    check('…the widest value fits, nothing scrolls inside the box', await ev(`(() => { const i = document.querySelector('#copies'), v = i.value; i.value = '88'; const r = i.scrollWidth <= i.clientWidth; i.value = v; return r; })()`));
+    check('…a field with no limit starts with 2 digits and grows with what is typed', await ev(`(() => { const g = document.querySelector('#bare-g'), i = document.querySelector('#bare'), v = i.value; const a = g.style.getPropertyValue('--spin-ch'); i.value = '12345'; i.dispatchEvent(new Event('input')); const b = g.style.getPropertyValue('--spin-ch'); i.value = v; i.dispatchEvent(new Event('input')); return a === '2' && b === '5'; })()`));
     check('…empty is a value when data-optional; the page gets null', await ev(`new Promise((r) => { const i = document.querySelector('#bare'); i.value = '5'; i.dispatchEvent(new Event('input')); document.querySelector('#bare-g').addEventListener('ayni:change', (e) => r(e.detail.value === null && i.getAttribute('aria-invalid') === 'false'), { once: true }); i.value = ''; i.dispatchEvent(new Event('input')); })`));
     check('…only a minimum: "At least 0."', await ev(`(() => { const i = document.querySelector('#bare'); i.value = '-1'; i.dispatchEvent(new Event('input')); const t = document.getElementById(i.getAttribute('aria-describedby')).textContent; i.value = '3'; i.dispatchEvent(new Event('input')); return t; })()`) === 'At least 0.');
     check('no limits: "Type a number." for letters; Home does nothing', await ev(`(() => { const i = document.querySelector('#free'); i.value = 'abc'; i.dispatchEvent(new Event('input')); const t = document.getElementById(i.getAttribute('aria-describedby')).textContent; i.value = '7'; i.dispatchEvent(new Event('input')); i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); return t + '|' + i.value; })()`) === 'Type a number.|7');
@@ -2068,7 +2210,7 @@ try {
     await reset();
 
     /* Toolbar fields and editing in place */
-    check('fields in a toolbar take its 30 px; their inside buttons stay 26', (await height('#tb-cell')) === 30 && (await height('#tb-spin')) === 30 && (await ev(`Math.round(document.querySelector('#tb-spin .btn').getBoundingClientRect().height)`)) === 26);
+    check('fields in a toolbar take its 30 px; a number field\'s buttons stay 24', (await height('#tb-cell')) === 30 && (await height('#tb-spin')) === 30 && (await ev(`Math.round(document.querySelector('#tb-spin .btn').getBoundingClientRect().height)`)) === 24);
     check('a toolbar button next to them keeps 30 px', (await height('#tb-bold')) === 30);
     const ieH = await height('#ie');
     await click('#ie');
@@ -2118,7 +2260,8 @@ try {
       check('password: the dialog is gone from the page', !(await ev(`!!document.getElementById('ayni-ask-pw')`)));
       await pwd({}); await wait(60); await ev(`(document.querySelector('dialog.panel[open] [data-close]').click(), true)`); await wait(60);
       check('password: cancelled, it answers null', (await ev(`window.pw`)) === null);
-      await pwd({}); await wait(60); await ev(`(document.querySelector('dialog.panel[open]').close(), true)`); await wait(60);
+      await pwd({}); await wait(60); await ev(`(document.querySelector('dialog.panel[open]').close(), true)`);
+      await ev(`new Promise((r) => { const end = Date.now() + 2000, go = () => (window.pw === null || Date.now() > end ? r() : setTimeout(go, 20)); go(); })`);   /* the browser sends 'close' with the next frame */
       check('password: Esc answers null too', (await ev(`window.pw`)) === null);
       await pwd({ verify: true, min: 6 }); await wait(60);
       check('password: a new one asks twice, for the manager to make one', await ev(`document.getElementById('ayni-ask-repeat').type === 'password' && document.getElementById('ayni-ask-pw').autocomplete === 'new-password'`));
@@ -2583,7 +2726,7 @@ try {
     check('the top and bottom bar says so', await ev(`document.querySelector('#s2 > .splitter').getAttribute('aria-orientation') === 'horizontal' && document.querySelector('#s2 > .splitter').classList.contains('rows')`));
     check('three glyphs, each named', await ev(`[...document.querySelectorAll(${JSON.stringify(BAR + ' .split-ctl button')})].map((b) => b.getAttribute('aria-label')).join('|')`) === 'Collapse left pane|Reset sizes|Collapse right pane');
     check('.split: data-default is the first pane\'s size', (await size('s1')) === 35 && (await size('s2')) === 50);
-    check('the bar is 7 px', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '7px');
+    check('the bar is 13 px and holds its glyphs', (await ev(`(() => { const b = document.querySelector(${JSON.stringify(BAR)}), r = b.getBoundingClientRect(); return getComputedStyle(b).width === '13px' && [...b.querySelectorAll('button')].every((g) => { const c = g.getBoundingClientRect(); return c.left >= r.left && c.right <= r.right; }); })()`)));
     { await into('#s1'); const w = await ev(`document.getElementById('s1').getBoundingClientRect().width`);
       const [x, y] = await ev(`(() => { const r = document.querySelector(${JSON.stringify(BAR)}).getBoundingClientRect(); return [r.left + 3, r.top + 6]; })()`);
       await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseMoved', x + w * .2, y);
@@ -2599,7 +2742,7 @@ try {
     await ev(`Ayni.splitter('#s1').reset()`);
     check('a drag tells nothing (no event)', (await log()) === '', await ev(`L.join()`));
     await click(BAR + ' [data-to="first"]');
-    check('the arrow collapses that pane; the other takes the room', await ev(`(() => { const [a, b] = document.querySelectorAll('#s1 > .pane'), h = document.getElementById('s1').getBoundingClientRect().width; return a.hidden && b.getBoundingClientRect().width > h - 10; })()`));
+    check('the arrow collapses that pane; the other takes the room', await ev(`(() => { const [a, b] = document.querySelectorAll('#s1 > .pane'), h = document.getElementById('s1').getBoundingClientRect().width; return a.hidden && b.getBoundingClientRect().width > h - 16; })()`));
     check('…the arrow is disabled, the other is not', await ev(`document.querySelector(${JSON.stringify(BAR + ' [data-to="first"]')}).getAttribute('aria-disabled') === 'true' && document.querySelector(${JSON.stringify(BAR + ' [data-to="last"]')}).getAttribute('aria-disabled') === 'false'`));
     check('…and it is told', (await log()) === 'split collapse/left/Left pane collapsed');
     check('collapsed = first', (await ev(`Ayni.splitter('#s1').collapsed`)) === 'first');
@@ -2655,7 +2798,7 @@ try {
     await drag('#host1 > .splitter', 2000);
     check('px limits hold', await ev(`m.c.size === 500`));
     await click('#host1 > .splitter [data-to="last"]');
-    check('collapse on a bare bar: hidden, the other fills whatever the page sized it to', await ev(`m.b.hidden && m.a.classList.contains('split-fill') && Math.abs(m.a.getBoundingClientRect().width - m.host.clientWidth + 7) < 2`), await ev(`m.a.getBoundingClientRect().width`));
+    check('collapse on a bare bar: hidden, the other fills whatever the page sized it to', await ev(`m.b.hidden && m.a.classList.contains('split-fill') && Math.abs(m.a.getBoundingClientRect().width - m.host.clientWidth + 13) < 2`), await ev(`m.a.getBoundingClientRect().width`));
     check('the collapsed pane is saved beside the size', (await ev(`localStorage.getItem('w1.fold')`)) === 'last');
     await ev(`(window.m2 = mk({ min: 200, max: 500, def: 300, key: 'w1' }), true)`);
     check('a new page puts both back', await ev(`m2.c.size === 500 && m2.c.collapsed === 'last' && m2.b.hidden`));
@@ -2752,9 +2895,9 @@ try {
     /* ---------- Touch ---------- */
     await ev(`(Ayni.setTouchPreview(true), true)`); await wait(40);
     check('touch: tabs are 44 px high', (await ev(`document.querySelector('#t4 > [role="tab"]').getBoundingClientRect().height`)) >= 44);
-    check('touch: the bar keeps 7 px, with a 19 px hit area each way', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '7px' && (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)}), '::before').left`)) === '-19px');
-    check('touch: a top and bottom bar the same, across', (await ev(`getComputedStyle(document.querySelector('#s2 > .splitter'), '::before').top`)) === '-19px');
-    check('touch: the arrows reach 34 px past the ends', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR + ' [data-to="first"]')}), '::before').top`)) === '-34px');
+    check('touch: the bar keeps 13 px, with a 44 px hit area', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '13px' && (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)}), '::before').left`)) === '-16px');
+    check('touch: a top and bottom bar the same, across', (await ev(`getComputedStyle(document.querySelector('#s2 > .splitter'), '::before').top`)) === '-16px');
+    check('touch: each glyph has its own 44 px, none overlaps', await ev(`(() => { for (const s of ['#s1', '#s2']) { const v = s === '#s1', r = [...document.querySelectorAll(s + ' > .splitter .split-ctl button')].map((b) => b.getBoundingClientRect()); for (let i = 0; i < 3; i++) if ((v ? r[i].height : r[i].width) < 44 || (i && (v ? r[i].top < r[i - 1].bottom : r[i].left < r[i - 1].right))) return false; } return true; })()`));
     check('touch: a choice row keeps 8 px between targets', (await ev(`getComputedStyle(document.getElementById('ch')).gap`)) === '8px');
     check('touch: a choice button has a 44 px hit area', (await ev(`(() => { const r = ch2.getBoundingClientRect(), s = getComputedStyle(ch2, '::before'); return r.height + 2 * Math.max(0, -parseFloat(s.top)); })()`)) >= 44);
     await ev(`(Ayni.setTouchPreview(false), true)`);
@@ -2824,7 +2967,8 @@ try {
     check('a chip is a group of real buttons', await ev(`document.querySelector('.chip').getAttribute('role') === 'group' && [...document.querySelectorAll('.chip button')].every((b) => b.tagName === 'BUTTON') && !document.querySelector('.chip button button')`));
     check('the selected chip shows its name and three buttons', (await style(FRONT + ' .chip-main > span:not(.icon)', 'display')) !== 'none' && (await style(FRONT + ' .chip-ctl', 'display')) === 'flex' && await ev(`document.querySelectorAll(${JSON.stringify(FRONT + ' [data-win]')}).length === 3`));
     check('another chip shows only its icon, its name in the tooltip', (await style(CHIP(1) + ' .chip-main > span:not(.icon)', 'display')) === 'none' && (await style(CHIP(1) + ' .chip-ctl', 'display')) === 'none' && await ev(`document.querySelector(${JSON.stringify(CHIP(1) + ' .chip-main')}).dataset.tip === 'Files'`));
-    check('the selected chip has an Accent edge at the bottom', /inset/.test(await style(FRONT, 'boxShadow')) && /0px -3px/.test(await style(FRONT, 'boxShadow')), await style(FRONT, 'boxShadow'));
+    check('the selected chip has no Accent edge', (await style(FRONT, 'boxShadow')) === 'none', await style(FRONT, 'boxShadow'));
+    check('a chip has the small corners', (await style(FRONT, 'borderRadius')) === '8px' && (await style(CHIP(1), 'borderRadius')) === '8px', await style(FRONT, 'borderRadius'));
     check('the selected chip is drawn on the card colour', (await style(FRONT, 'backgroundColor')) === await ev(`(() => { const p = document.createElement('i'); p.style.background = 'var(--card)'; document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c; })()`));
     await log();
     await click(CHIP(1) + ' .chip-main');
@@ -2953,8 +3097,8 @@ try {
       check(`${e}: the selected chip ${side ? 'hides' : 'shows'} its name`, ((await style(FRONT + ' .chip-main > span:not(.icon)', 'display')) === 'none') === side);
       check(`${e}: the chip stays inside the bar`, await ev(`(() => { const c = document.querySelector(${JSON.stringify(FRONT)}).getBoundingClientRect(), b = document.querySelector('.taskbar').getBoundingClientRect(); return c.left >= b.left - .5 && c.right <= b.right + .5 && c.top >= b.top - .5 && c.bottom <= b.bottom + .5; })()`));
       check(`${e}: its buttons ${side ? 'stack under the icon' : 'sit in a row'}`, (await style(FRONT + ' .chip-ctl', 'flexDirection')) === (side ? 'column' : 'row'));
-      const shadow = await style(FRONT, 'boxShadow'), want = { bottom: '0px -3px', top: '0px 3px', left: '3px 0px', right: '-3px 0px' }[e];
-      check(`${e}: the Accent edge is on the side of the screen`, shadow.includes(want + ' 0px 0px'), shadow);
+      check(`${e}: the selected chip has no Accent edge`, (await style(FRONT, 'boxShadow')) === 'none');
+      check(`${e}: the chip has the small corners`, (await style(FRONT, 'borderRadius')) === '8px', await style(FRONT, 'borderRadius'));
       await click('#s-btn'); await wait(60);
       check(`${e}: a popup opens off the bar`, off(e, await box('#tall'), await box('.taskbar')), await box('#tall'));
       await closePops();

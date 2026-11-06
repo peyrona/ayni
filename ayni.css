@@ -1,4 +1,4 @@
-/* Ayni library 0.1.0: what no family owns: the page's own defaults, layout helpers, states and the touch sizes of plain
+/* Ayni library 0.2.0: what no family owns: the page's own defaults, layout helpers, states and the touch sizes of plain
    rows. Plain CSS, no build step, evergreen browsers 2024+. Load it after ayni-base.css (the colours, sizes and icons it
    uses); see README.md. */
 *, *::before, *::after { box-sizing: border-box; }

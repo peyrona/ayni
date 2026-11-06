@@ -6,6 +6,7 @@
 <title>Ayni buttons family only</title>
 <!-- A page that takes the base and the buttons family, and nothing else: how an app moves to Ayni one family at a time -->
 <script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
@@ -30,6 +31,10 @@
 </div>
 <div class="row"><button class="btn text" id="text"><span class="icon" data-icon="folder"></span>Extract here</button>
   <button class="btn text dashed" id="dashed" style="width:auto"><span class="icon" data-icon="plus"></span>Add stage</button></div>
+<div class="row"><a class="btn large" id="big" href="#"><span class="icon" data-icon="folder"></span><span>Drive</span></a>
+  <button class="btn large" id="bigpop" type="button" popovertarget="bigmenu"><span class="icon" data-icon="folder"></span><span>Office</span></button>
+  <button class="btn large" id="bigoff" type="button" aria-disabled="true"><span class="icon" data-icon="folder"></span><span>Find</span></button>
+  <div id="bigmenu" popover>Menu</div></div>
 <div style="width:320px"><label class="switch end" id="sw">Show the date<input type="checkbox" role="switch"></label></div>
 <div role="toolbar" class="tall" id="tb" style="display:flex"><button class="btn" data-tip="Undo"><span class="icon" data-icon="undo"></span></button></div>
 <section class="panel" style="width:300px"><footer id="foot"><button class="btn primary" data-tip="OK"><span class="icon" data-icon="check"></span></button></footer></section>

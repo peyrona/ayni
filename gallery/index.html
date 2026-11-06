@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ayni Components</title>
 <script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
@@ -17,11 +18,13 @@
 <link rel="stylesheet" href="../ayni-fields.css">
 <link rel="stylesheet" href="../ayni-pickers.css">
 <link rel="stylesheet" href="../ayni-layout.css">
+<link rel="stylesheet" href="../ayni-schemes.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
 <script src="demo-icons.js" defer></script>
 <script src="../ayni-base.js" defer></script>
+<script src="../ayni-icons-more.js" defer></script>
 <script src="../ayni-buttons.js" defer></script>
 <script src="../ayni-toasts.js" defer></script>
 <script src="../ayni-dialogs.js" defer></script>
@@ -32,6 +35,7 @@
 <script src="../ayni-fields.js" defer></script>
 <script src="../ayni-pickers.js" defer></script>
 <script src="../ayni-layout.js" defer></script>
+<script src="../ayni-schemes.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
 </head>
@@ -42,6 +46,7 @@
   <header>
     <h2 id="g-title">Ayni Components</h2>
     <span class="mode" id="mode"></span>
+    <button class="btn text sm bordered" id="schemes-btn" type="button" data-i18n="ayni.scm.title"></button>
     <button class="btn" id="theme-btn" data-theme-toggle aria-pressed="false" aria-label="Dark mode" data-tip="Dark mode"><span class="icon" data-icon="moon"></span></button>
     <label class="switch">Touch preview<input type="checkbox" role="switch" id="sim-touch"></label>
     <button class="btn" id="help-btn" data-help-open data-tip="Help"><span class="icon" data-icon="help"></span></button>
@@ -150,6 +155,10 @@
         <p class="rule">One label: the switch is on or off. It does the same job as one check box, and it takes effect at once. Click it or press Space. Both controls below hold the same value.</p>
         <label class="switch">Visible<input type="checkbox" role="switch" id="sw-visible" checked></label>
         <label class="choice"><input type="checkbox" id="cb-visible" checked>Visible</label></div>
+      <div class="spec"><h3>Large buttons</h3>
+        <p class="rule">A big icon with its name under it, for a launcher or a home screen. Never in a toolbar.</p>
+        <div class="row"><button class="btn large" type="button"><span class="icon" data-icon="folder"></span><span>Files</span></button>
+          <button class="btn large" type="button" aria-disabled="true"><span class="icon" data-icon="phone-find"></span><span>Find</span></button></div></div>
       <div class="spec"><h3>Popup buttons</h3>
         <p class="rule">A small down-pointing triangle means the button opens a menu or popup, like a combo box. These buttons never have a second action, so they never show the dot.</p>
         <div class="row">
@@ -433,7 +442,7 @@
         <p class="rule">The same fields, at the toolbar's height and without a label above them: the tooltip names them. A number in a toolbar is a number field too.</p>
         <div role="toolbar" aria-label="Sheet" class="row">
           <input class="input" id="tb-cell" value="B4" style="width:88px" aria-label="Cell" data-tip="Cell">
-          <div class="input-group spin" style="width:120px" data-tip="Right margin (mm)">
+          <div class="input-group spin" data-tip="Right margin (mm)">
             <button class="btn" data-step="-1" aria-label="Decrease" data-tip="Decrease" tabindex="-1"><span class="icon" data-icon="minus"></span></button>
             <input class="input" role="spinbutton" inputmode="numeric" data-min="0" data-max="50" data-step="1" value="20" aria-label="Right margin (mm)">
             <button class="btn" data-step="1" aria-label="Increase" data-tip="Increase" tabindex="-1"><span class="icon" data-icon="plus"></span></button></div>

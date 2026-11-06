@@ -8,7 +8,7 @@ This book is the rule set for Ayni, a CUA (Common User Access) interface built w
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
-**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, type and icons, sizes, states, keyboard, touch, scrolling and language. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
+**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, type and icons, sizes, states, keyboard, touch, scrolling, language, helpers and pages inside frames. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 covers the page around the controls, and chapter 19 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
 
 **Words used in this book.**
 
@@ -18,7 +18,7 @@ It is written for designers and developers. Designers use it to decide what a sc
 - **Touch**: a device whose main pointer is coarse (a finger). **Phone**: a touch device narrower than 600 px.
 - **Mouse and keyboard**: a device with a fine pointer.
 
-**Status.** The design of all controls listed here is closed, except for the points in chapter 18. Desktop mode is covered in chapter 17. The accessibility work for blind and deaf users comes later.
+**Status.** The design of all controls listed here is closed, except for the points in chapter 19. Desktop mode is covered in chapter 17. The accessibility work for blind and deaf users comes later.
 
 **Browsers.** Evergreen browsers from 2024 on: Chrome and Edge 119, Firefox 128, Safari 18 or newer. They all have the native popover and dialog elements and the modern CSS colour functions Ayni needs. On an older browser `Ayni.supported()` returns false, so the page can tell the user to update.
 
@@ -69,7 +69,7 @@ Each colour scheme, light and dark, sets the colours below by hand. A few more a
 | `--text` | Text, icons | #242732 | #E7E7E9 |
 | `--text-dim` | Secondary text, quiet icons, field labels, placeholders | #484C5B | #9597A1 |
 | `--text-faint` | Done items, disabled text | #5E6472 | #6B6E77 |
-| `--accent` | Default button fill, selection, focus ring, active marks (dot, triangle, active filter) | #61410A | #1F80B1 |
+| `--accent` | Default button fill, selection, focus ring, active marks (dot, active filter) | #61410A | #1F80B1 |
 | `--on-accent` | Text and icons on an Accent fill | #F9F9FB | #0D0F17 |
 | `--on-solid` | Icons on a solid Success or Danger fill, a switch's knob | #FFFFFF | #FFFFFF |
 | `--danger` | Danger icons, errors, required mark | #9C4150 | #D9707D |
@@ -96,11 +96,17 @@ Each colour scheme, light and dark, sets the colours below by hand. A few more a
 
 **Schemes.** Light and dark are the two built-in schemes. A user can make their own schemes and pick one for light and one for dark; a scheme sets Bg, Card, Card 2, Line, Accent and On accent, and everything else keeps the built-in value. The schemes are kept on the device (`ayni-schemes`), and a page can also hand Ayni a scheme from code.
 
+**The scheme dialog.** `ayni-schemes.css` and `ayni-schemes.js`, optional, give the dialog: the list of schemes, editing with the whole page as a live preview, a warning (never a block) when the Accent is hard to see, new schemes, delete with Undo, and which scheme serves light and which dark. At least one of each kind stays. It ships four schemes: Oscuro and Beige, the two built-in ones, and Noche and Niebla. Open it with `Ayni.schemeDialog()`.
+
+**Identity colours.** People, habits and anything told apart at a glance get one of eight fixed hues by index: `data-c="0"` to `"7"` sets `--id-color`, and the page paints with it. They are not theme colours: the same in light and dark, and white text reads on all of them. To get a colour from a name, the same one on every device: `Ayni.colorFor(name)` gives one of eight tile colours, `Ayni.hueOf(name)` a hue, `Ayni.hash(name, mod)` the number behind them.
+
 **Choosing light or dark.** There are four modes:
 
 - **System** (the default): follows the setting of the phone or computer, and changes with it.
 - **Light** or **Dark**: the user's own choice.
 - **Sun**: light by day, dark by night, worked out from where the device is. It goes light once the sun is 5° above the horizon and dark once it is 4° below, so it does not switch while the sky is still dim. The page gives Ayni the place (rounded to about 10 km, kept only on the device); without one, Ayni uses the main city of the device's time zone.
+
+For Sun, `Ayni.theme.askPlace()` asks the device where it is, from a user's press, and says whether it did; `Ayni.theme.refreshPlace()` updates it quietly, only with leave already given. Without a place, the main city of the time zone serves.
 
 A round button in the title row (a toggle, `data-theme-toggle`) switches between light and dark: it shows a moon while light is on and a sun while dark is on, and its tooltip says what it will do ("Dark mode"). Pressing it is a choice by hand, so it also ends System and Sun modes. The choice is kept on the device (`ayni-theme`) and every open tab and window of the same site follows it at once. The browser's own bar (`<meta name="theme-color">`) takes the Bg colour. Each change fires `ayni:theme` on `document`, so a page can repaint widgets that CSS cannot reach.
 
@@ -129,6 +135,8 @@ A round button in the title row (a toggle, `data-theme-toggle`) switches between
 - An icon is written in the page as `<span class="icon" data-icon="name"></span>`; code uses `Ayni.icon(name)`. No SVG is pasted into a page.
 - Ayni ships only the icons its controls need. An app adds its own set (`Ayni.icons.add`), and can replace the whole set with another one (Lucide, an icon font...) by mapping Ayni's icon names to that set's names; a name the other set lacks keeps Ayni's icon.
 - Status icons: Information, Success, Warning and Error, each in its meaning colour.
+
+**More icons.** `ayni-icons-more.js`, optional, adds about 400 for apps: an editor's toolbars, a player, files, a desktop. No SVG is pasted into a page: `<span class="icon" data-icon="bold"></span>`, with `style="--icon:18px"` for another size, or `Ayni.icon('bold', '', 18)` in code. `Ayni.icon` works from the first script on.
 
 ### 2.3 Sizes and spacing
 
@@ -219,9 +227,41 @@ Every text Ayni shows (tooltips, "Loading…", the calendar's month names, the g
 - **Missing texts:** a key missing in a language falls back to the page's reference language (English for Ayni's own texts; an app names its own), then to the key itself.
 - **No half-translated screen:** the language script loads first, without `defer`, and keeps the page hidden until the texts are in, for 2.5 s at most, so a dead network never leaves a blank screen. Ayni itself starts only then, and `Ayni.ready` says when: code that builds controls or text waits for it.
 
+### 2.9 Helpers
+
+`ayni-util.js` holds the small jobs every app writes again. It loads right after `ayni-i18n.js`, without `defer`, and every page needs it, because Ayni's own files use it. It does nothing on loading but define its functions, so a service worker can load it too.
+
+| Job | Calls |
+|---|---|
+| Build a node | `Ayni.h(tag, props, ...kids)`: `props` is `{ class, text, html, on: { click }, attrs, data, anyProperty }`, or just the class as a string, and a null or false one is skipped. Kids are nodes, text, numbers, lists, and null or false (skipped). `html` is for your own icons only, never for data |
+| Text into HTML and CSS | `Ayni.esc(text)`; `Ayni.cssEsc(text)`, `Ayni.cssUrl(url)` for a quoted string or a `url("...")` |
+| Paths | `Ayni.extOf`, `Ayni.baseName`, `Ayni.dirOf`, `Ayni.stripExt`; `Ayni.followPath(path, pairs)`, where a path is after moves |
+| Names | `Ayni.uniqueName(name, taken)` gives "photo (2).jpg"; `Ayni.slugify(text, fallback, max)` gives "cordoba-2026" |
+| Showing amounts | `Ayni.fmtBytes(n)` gives "1.5 KB", "15 MB", with the page's decimal mark; `Ayni.fmtClock(seconds)` gives "1:05", "1:02:05"; `Ayni.fmtRuntime(seconds)` gives "1 h 30 min" |
+| Waiting | `Ayni.sleep(ms)`; `Ayni.pool(items, n, worker)` runs `worker` over the items, at most `n` at a time |
+| Leaving the page | `Ayni.copyText(text)`: to the clipboard, also on plain HTTP, where it has to go through a hidden field; the promise fails when neither way works. `Ayni.saveFile(data, name, type)` hands a Blob or a text to the device as a download. `Ayni.saveUrl(url, name)` does the same with an address |
+| The device | `Ayni.isMac`, `Ayni.isIOS()` |
+| Dates | `Ayni.dates.pad(n)`, `.iso(date)`, `.parseIso(text)`, `.today()` (the device's day as `YYYY-MM-DD`, never the UTC day), `.zone(fallback)` (the device's time zone, `UTC` when it will not say), `.zones()` (every zone the browser knows). The date formatters come with `ayni-fields.js` |
+
+### 2.10 A page inside a frame
+
+A page may run inside another page: a pane of a bigger view, or a whole app in a window (17.4). `Ayni.frame` says which, and the page's own CSS can ask the same on `<html>`:
+
+| Case | `Ayni.frame` | `<html>` |
+|---|---|---|
+| The page is the whole tab | `embedded: false`, `windowed: false` | nothing |
+| A pane of another page | `embedded: true`, `windowed: false` | `.is-embedded`, and `.is-embedded-wide` while the top window is wider than a phone (641 px or more), when the host shows its panes side by side |
+| A window of a desktop | `embedded: true`, `windowed: true` | `.is-windowed` |
+
+**The host says what a frame is:** a frame that is a window carries `data-ayni-window`, set before its `src`. A frame without it is a pane. A foreign site that frames the page counts as a pane too.
+
+`Ayni.frame.owner()` is the window that owns the address bar: the top one when framed by a page of the same site, the page itself otherwise. "Go home" and "sign in again" navigate it, so they leave the frame instead of opening inside it.
+
+Things that belong to the whole screen (an update bar, a first-visit mark) show only where `Ayni.frame.embedded` is false.
+
 ## 3. Buttons
 
-Every button is a circle with an icon and no text label, and every button has a tooltip that names its action. The one exception is the text button (3.9), kept for wide calls to action that an icon cannot say.
+Every button is a circle with an icon and no text label, and every button has a tooltip that names its action. There are two exceptions: the text button (3.9), kept for wide calls to action that an icon cannot say, and the large button (3.10), for the main choices of a launcher or a home screen.
 
 This applies to push buttons and toggle buttons. It does not apply to tabs, menu items, menu bar items, radio buttons or check boxes, which keep their text.
 
@@ -242,7 +282,7 @@ A toggle button holds an on/off state (Bold, Favourite, the Day / Week / Month v
 
 ### 3.3 Buttons that open a popup
 
-A button that opens a menu or popup shows a small down-pointing triangle in the Accent colour at its lower right, as a combo box does. The triangle stays small (9 × 6 px on a 36 px button). Ayni adds it to every button that opens one. Such a button can never have a second action, so it never shows the dot.
+A button that opens a menu or popup shows a small down-pointing triangle at its lower right, as a combo box does, always in the same colour as the button's icon. The triangle stays small (9 × 6 px on a 36 px button). Ayni adds it to every button that opens one. Such a button can never have a second action, so it never shows the dot.
 
 The "more" button (⋮, three dots one above the other) is the one exception: its dots already say "a menu of more things", so it shows no triangle.
 
@@ -285,13 +325,25 @@ A text button carries a short label, with an optional icon before it. It is for 
 - **Label:** a verb first, two or three words, no full stop. It is the accessible name, so no tooltip is needed unless it adds something.
 - **Choice row:** a row of small bordered text buttons that are toggles (3.2): the filters of a list (All, Unread, Groups), one of a few choices (Equal, Shares, Percent), several of a few (the days of a week). Their labels are nouns. On is the soft Accent tint of a toggle, never a fill. For one of a few, pressing one turns the others off. The row wraps. It stays on the page and the view does not change: tabs change the page (12.1), and a longer list of choices is a list picker (7).
 
-### 3.10 For developers
+### 3.10 Large buttons
+
+A large button is a big icon with its name under it, for the main choices of a launcher or a home screen ("Chat", "Photos", "Sudoku"). It never goes in a toolbar or a title row.
+
+- **Look:** a rounded box, not a circle, with the same states as a round button: no fill at rest, grey tint on hover, faded when disabled. The 40 px icon is in Accent, at rest too; the name is in Text dim, and Text on hover.
+- **Name:** always visible, so it is the accessible name and no tooltip is needed.
+- **Popup:** one that opens a popup shows the triangle of 3.3 at the box's lower right.
+- **Width:** up to 110 px, less on narrow screens; `--large-w` changes the top limit.
+- **Border:** `.bordered` adds the plain edge, for large buttons on a card.
+- It can be a link (`<a class="btn large">`) as well as a button.
+
+### 3.11 For developers
 
 | Need | Markup |
 | --- | --- |
 | Button | `.btn` with an icon, `aria-label` and `data-tip` (Ayni fills in `aria-label` from `data-tip` when it is missing) |
 | Small | `.btn.sm` |
 | With a border | `.btn.bordered` |
+| Large | `.btn.large` with an icon and a `<span>` for its name; `.btn.large.bordered` with an edge |
 | Default | `.btn.primary` (one per view) |
 | Meaning | `.danger`, `.ok`, `.warn` |
 | Toggle | `aria-pressed` |
@@ -341,6 +393,7 @@ A number in a range, laid out as − field +. Every number field is one, in form
 - **Decimal mark:** both comma and point are accepted; the one the user typed is kept for display. The page always gets the number itself, never the typed text.
 - **Label:** say the range and step when they matter: "Weight in kg (0–50, steps of 0.5)".
 - **Empty:** a number that may stay empty says what empty means in its label ("Quota in GB, empty = no limit"); empty is then a value, never an error.
+- **Width:** only − value +, nothing more. The box holds the longest value the limits allow, or 2 digits with no limit, and grows for anything longer. The buttons are 24 px. So no page sets a width and no number field has a placeholder.
 
 ### 4.5 Search field
 
@@ -591,7 +644,7 @@ Arrow keys, Home and End move the selection. The selected item has the soft Acce
 ### 8.4 Picking in an item list
 
 - **Mouse:** a click picks that item alone. Ctrl+click (⌘ on Mac) adds or removes one item. Shift+click picks a range from the last anchor, and Ctrl+Shift+click adds that range. A click on empty space clears the picks. A double-click or Enter opens the item; a middle click can open it in a new tab where that makes sense.
-- **The tick:** a small square at the start of each item. With a mouse it shows on hover and on picked items, and a click on it adds or removes that item. On touch it shows only while picking. In a grid of cards it sits in the card's corner.
+- **The tick:** a small square at the start of each item. With a mouse it shows on hover and on picked items, and a click on it adds or removes that item. On touch it shows only while picking. In a grid of cards it sits in the card's corner and, outside a desktop window, always shows, with a mouse or on touch.
 - **Keyboard:** the arrows move and pick the item they reach; Shift+arrows extend the range; Ctrl+arrows move the focus only, and Space then adds or removes the focused item. Home, End, Page Up and Page Down jump. Ctrl+A (⌘A) picks every item shown. Esc clears the picks. In a grid, the arrows move by place on the screen. Shift+F10 or the Menu key opens the pop-up menu.
 - The keys of a view's main list work while the focus is on the title row's buttons too (after pressing Delete in the toolbar, the Delete key still works). They do not work while a text field, a menu or a dialog has the focus.
 - **Touch:** a tap opens an item. A long tap starts picking: the squares show on every item, that item is picked, and each tap then adds or removes one. Esc or the × of the count stops.
@@ -735,6 +788,7 @@ The title row of a view or window shows what you look at on the left and what yo
 | Pop-up menu on an area | `Ayni.contextMenu(area, { menu, target, keyTarget, onDrag })` |
 | Long tap that picks | `Ayni.longTap(area, selector, (item, x, y) => …)`: the same ring and timing; the click its release leaves is swallowed |
 | Shortcut text | `Ayni.keyLabel('Ctrl+C')`: "Ctrl+C", or "⌘C" on Mac |
+| Shortcut on a button's tooltip | `Ayni.keyHints([{ el: 'printBtn', label: () => Ayni.keyLabel('Ctrl+P') }], phone)`: adds " (Ctrl+P)", or takes it off on a phone; safe to run again after a tooltip is rewritten |
 | A menu bar from a list | `Ayni.menuBar(bar, { menus })`: `menus` is `[{ key or label, items }]`, `items` the rows of `Ayni.menuAt`, read each time a menu opens; returns `{ build, openAt, close, isOpen }` |
 | A popup | `.panel.popup.controls[popover]`, opened with `popovertarget`; `h4` heads a group; `.tall` lets it grow to the height of the screen; `Ayni.showPopup(popup, button)` opens one from code, as its button would |
 | Tool group | `.panel.popup.tools[popover]` holding the real `.btn` tools; `data-lit-by="id id"` on the group button names the toggles that light it |
@@ -939,10 +993,10 @@ A long form folds its rarely used half behind one line: a small pill with a chev
 
 A splitter is a bar between two panes, side by side or top and bottom, that the user drags to resize them; three small glyphs in its middle collapse either pane or reset both.
 
-- **Look:** a 7 px bar in the title-row colour, soft Accent under the pointer and while dragged. Every bar looks the same.
+- **Look:** a 13 px bar, wide enough to hold its glyphs, in the title-row colour, soft Accent under the pointer and while dragged. Every bar looks the same.
 - **Sizes:** a side pane is sized in pixels, so it keeps its width as the window grows and the other pane takes the rest. Two panes that share the room are sized in percent. Each pane has limits the bar stops at, and either pane can be the sized one.
 - **Remembered:** the size and the collapsed pane are kept on this device, saved when the drag ends. Each bar in the page has its own.
-- **Glyphs:** centred on the bar, three small solid glyphs with no circle, no background and no button styling. On a side-by-side bar, ◂ and ▸ are stacked with the dot between them; on a top/bottom bar, ▴ and ▾ sit in a row with the dot between. Glyph boxes are 10 px with a 1 px gap (about 3 px between the glyphs); triangles 7 × 9 px, dot 7 px.
+- **Glyphs:** centred on the bar, three small solid glyphs with no circle, no background and no button styling. On a side-by-side bar, ◂ and ▸ are stacked with the dot between them; on a top/bottom bar, ▴ and ▾ sit in a row with the dot between. Glyph boxes are 10 px with a 4 px gap (about 6 px between the glyphs); triangles 7 × 9 px, dot 7 px.
 - **Arrows** send the bar to that end, collapsing that pane ("Collapse left pane"). An arrow is disabled when its pane is already collapsed. The bar stays, with its glyphs, to bring the pane back.
 - **Dot** resets both panes to their default sizes ("Reset sizes"). It is a solid dot here even though a dot on a button means second action: on the splitter it is not a button.
 - **Rest of the bar** is dragged to resize.
@@ -950,7 +1004,7 @@ A splitter is a bar between two panes, side by side or top and bottom, that the 
 - **No glyphs:** a view with its own button that shows or hides the pane has a bar without glyphs: one action, one control. The drag, the keys and the double-click stay.
 - **Keyboard:** focus the bar; arrow keys move it (Left and Right side by side, Up and Down top and bottom), Home and End go to the limits, Enter collapses or restores the first pane.
 - **Mouse:** double-click on the bar resets both panes.
-- **Touch:** the glyphs keep their close spacing. Invisible hit areas reach 19 px across the bar and the arrows reach 34 px past the ends (44 px in all); the dot's area stays small. A double tap on the bar also resets.
+- **Touch:** each glyph has its own 44 px along the bar, so a finger cannot land on the wrong one, and the invisible hit areas reach 44 px across it. The bar is still dragged above and below the glyphs; a bar too short for that (under 220 px) shows only the dot. A double tap on the bar also resets.
 - **Tooltips:** the bar says "Drag to resize"; each glyph names what it does.
 - **Phones:** one pane at a time and no bar. The other pane is a view of its own or a sheet (16.9).
 - **Embedded pages:** while the bar is dragged, frames in the page ignore the pointer, so the drag never gets lost over them.
@@ -1172,7 +1226,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 - The title row starts at the top left with the app's icon and the app's name, followed by the app's toolbar.
 - **A window has no minimise, maximise or close buttons of its own.** They are in the window's chip in the taskbar, and show while that window is selected.
 - **Window chips**: one chip per open window. Every chip shows only the app's icon (the name is in its tooltip), except the chip of the selected window, which also shows the name of what the window shows (the document, or else the app) and the window buttons: minimise, maximise (restore while maximised) and close. An app may add window buttons of its own. On a side bar no chip shows a name, there is no room: the selected chip stacks its buttons under the icon.
-- **Chip states.** The selected chip is drawn on the card colour, with a 3 px Accent edge on the side of the screen. A minimised window's icon is greyed. An app may put a small mark on a chip (unread messages, a question waiting).
+- **Chip states.** A chip is a rectangle with rounded corners (`--radius-s`). The selected chip is drawn on the card colour. A minimised window's icon is greyed. An app may put a small mark on a chip (unread messages, a question waiting).
 - The content scrolls vertically and horizontally, with scrollbars only when needed, as every container does (2.7).
 - **A toolbar that does not fit:** the app's icon and name never shrink. The tools leave by rank into the More (⋮) menu, as in every title row (9.9). They come back as the window widens.
 - **Moving and resizing:** drag the title row (not its toolbar buttons) to move a window; drag any edge or corner to resize it, down to a minimum size. Double-click the title row to maximise or restore. Dragging to a screen edge does nothing special (windows that hold whole pages may offer it: 17.4). The title row always stays inside the work area.
@@ -1191,6 +1245,7 @@ An app made of separate pages shows each in a frame, one per window. **Ayni's co
 - **Windows come back.** Open windows return after a reload with their pages, places and sizes. A new window of an app opens where that app's last one closed.
 - **Touch.** The on-screen keyboard shortens the front window so the field stays in sight; only the look changes, never the saved size.
 - **Switching.** Alt pressed and let go alone shows every window, the last used first. Keys typed in a frame never reach the page around it, so every frame is listened to.
+- **Frames say they are windows.** Each one carries `data-ayni-window`, so the page inside knows it (2.10): its own row is the title row, and "go home" opens the launcher instead of leaving the desktop.
 
 Three options an app may offer, per device, with any of them left out:
 
@@ -1228,15 +1283,100 @@ By default `.desktop` hides below 1024 px and anything marked `.no-desktop` show
 
 `aria-current="true"` marks the selected chip, `.min` a minimised one. `.chip-ctl` holds any number of `.btn`.
 
-## 18. To be defined
+## 18. The app shell
+
+`ayni-shell.css` and `ayni-shell.js`, optional, are the page around the controls, for an app that takes its whole window. Load the pair after `ayni-base`.
+
+### 18.1 Two shells
+
+Each app takes one, never both:
+
+- **Tool** (`.app`): a full-height column. The title row on top, and the work area (a grid, an editor, a map) fills the rest and does its own scrolling.
+- **Card** (`.page > .page-inner > .card`): one centred column that reads like a sheet of paper, 460 px at most. On a phone (480 px and under) it loses its border, corners and shadow and goes edge to edge. A `.card` on its own keeps its box at every width.
+
+### 18.2 The title row
+
+`.topbar` in a tool, `.header` in a card, and they look the same: same padding, gaps, icon size and divider. A card's stays in view while the list scrolls under it, and its height is in `--win-head-h` for the page's own sticky heads.
+
+The order is the same in every app: **look on the left, act on the right.** Left: the back arrow of a sub-view, `.app-icon`, `<h1>`, what is open, the view switch (`.tb-modes`), a pager. Right, in `.topbar-actions` or `.header-actions`: the actions on the picked items, search, New, the app's tools, then More, settings and Help (9.7).
+
+- The name is Accent, 1.1 rem, bold, and is never cut: it wraps first.
+- On a phone the fixed app name is hidden and the icon stays, so the tools get the room; screen readers still get the name. A title that says what is open stays. A window as narrow as a phone keeps its name.
+- `.view-bar` is a row of toolbar groups of its own, under the title row.
+- A thin line between two groups is drawn for you; never place one by hand.
+
+### 18.3 Two layouts, one break
+
+PC and tablet are the default. **Phones are 640 px and under**, in every app, and there is no second phone break. An app may add a pane break, the width at which a side pane no longer fits; that is not a phone.
+
+On a phone the title row keeps the name; what does not fit leaves by rank for the More menu or wraps; side panes become a sheet; a dialog taller than the screen scrolls inside; every text field is at least 16 px, so the phone never zooms; nothing is wider than the screen.
+
+### 18.4 A page inside a frame
+
+`Ayni.frame` says what the page is (2.10). In a pane the host shows the name, so the page hides its own icon and name, and on a wide host the icon comes back as the label of the pane. A window keeps its icon and name: that row is the title bar, with an empty strip after the name to grab it by. In a pane or a window a card fills its frame.
+
+### 18.5 The icon and name go home
+
+Both are one button back to the app's home: only the pointer and a light hover show it, and nothing moves. A real control in the row keeps its own job. A pane's icon is only its label.
+
+### 18.6 Export to PDF
+
+No library: the page writes a plain, light sheet and the browser's print dialog saves it ("Save as PDF"). A plain Ctrl+P still prints the page itself.
+
+### 18.7 What the app says about itself
+
+- **The connection plug.** One plug, drawn seated in its socket or pulled out, so the state reads without its colour: green plugged in, blue a transfer running, gold unplugged with changes waiting, red unplugged with an error. It takes no room while all is well. When the link has been bad for 3 s it floats as a round chip just off the end of the bar, and stays green 1.5 s when the link is back. A frame shows none: its host shows one.
+- **The space card.** Stays until closed, bottom centre, over the page and under notifications. When it shows is the app's: only it knows its space.
+- **The unread dot.** A red dot on the app's icon's top-right corner. It blinks 5 times when new news comes, also with reduced motion: it is a short signal, not decoration.
+
+### 18.8 Sharing, uploads and writing
+
+- **Sharing** (`ayni-share`). One dialog: who has it, with a × to take it back and Undo; who else could have it, as a pick list, with Everybody on top; for a folder, a switch that lets them add files; and, when the app asks, a link anyone can open, made as the dialog opens.
+- **Uploads** (`ayni-upload.js`). All the uploads of a burst share one progress notification, shown only after 600 ms, so a small one shows nothing. Before a long upload, the app asks whether there is room; when emptying the bin would make room, the user is offered that, and only what the bin held when asked is deleted.
+- **Writing** (`ayni-compose`). Marks in a short message: `*bold*`, `_italic_`, `~strike~`, `- ` lists. Messages stay plain text. An emoji panel. Emoticons become emoji once the space after them is typed, and a Backspace right after gives the emoticon back.
+- **Calendar views** (`ayni-calview.css`). The look of FullCalendar in Ayni's colours. The engine is the app's: it has its own licence.
+
+### 18.9 Installed apps
+
+- **The install offer** says what you get, not a one-line bar. Where the browser can install, one button; on iOS and Android, the real steps. The automatic one speaks only when an install is really possible, never over another dialog; "Not now" lasts this visit, "Don't show again" for good. By hand it always opens and always says something.
+- **The browser warning** speaks when the browser is too old, or forgets what it is told. A warning, never a wall.
+- **The update bar.** A new version is offered, never forced: the page may hold unsaved work.
+- **The session bar.** Session gone, one bar, one way out, never a redirect on its own.
+- **Low battery.** A dialog in front of all, at 15% or less and not charging, once per drop. Plugging in closes it.
+- **The screen locker.** After the chosen idle minutes an animation covers the page, and only the password takes it away. The lock lives in the browser: it covers the open pages, not the session.
+
+### 18.10 For developers
+
+| Need | Code |
+| --- | --- |
+| The way home | `const apply = Ayni.homeLinks({ go, tip, heads, not, onIcon })`, then `apply()`, and `apply(root)` for a part drawn later. `go(event)` goes home; `tip` is the key of the icon's tooltip; `heads` the title rows, `.topbar, .header` by default; a name inside `not` stays plain; `onIcon(element)` runs for each icon marked. Marked items get `.home-link` |
+| Export to PDF | A hidden `<div id="printRoot">`, the page in `#app`, then `Ayni.printPage(html, title, hintKey)`: `title` seeds the file name, `hintKey` is the key of the text that says what to pick |
+| The plug | A `.sync-indicator`, `Ayni.plug.draw(root)` for one built later, `Ayni.plug.set(element, state, { titles, tapHint })`, or `Ayni.plug.listener(options)` for a store's `onState`. States: `synced`, `loading`, `saving`, `offline`, `pending`, `needs-auth`, `conflict`, anything else is an error. `Ayni.plug.bars` lists what counts as a bar |
+| The space card | `Ayni.spaceCard({ title, used, how, items, action: { label, icon, run } })`, in `ayni-status.js`, with `ayni-status.css` |
+| The unread dot | `const dot = Ayni.badge(selector)`, then `dot.set(n, blink)`, `dot.place()`, `dot.showing()` |
+| Sharing | `Ayni.share({ path, app, title, canAdd, link, lead, peopleHead, api, users })`; see the head of `ayni-share.js`. `Ayni.share.rowButton(name, title, action)` |
+| Uploads | `Ayni.uploads({ event, onBurst })` listens for the app's transport; `Ayni.ensureRoom(need, { space, binIds, empty })` |
+| Writing | `Ayni.marks`, `Ayni.emojiPanel(pick)`, `Ayni.smileys(textarea)` |
+| Installed apps | `Ayni.pwa.config({ app, logo, keys, apkRef, apkKey, held, page, signIn })`, then `offerInstall({ manual })`, `installMode()`, `isStandalone()`, `warnBrowser()`, `pingUpdate()`, `watchBattery()`, `sessionExpired()`, `b64ToU8(key)`, `samePushKey(sub, key)`, `inAndroidApp()` |
+| Screen locker | Set `window.AyniLockerConfig`, load `ayni-locker.js` in `<head>` without `defer`, then `AyniLocker.settings()`, `.save(part)`, `.lock()`, `.define(id, fn)`. It ships `lockers/clock.js`, `matrix.js`, `life.js` |
+| The clip's panel | `Ayni.attachPanel(items, onPick)`, in `ayni-dialogs.js`: `items` are `{ icon: node, label, color: 0-8, act }` |
+| Touch | `--hit` is 44 px on a coarse pointer, for a page's own hit pads |
+
+### 18.11 The data side
+
+`ayni-net.js`, `ayni-store.js` and `ayni-boot.js` keep an app's data safe when the network is not. A save goes to the screen and the device first, and to the server when it can: a page closed, a train tunnel or a lost session never loses it. Two devices that change the same file are told apart by its version, and nothing is written over a change the page has not seen. `AyniDoc` adds a document on top: autosave, a draft on the device for one with no name yet, one window per document.
+
+`window.AyniNames` (keys, cookies, the API's address, its headers) is read when the files load. `sample/server.mjs` shows what the server must answer.
+
+## 19. To be defined
 
 These points are known and deliberately left open; each will get its own decision and then its own chapter or rule.
 
-### 18.1 Low-priority review items
+### 19.1 Low-priority review items
 
 The low-priority items of the gap review have not been reviewed. They will be taken up only if Frasquito asks.
 
-### 18.2 Accessibility for blind and deaf users, right-to-left, High Contrast
+### 19.2 Accessibility for blind and deaf users, right-to-left, High Contrast
 
 To be done after the full design is closed:
 

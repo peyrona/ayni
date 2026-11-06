@@ -8,6 +8,7 @@
      (no ayni.css). window.L holds everything the desktop tells, in order; add(name, tools) makes one more window; keep =
      true makes a window refuse to close. #demo opens the month (for screenshots). -->
 <script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
 <link rel="stylesheet" href="../ayni-base.css">
 <link rel="stylesheet" href="../ayni-buttons.css">
@@ -43,7 +44,7 @@
   window.add = (name, tools = '') => {
     const w = document.createElement('section'); w.className = 'panel window'; w.setAttribute('aria-label', name);
     w.style.width = '300px'; w.style.height = '200px';
-    w.innerHTML = `<header><span class="app">${Ayni.icon('file')}<h2>${name}</h2></span>${tools}</header><div class="body">x</div>`;
+    w.innerHTML = `<header><span class="win-app">${Ayni.icon('file')}<h2>${name}</h2></span>${tools}</header><div class="body">x</div>`;
     $('.area').append(w); Ayni.init(w); return w;
   };
   $('#size').addEventListener('input', (e) => $('.desktop').style.setProperty('--bar-h', e.target.value + 'px'));
@@ -59,12 +60,12 @@
 <div class="desktop" data-edge="bottom">
   <main class="area" aria-label="Desktop">
     <section class="panel window" id="w1" aria-labelledby="w1n" style="left: 40px; top: 32px; width: 460px; height: 300px">
-      <header><span class="app"><span class="icon" data-icon="folder"></span><h2 id="w1n">Files</h2></span>
+      <header><span class="win-app"><span class="icon" data-icon="folder"></span><h2 id="w1n">Files</h2></span>
         <div role="toolbar" aria-label="Files tools"><button class="btn" aria-label="New" data-tip="New"><span class="icon" data-icon="new"></span></button></div></header>
       <div class="body"><p>Files</p><input class="input" id="w1f" aria-label="In the window"></div>
     </section>
     <section class="panel window" id="w2" aria-labelledby="w2n" style="left: 120px; top: 90px; width: 560px; height: 280px">
-      <header><span class="app"><span class="icon" data-icon="edit"></span><h2 id="w2n">Notes</h2></span>
+      <header><span class="win-app"><span class="icon" data-icon="edit"></span><h2 id="w2n">Notes</h2></span>
         <div role="toolbar" aria-label="Notes tools">
           <button class="btn" aria-label="Save" data-tip="Save"><span class="icon" data-icon="save"></span></button>
           <button class="btn" aria-label="Bold" data-tip="Bold"><span class="icon" data-icon="bold"></span></button>
