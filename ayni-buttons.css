@@ -38,8 +38,8 @@
 .btn-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; animation: spin .8s linear infinite; }
 .btn .icon { --icon: 18px; }
 /* Second action (double-click, long tap on touch, Shift+Enter): always marked with a dot, on every device */
-.btn[data-alt] { position: relative; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; }
-.btn[data-alt]::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%;
+:is(.btn, button)[data-alt] { position: relative; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; }
+:is(.btn, button)[data-alt]::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%;
   background: var(--accent); border: 2px solid var(--panel-bg); }
 /* Popup button (opens a menu or popover): a small down-pointing triangle in the icon's colour, in the same corner, like a combo box. One
    pseudo element only (a border triangle, ringed in the panel colour by drop shadows), so ::before stays free for the
@@ -129,3 +129,14 @@ html.touch .panel > footer .btn, html.touch .panel > form > footer .btn { --btn:
 html.touch .choice, html.touch .switch, html.touch .switch-pair, html.touch .switch-pair > label { min-height: var(--touch); }
 html.touch .switch-pair > label { display: flex; align-items: center; justify-content: center; min-width: var(--touch); }   /* an icon side too */
 html.touch .switch-pair > .track::before { content: ""; position: absolute; inset: -12px -4px; }
+
+/* ---------- Bevel ---------- */
+/* The splitter's soft raised edge (light on top, dark under it), on every control that has a face of its own: framed and
+   default buttons, a pressed or hovered one, tiles, tabs, switches and the desktop's chips. Only with html.bevel (the
+   desktop's "Raised controls" switch, which its windows copy); html.flat takes it off the splitter too. !important: the
+   controls' own states set the whole background, and would wipe the edge on hover */
+:root { --bevel: linear-gradient(to bottom, rgb(255 255 255 / .16), transparent 40%, rgb(0 0 0 / .07)); }
+html.bevel :is(.btn.bordered, .btn.primary:not(.danger), .btn.text.dashed, .btn[aria-pressed="true"], .btn.large.bordered,
+  .btn:hover:not([aria-disabled="true"]), [role="tab"], [role="menubar"] > button[aria-expanded="true"],
+  .switch input, .switch-pair > .track, .chip:hover, .chip[aria-current="true"]) { background-image: var(--bevel) !important; }
+html.flat .splitter { background-image: none; }
