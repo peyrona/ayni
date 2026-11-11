@@ -45,10 +45,10 @@ dialog.panel > .body:first-child, dialog.panel > form > .body:first-child, dialo
 /* ---------- Content ---------- */
 /* The text of a confirmation or a message built in code keeps its line breaks */
 dialog.panel .body > p.text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-/* A message with its icon (info, warn) */
-.msg { display: flex; gap: 12px; align-items: flex-start; }
-.msg .icon { --icon: 28px; }
-.msg.warn .icon { color: var(--warn); } .msg.info .icon { color: var(--accent); }
+/* A message with its icon (info, warn), in a dialog's body only: an app's own .msg (a chat bubble) keeps its look */
+dialog.panel .body > .msg { display: flex; gap: 12px; align-items: flex-start; }
+dialog.panel .body > .msg .icon { --icon: 28px; }
+dialog.panel .body > .msg.warn .icon { color: var(--warn); } dialog.panel .body > .msg.info .icon { color: var(--accent); }
 
 /* ---------- Moving ---------- */
 /* RULE: a floating modal dialog moves by its title row (ayni-dialogs.js); while it moves nothing in it gets selected */

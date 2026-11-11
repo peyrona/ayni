@@ -219,7 +219,7 @@ try {
   await t.evaluate(`localStorage.setItem('ayni-lang', 'es'), true`); await t.open();
   check('es: the password button says "Mostrar contraseña"', (await t.evaluate(`(() => { const b = document.querySelector('#pw-toggle'); b.click(); b.click(); return b.dataset.tip; })()`)) === 'Mostrar contraseña');
   check('es: calendar days start "Lu"', (await t.evaluate(`document.querySelector('#cal-inline th')?.textContent`)) === 'lu' || (await t.evaluate(`document.querySelector('#cal-inline th')?.textContent`)) === 'Lu', await t.evaluate(`document.querySelector('#cal-inline th')?.textContent`));
-  check('es: the calendar title is in Spanish', (await t.evaluate(`document.querySelector('#cal-inline .cal-title').textContent.trim()`)) === (await t.evaluate(`new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(new Date())`)));
+  check('es: the calendar month is in Spanish', (await t.evaluate(`document.querySelector('#cal-inline .cal-title[data-view="months"]').textContent.trim()`)) === (await t.evaluate(`new Intl.DateTimeFormat('es', { month: 'long' }).format(new Date())`)));
   check('es: the theme button says "Tema claro" / "Tema oscuro"', ['Tema claro', 'Tema oscuro'].includes(await t.evaluate(`document.querySelector('#theme-btn').dataset.tip`)));
   check('es: Ayni.t reads a key', (await t.evaluate(`Ayni.t('ayni.undo')`)) === 'Deshacer');
   check('es: Ayni.tf fills its places', (await t.evaluate(`Ayni.tf('ayni.tree.nItems', { n: 3 })`)) === '3 elementos');
@@ -2232,12 +2232,20 @@ try {
     check('…it goes as soon as something changes', await ev(`document.querySelector('#dlg-err').hidden`));
     await reset();
 
+    /* The calendar head (month, year, Today, arrows) fits over the days with the longest month name of any language */
+    const headFits = async () => ev(`(() => { const p = document.getElementById(${JSON.stringify(await popOf('day'))}), head = p.querySelector('.cal-head'), mb = head.querySelector('[data-view="months"]'), tn = mb.firstChild, keep = tn.textContent; let need = 0, name = '';
+      for (const l of ['en', 'es', 'pt', 'fr', 'de']) for (let m = 0; m < 12; m++) { tn.textContent = new Intl.DateTimeFormat(l, { month: 'long' }).format(new Date(2026, m, 1)); const n = head.querySelector('.cal-picks').scrollWidth + head.querySelector('.cal-nav').offsetWidth + parseFloat(getComputedStyle(head).columnGap); if (n > need) { need = n; name = tn.textContent; } }
+      tn.textContent = keep; const room = p.querySelector('.cal table').offsetWidth; return need <= room ? 'ok' : need + ' px > ' + room + ' px (' + name + ')'; })()`);
+    await click(btnOf('day')); await wait(100);
+    check('the calendar head fits over the days in every language', (await headFits()) === 'ok', await headFits());
+    await reset();
     /* Touch */
     await ev(`(Ayni.setTouchPreview(true), true)`); await wait(100);
     check('touch: fields 44 px, sliders 44 px', (await height('#name')) === 44 && (await height('#vol')) === 44);
     check('touch: a toolbar field stays 30 px', (await height('#tb-cell')) === 30);
     await click(btnOf('day')); await wait(100);
     check('touch: calendar days are 44 px', (await ev(`Math.round(document.querySelector('#${await popOf('day')} .cal td button').getBoundingClientRect().height)`)) === 44);
+    check('touch: the calendar head fits over the days in every language', (await headFits()) === 'ok', await headFits());
     await reset();
     check('touch: the slider dot is drawn 20 px (rule present)', await ev(`[...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => (r.selectorText || '').includes('html.touch input[type="range"]::-webkit-slider-thumb') && r.style.width === '20px'); } catch { return false; } })`));
     await ev(`(Ayni.setTouchPreview(false), true)`);
@@ -2333,6 +2341,10 @@ try {
     await click('#dd-f'); await pickByMouse('dd', 'High');
     check('pick with the mouse: text, value, event with value, text and name', (await fieldText('dd')) === 'High' && (await ev(`document.querySelector('#dd input[type=hidden]').value`)) === 'h' && (await log()) === 'dd:h/High/Priority', await log());
     check('…the list closes and the focus is in the field', !(await isOpen('dd')) && (await ev(`document.activeElement.id`)) === 'dd-f');
+    /* A page that sets new items on ayni:change: the list is redrawn during the pick, and must still close */
+    await ev(`(document.getElementById('dd').addEventListener('ayni:change', () => { const p = Ayni.picker('#dd'); p.options = p.items; }, { once: true }), true)`);
+    await click('#dd-f'); await pickByMouse('dd', 'Low');
+    check('a page that redraws the items on ayni:change: the pick closes the list', (await fieldText('dd')) === 'Low' && !(await isOpen('dd')), await isOpen('dd'));
     await reset(); await focus('#dd-f');
     await key('u');
     check('type-ahead while closed picks the match', (await fieldText('dd')) === 'Urgent' && (await log()) === 'dd:u/Urgent/Priority');
@@ -3252,11 +3264,14 @@ try {
     check('view only: Page Down moves a month', (await title()) !== today);
     await key('PageUp');
     check('view only: Page Up comes back', (await title()) === today);
-    await click('#view .cal-title'); await wait(30);
-    check('view only: the title opens the months', await ev(`document.querySelectorAll('#view .cal-grid button').length === 12`));
+    check('the head holds month, year, Today and both arrows; no foot row', await ev(`(() => { const h = document.querySelector('#view .cal-head'); return !document.querySelector('#view .cal-foot') && h.querySelectorAll('.cal-picks .cal-title').length === 2 && [...h.querySelectorAll('.cal-nav button')].map((b) => 'today' in b.dataset ? 'T' : b.dataset.nav).join() === 'T,-1,1' && h.scrollWidth <= h.clientWidth; })()`));
+    await click('#view .cal-title[data-view="months"]'); await wait(30);
+    check('view only: the month opens the months', await ev(`document.querySelectorAll('#view .cal-grid button').length === 12 && document.querySelector('#view [data-view="months"]').getAttribute('aria-expanded') === 'true'`));
     check('view only: the grid is as wide as the days with week numbers', (await box('#view .cal-grid')).w === 272, await box('#view .cal-grid'));
-    await click('#view .cal-title'); await wait(30);
-    check('view only: then the years', await ev(`/\\d{4}.*\\d{4}/.test(document.querySelector('#view .cal-title').textContent)`));
+    await click('#view .cal-title[data-view="months"]'); await wait(30);
+    check('view only: the month again goes back to the days', await ev(`document.querySelectorAll('#view td span').length`) === 42);
+    await click('#view .cal-title[data-view="years"]'); await wait(30);
+    check('view only: the year opens the years', await ev(`[...document.querySelectorAll('#view .cal-grid button')].filter((b) => /^\\d{4}$/.test(b.textContent)).length === 12 && document.querySelector('#view [data-view="years"]').getAttribute('aria-expanded') === 'true'`));
     await click('#view .cal-grid button:nth-child(2)'); await wait(30);
     check('view only: picking a year goes back to the days, with no crash', await ev(`document.querySelectorAll('#view td span').length`) === 42);
     await closePops();

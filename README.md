@@ -368,6 +368,7 @@ The page follows the system setting until the user picks light or dark (`ayni-th
 | `docs/accessibility-backlog.md` | Accessibility work planned for after the design is closed |
 | `docs/*.png` | Images for this page |
 | `tests/run.mjs` | The tests: `node tests/run.mjs` loads the gallery in a headless Chromium and checks it (Node 22+, no packages); it ends with ALL GREEN |
+| `deploy.sh` | Copies Ayni to a VPS as a static site: `./deploy.sh --help` lists the options. The private address goes in `deploy.local.sh`, which git ignores |
 | `CHANGELOG.md` | What changed in each version |
 
 ## Licence

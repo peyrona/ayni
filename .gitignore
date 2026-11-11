@@ -11,3 +11,6 @@ desktop.ini
 node_modules/
 *.log
 .env
+
+# Private VPS address
+deploy.local.sh

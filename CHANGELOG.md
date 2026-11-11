@@ -2,6 +2,11 @@
 
 All notable changes to Ayni are listed here. Versions follow [Semantic Versioning](https://semver.org/); until 1.0 the markup and the API may still change.
 
+## Unreleased
+
+- Calendar: one head row, "November ▾ 2026 ▾ … Today < >": the month and the year each open their own grid (a second press returns to the days), and Today moved up from its own foot row; Today and the arrows are small buttons.
+- List picker: a pick with the mouse closes the list also when the page sets new items on `ayni:change` (it used to open again at once).
+
 ## 0.2.0
 
 Everything an app needs beyond the controls, so Ayni serves any project; `sample/` is the proof, a small app made of Ayni alone.
@@ -10,7 +15,7 @@ Everything an app needs beyond the controls, so Ayni serves any project; `sample
 - Text button: the word is no longer bold.
 - Item lists: a grid of cards (`grid` option) always shows its ticks, with a mouse or on touch, except in a desktop window.
 - List picker: the items in its popup take the size of the text in its field, in a toolbar too.
-- Title row: on a phone the fixed app name is hidden and the icon stays; screen readers still get the name (guidelines 18.2).
+- Title row: on a phone the fixed app name is hidden and the icon stays, in an Accent circle; screen readers still get the name (guidelines 18.2).
 - Window chips: rectangles with rounded corners (`--radius-s`), and the selected chip loses its Accent edge: the card colour alone marks it (guidelines 17.3).
 - Splitter: the bar is 13 px, wide enough to hold its glyphs; on touch each glyph has its own 44 px along the bar.
 - A popup button's triangle takes the colour of the button's icon, no longer Accent (guidelines 3.3).

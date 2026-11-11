@@ -536,15 +536,17 @@ Dates are typed as YYYY-MM-DD (times as 24-hour HH:MM) or picked from the Ayni c
 
 ### 6.4 Calendar
 
+The calendar has no foot row: its one head reads "November ▾ 2026 ▾" on the left (look) and Today, previous, next on the right (act).
+
 | Action | Mouse or touch | Keyboard |
 | --- | --- | --- |
 | Move by day / week | — | Left, Right / Up, Down |
-| Previous / next month | Arrow buttons beside the title | Page Up / Page Down |
+| Previous / next month | Arrow buttons at the right of the head | Page Up / Page Down |
 | Pick a day | Click or tap | Enter |
-| Pick a month | Click the month title: a 12-month grid appears | — |
-| Pick a year | Click the title again: a 12-year grid appears | — |
-| Back to the days | Picking a month or year returns to the days | Esc in the month or year grid |
-| Today | Today button (bottom left) jumps to today and picks it | — |
+| Pick a month | Click the month name: a 12-month grid appears | — |
+| Pick a year | Click the year: a 12-year grid appears | — |
+| Back to the days | Picking a month or year, or clicking the same name again, returns to the days | Esc in the month or year grid |
+| Today | Today button (in the head, before the arrows) jumps to today and picks it | — |
 | Close | Click outside | Esc |
 
 **Week numbers.** A calendar can start each row with its ISO week number (week 1 holds the year's first Thursday).
@@ -1301,7 +1303,7 @@ Each app takes one, never both:
 The order is the same in every app: **look on the left, act on the right.** Left: the back arrow of a sub-view, `.app-icon`, `<h1>`, what is open, the view switch (`.tb-modes`), a pager. Right, in `.topbar-actions` or `.header-actions`: the actions on the picked items, search, New, the app's tools, then More, settings and Help (9.7).
 
 - The name is Accent, 1.1 rem, bold, and is never cut: it wraps first.
-- On a phone the fixed app name is hidden and the icon stays, so the tools get the room; screen readers still get the name. A title that says what is open stays. A window as narrow as a phone keeps its name.
+- On a phone the fixed app name is hidden and the icon stays, so the tools get the room; the icon then sits in an Accent circle, drawn in On-accent; screen readers still get the name. A title that says what is open stays. A window as narrow as a phone keeps its name.
 - `.view-bar` is a row of toolbar groups of its own, under the title row.
 - A thin line between two groups is drawn for you; never place one by hand.
 
@@ -1366,7 +1368,7 @@ No library: the page writes a plain, light sheet and the browser's print dialog 
 
 `ayni-net.js`, `ayni-store.js` and `ayni-boot.js` keep an app's data safe when the network is not. A save goes to the screen and the device first, and to the server when it can: a page closed, a train tunnel or a lost session never loses it. Two devices that change the same file are told apart by its version, and nothing is written over a change the page has not seen. `AyniDoc` adds a document on top: autosave, a draft on the device for one with no name yet, one window per document.
 
-`window.AyniNames` (keys, cookies, the API's address, its headers) is read when the files load. `sample/server.mjs` shows what the server must answer.
+`window.AyniNames` (keys, cookies, the API's address, its headers, the upload event's name - `upload`, "ayni:upload" by default) is read when the files load. `sample/server.mjs` shows what the server must answer.
 
 ## 19. To be defined
 
