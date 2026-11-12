@@ -2796,12 +2796,28 @@
             return r === true ? "clean" : ( r === "other" ? "lock" : null );
         }
 
+        // A save still waiting for this document goes up FIRST, with the .bak
+        // the server makes for it (store.js PARKED SAVES, BAK) - as Restore
+        // does. Left waiting, the padlock's own save takes that request over,
+        // and the server copies the file over the .bak written here AFTER it:
+        // the plain copy over the sealed one, or the sealed one (whose
+        // password just went) over the plain one. Not sent: nothing changes.
+        async function sentFirst()
+        {
+            await saver.flush();
+            var up = await saver.upload();
+            if( ! up || up.ok ) return true;
+            if( ! notOwner() ) toast( "err", "write.actionFailed" );
+            return false;
+        }
+
         async function addLock()
         {
             // Never written anywhere yet (the padlock pressed before the first
             // word): there is no past to warn about, and none will exist.
             var how = ( path || saver.drafted() ) ? await warnAlreadyWritten() : "lock";
             if( ! how ) return;
+            if( ! await sentFirst() ) return;
 
             var pw = await Ayni.ask( { password: true, title:   t( "lock.setTitle" ),
                                                    lead:    t( "lock.setBody" ),
@@ -2866,6 +2882,7 @@
                                                confirm: t( "lock.remove" ),
                                                danger:  true } );
             if( ! ok ) return;
+            if( ! await sentFirst() ) return;
 
             if( ! await saver.unlockDoc() ) { notOwner(); return; }   // another account now (L5): nothing changed
             showLock();
