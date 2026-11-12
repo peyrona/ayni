@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, app shell: what the title row and the page do. Plain JavaScript, no build step, evergreen browsers 2024+.
+/* Ayni library 0.3.0, app shell: what the title row and the page do. Plain JavaScript, no build step, evergreen browsers 2024+.
    Optional: load it after ayni-base.js, with ayni-shell.css. The rules are chapter 18 of the guidelines. */
 ( function ()
 {

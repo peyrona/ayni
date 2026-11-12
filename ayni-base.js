@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, base: the foundations every page needs and every family file builds on (colours and light
+/* Ayni library 0.3.0, base: the foundations every page needs and every family file builds on (colours and light
    and dark, icons, texts, the browser check, start-up). Plain JavaScript, no build step, evergreen browsers 2024+.
    Load it after ayni-i18n.js, ayni-util.js and the icons, before any family file:
      <script src="ayni-i18n.js"></script>
@@ -430,7 +430,7 @@ if (embedded && !windowed) try {
 const owner = () => { try { if (embedded && window.top.location.pathname) return window.top; } catch { /* foreign */ } return window; };
 
 Object.assign(window.Ayni ??= {}, {
-  version: '0.2.0', init, $, $$, icon, setIcon, isDark, setTheme, theme, supported, frame: { embedded, windowed, owner }, isTouch, setTouchPreview, setTip, fold, matcher,
+  version: '0.3.0', init, $, $$, icon, setIcon, isDark, setTheme, theme, supported, frame: { embedded, windowed, owner }, isTouch, setTouchPreview, setTip, fold, matcher,
   icons: { use: useIcons, add: addIcons, names: ICONS, get set() { return iconSet; } },
   /* For Ayni's own family files */
   core: { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, family, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip, fold },

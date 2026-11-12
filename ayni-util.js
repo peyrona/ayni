@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, helpers: the small jobs every app writes again. Plain JavaScript, no build step, evergreen
+/* Ayni library 0.3.0, helpers: the small jobs every app writes again. Plain JavaScript, no build step, evergreen
    browsers 2024+. It needs nothing, and every page loads it, because Ayni's own files use it. Load it right after
    ayni-i18n.js, without defer:
      <script src="ayni-i18n.js"></script>

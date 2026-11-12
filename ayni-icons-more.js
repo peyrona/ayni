@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, more icons: every drawing an app may want beyond the ones the controls use. Optional, and not small:
+/* Ayni library 0.3.0, more icons: every drawing an app may want beyond the ones the controls use. Optional, and not small:
    a page that uses none of them leaves it out. Load it right after ayni-base.js, with defer:
      <script src="ayni-base.js" defer></script>
      <script src="ayni-icons-more.js" defer></script>

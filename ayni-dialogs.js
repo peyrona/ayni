@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, dialogs family: dialog.panel opened from markup or code, Esc, the first field, moving a
+/* Ayni library 0.3.0, dialogs family: dialog.panel opened from markup or code, Esc, the first field, moving a
    dialog, confirmation / message / question dialogs built in code, and fields saved as they change.
    Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-base.js and ayni-buttons.js:
      <script src="ayni-base.js" defer></script>

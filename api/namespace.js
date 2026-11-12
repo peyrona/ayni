@@ -6,7 +6,7 @@
  */
 const Ayni = {
   /** @type {string} Library version. */
-  version: '0.2.0',
+  version: '0.3.0',
 
   Component, Button, Field, TextField, PasswordField, SearchField, TextArea, NumberField,
   CheckBox, Switch, RadioGroup, Slider, ListBox, ListPicker, Tree,

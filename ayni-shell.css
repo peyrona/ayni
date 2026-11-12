@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, app shell: the page around the controls, for an app that takes its whole window. The two shells, the title
+/* Ayni library 0.3.0, app shell: the page around the controls, for an app that takes its whole window. The two shells, the title
    row, a page inside a frame, Export to PDF, finger-sized targets in the title row. Plain CSS, no build step, evergreen browsers
    2024+. Optional: load it after ayni-base.css. The behaviour is in ayni-shell.js; the rules are chapter 18 of the guidelines.
    Two layouts and one break between them: phones are 640 px and under. */

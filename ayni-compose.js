@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, writing: the marks of a short message, the emoji panel, emoticons that become emoji. Plain JavaScript, no build
+/* Ayni library 0.3.0, writing: the marks of a short message, the emoji panel, emoticons that become emoji. Plain JavaScript, no build
    step, evergreen browsers 2024+. Optional, with ayni-compose.css. The clip's panel is Ayni.attachPanel (ayni-dialogs.js).
      Ayni.marks.parse(text), .strip(text), .urls(text): *bold*, _italic_, ~strike~ and lines starting with "- " as a bullet list. Text
        work only, no page. Messages stay plain text; only the screen shows the marks.

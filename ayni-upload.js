@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, upload: one progress notification for a burst of uploads, and the check that there is room first. The transport
+/* Ayni library 0.3.0, upload: one progress notification for a burst of uploads, and the check that there is room first. The transport
    is the app's. Plain JavaScript, no build step, evergreen browsers 2024+. Optional; it needs ayni-toasts.js and ayni-dialogs.js when it runs. */
 ( function ()
 {

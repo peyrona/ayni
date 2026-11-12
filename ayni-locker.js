@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, screen locker: after N idle minutes the page is covered by an animation, and only the password takes it away. A key or
+/* Ayni library 0.3.0, screen locker: after N idle minutes the page is covered by an animation, and only the password takes it away. A key or
    a click only shows the password box. Plain JavaScript, no build step. Optional: load it in <head>, WITHOUT defer, so a page that opens
    while locked is hidden from its first paint, after setting window.AyniLockerConfig:
      { keys: { set, lock, seen }, lockers: [ids], isDesk(), signedIn(), unlock(password) -> status (200 ok, 401 signed out, 403 wrong),

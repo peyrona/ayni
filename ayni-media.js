@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, media: what a player and a library view share. Ayni.media.wirePlayer(el, hooks) (a seek slider #seekRange, #elapsedLabel,
+/* Ayni library 0.3.0, media: what a player and a library view share. Ayni.media.wirePlayer(el, hooks) (a seek slider #seekRange, #elapsedLabel,
    #totalLabel, #volumeRange), setPlayIcon(playing) (#playBtn, #playIcon), mediaSession(meta, handlers), positionState(el), probeDuration(kind, url),
    scopeBarHtml(label, clearTitle), ICONS. Plain JavaScript, no build step, evergreen browsers 2024+. Optional, with ayni-media.css. */
 ( function ()

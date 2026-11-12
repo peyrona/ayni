@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, status: what an app says about itself. The connection plug (Ayni.plug), the card for almost-full space
+/* Ayni library 0.3.0, status: what an app says about itself. The connection plug (Ayni.plug), the card for almost-full space
    (Ayni.spaceCard) and the unread dot on the app's icon (Ayni.badge). Plain JavaScript, no build step, evergreen browsers 2024+.
    Optional: load it after ayni-base.js, with ayni-status.css. The rules are chapter 18.8 of the guidelines. */
 ( function ()

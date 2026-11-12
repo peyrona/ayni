@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, share: the dialog to share something with people, and a link anyone can open. Plain JavaScript, no build step,
+/* Ayni library 0.3.0, share: the dialog to share something with people, and a link anyone can open. Plain JavaScript, no build step,
    evergreen browsers 2024+. Optional, with ayni-share.css; it needs ayni-dialogs.js and ayni-lists.js when it opens.
      Ayni.share({ path, app, title, canAdd, link, lead, peopleHead, api, users })
    The app gives the data: users() resolves to the names; api(method, body, id) makes the calls: 'GET' resolves to { mine: [grants] },

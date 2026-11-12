@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0: FullCalendar in Ayni's look. The calendar engine is FullCalendar, under its own licence: the app brings it, Ayni only
+/* Ayni library 0.3.0: FullCalendar in Ayni's look. The calendar engine is FullCalendar, under its own licence: the app brings it, Ayni only
    dresses it. Plain CSS, no build step. Optional: load it after ayni-base.css. */
 
 .fc { --fc-border-color: var(--line); --fc-page-bg-color: transparent; --fc-neutral-bg-color: color-mix(in srgb, var(--text) 5%, transparent); height: 100%; }

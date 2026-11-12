@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, pickers family: the list picker (drop-down list, filtered list and combo box, one component). Plain JavaScript,
+/* Ayni library 0.3.0, pickers family: the list picker (drop-down list, filtered list and combo box, one component). Plain JavaScript,
    no build step, evergreen browsers 2024+. Load it after ayni-base.js, ayni-menus.js (placing) and ayni-lists.js
    (type-ahead), and after ayni-fields.js for the filtered list's "!":
      <script src="ayni-base.js" defer></script>

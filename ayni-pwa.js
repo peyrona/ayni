@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, installed apps: the install offer, the browser warning, the update bar, the session bar, push keys, the low
+/* Ayni library 0.3.0, installed apps: the install offer, the browser warning, the update bar, the session bar, push keys, the low
    battery dialog. Plain JavaScript, no build step, evergreen browsers 2024+. Optional: load it after ayni-base.js, with ayni-pwa.css,
    and call Ayni.pwa.config({ app, logo, keys: { install, browser, batt }, apkRef, apkKey, held(), page(), signIn() }) as the page starts.
    app: its name, for the texts. held(): true while the page wants nothing to open over it. page(): true on a page that may warn.

@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, status: the connection plug, the space card, the unread dot. Plain CSS, no build step, evergreen browsers
+/* Ayni library 0.3.0, status: the connection plug, the space card, the unread dot. Plain CSS, no build step, evergreen browsers
    2024+. Optional: load it after ayni-base.css. */
 
 /* Header sync dot. Red at rest ("not synced" is the safe starting state); the

@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, desktop family: the taskbar, windows and their modeless dialogs, the applications launcher and
+/* Ayni library 0.3.0, desktop family: the taskbar, windows and their modeless dialogs, the applications launcher and
    the clock widget. Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-menus.js:
      <script src="ayni-menus.js" defer></script>
      <script src="ayni-desktop.js" defer></script>

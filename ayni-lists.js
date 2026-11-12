@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, lists family: pick lists (list box), item lists that pick like a file manager (Ayni.list, with
+/* Ayni library 0.3.0, lists family: pick lists (list box), item lists that pick like a file manager (Ayni.list, with
    the picked items' group in the title row), drag and drop onto rows (Ayni.dropZone), the tree view (editable, or
    navigation beside a list) and Move to… (Ayni.pickNode). Shared with the list picker: type-ahead (Ayni.makeTypeAhead).
    Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-menus.js (menus, long tap, fitBar) and

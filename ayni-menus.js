@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, menus family: menus and pop-up menus (markup or built in code), one level of submenus, the
+/* Ayni library 0.3.0, menus family: menus and pop-up menus (markup or built in code), one level of submenus, the
    menu bar, the long tap, toolbars (one Tab stop, tools that leave an overfull row by rank into one More menu), tool
    groups and popups with controls, placing them and closing them on scroll, resize and window blur.
    Plain JavaScript, no build step, evergreen browsers 2024+. Load it after ayni-base.js and ayni-buttons.js:

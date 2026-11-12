@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, boot: the access probe an app with a store starts with, and the auto re-read ("the plug is the refresh button").
+/* Ayni library 0.3.0, boot: the access probe an app with a store starts with, and the auto re-read ("the plug is the refresh button").
    AyniBoot.boot(store, load, options), AyniBoot.wireRefresh({ store, read, guard }). Plain JavaScript. Optional: load it after ayni-net.js. */
 ( function ()
 {

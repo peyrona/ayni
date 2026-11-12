@@ -2,10 +2,15 @@
 
 All notable changes to Ayni are listed here. Versions follow [Semantic Versioning](https://semver.org/); until 1.0 the markup and the API may still change.
 
-## Unreleased
+## 0.3.0
 
 - Calendar: one head row, "November ▾ 2026 ▾ … Today < >": the month and the year each open their own grid (a second press returns to the days), and Today moved up from its own foot row; Today and the arrows are small buttons.
 - List picker: a pick with the mouse closes the list also when the page sets new items on `ayni:change` (it used to open again at once).
+- Second-action dot: any button with `data-alt` shows it, not only round ones.
+- Session bar: a 401 shows the bar again (it used to throw).
+- Item lists: a row that only swaps its icon no longer re-lays out a long list.
+- README is short now; the files, events and API moved to `docs/reference.md`.
+- `deploy.sh`: puts Ayni on a VPS as a static site.
 
 ## 0.2.0
 

@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, base: the colours, sizes, type and icons every Ayni page and family builds on. Plain CSS, no
+/* Ayni library 0.3.0, base: the colours, sizes, type and icons every Ayni page and family builds on. Plain CSS, no
    build step, evergreen browsers 2024+. Load it before any family stylesheet. Fonts: the system's own, nothing is
    loaded from the network. */
 /* RULE: colour. Each scheme (light, dark) sets its colours by hand; each has one job, written beside it. A few more

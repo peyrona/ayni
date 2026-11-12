@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, fields family: text fields and text areas, password show / hide, the number field (spin
+/* Ayni library 0.3.0, fields family: text fields and text areas, password show / hide, the number field (spin
    button), the date and date-and-time fields with the calendar, sliders and field errors. Plain JavaScript, no build
    step, evergreen browsers 2024+. Load it after ayni-base.js, ayni-buttons.js and ayni-menus.js (the date popups are
    placed by it):

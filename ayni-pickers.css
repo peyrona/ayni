@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, pickers family: the list picker (drop-down list and combo box), its popup and phone sheet,
+/* Ayni library 0.3.0, pickers family: the list picker (drop-down list and combo box), its popup and phone sheet,
    headings, and its look in a toolbar. Load it after ayni-base.css, ayni-menus.css (popups) and ayni-lists.css (the
    option rows are the list box's). The rules are chapter 7 of the guidelines.
    RULE: one list picker serves every drop-down list and combo box, on every device: no native select, datalist or

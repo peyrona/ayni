@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, colour schemes: the dialog that lists, edits, makes and deletes them, and the schemes Ayni ships
+/* Ayni library 0.3.0, colour schemes: the dialog that lists, edits, makes and deletes them, and the schemes Ayni ships
    (dark: Oscuro, Noche; light: Beige, Niebla). Plain JavaScript, no build step, evergreen browsers 2024+. Optional: only a
    page that offers the dialog loads it, after ayni-dialogs.js and ayni-pickers.js, with ayni-schemes.css and ayni-icons-more.js:
      <button onclick="Ayni.schemeDialog()">

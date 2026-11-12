@@ -1,4 +1,4 @@
-/* Ayni library 0.2.0, layout family: tabs, the splitter, the status bar and More fields. Plain JavaScript, no build step, evergreen
+/* Ayni library 0.3.0, layout family: tabs, the splitter, the status bar and More fields. Plain JavaScript, no build step, evergreen
    browsers 2024+. Load it after ayni-base.js:
      <script src="ayni-base.js" defer></script>
      <script src="ayni-layout.js" defer></script>
