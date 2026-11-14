@@ -2,6 +2,19 @@
 
 All notable changes to Ayni are listed here. Versions follow [Semantic Versioning](https://semver.org/); until 1.0 the markup and the API may still change.
 
+## 0.4.0
+
+- Text size: `Ayni.textSize` scales the text of every page, per device.
+- Button pair, `.btn-pair`: two buttons as one pill, a thin line between the halves.
+- Hold: a finger that stays down 400 ms always gets the second action; `data-hold` shows the same dot as `data-alt` for a hold the page times itself.
+- Desk page: "Show the desk" moves every window out of the way and a second press brings them back; "Show the clock" can hide the clocks.
+- New icons: sticky note, new note, show the desktop.
+- Tooltips: a button whose label already says the same shows none.
+- `pickFolder`: lazy folders read their sub-folders when opened; the current folder is lit and scrolled into view.
+- A title's (i) sits right after the title.
+- `AyniDoc`: typing an extension in the name picks the matching format; writes go one at a time; Restore loads the copy before writing `.bak`; the padlock sends a waiting save before writing `.bak`.
+- Review fixes in lists, media, photo, fx, help, icons, iCal and vCard.
+
 ## 0.3.0
 
 - Calendar: one head row, "November ▾ 2026 ▾ … Today < >": the month and the year each open their own grid (a second press returns to the days), and Today moved up from its own foot row; Today and the arrows are small buttons.
