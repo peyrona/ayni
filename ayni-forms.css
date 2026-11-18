@@ -1,0 +1,80 @@
+/* Ayni library 0.4.0, forms family, optional: the editable list, the repeated block and the signature. Needs
+   ayni-base.css, ayni-buttons.css, ayni-fields.css (the text edited in place, the error "!"), ayni-dialogs.css (the
+   phone's signing dialog) and ayni-lists.css (the drop marks between rows). The behaviour is in ayni-forms.js; the
+   rules are chapter 20 of the guidelines. */
+
+/* ---------- Editable list ----------
+   RULE: each row is a text edited in place, with its small × at the end (⋮ on touch, where nothing is dragged); the
+   dashed "Add" text button sits under the last row. The text at rest and its field share one box (4.8). */
+.elist                       { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-width: 0; }
+.elist-rows                  { display: flex; flex-direction: column; gap: 2px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.elist-row                   { display: flex; align-items: center; gap: var(--space-1); min-width: 0; border-radius: var(--radius-s); }
+.elist-row > .err-wrap,
+.elist-row > .elist-text,
+.elist-row > .elist-input    { flex: 1 1 auto; min-width: 0; }
+.elist-row > .err-wrap > .elist-text { display: block; }
+.elist-text                  { min-height: 1.4em; overflow-wrap: anywhere; }
+.elist-text:focus-visible    { outline: 2px solid var(--accent); outline-offset: 0; }
+.elist-text[aria-invalid="true"] { padding-right: 30px; }
+.elist-row > .btn            { flex: none; }
+.elist-row > .error          { display: none; }
+.elist-more                  { display: none; }
+.elist-row[draggable="true"] { cursor: grab; }
+.elist-row.dragged           { opacity: .45; }
+.elist[aria-readonly="true"] .elist-row > .btn,
+.elist[aria-readonly="true"] .elist-add { display: none; }
+.elist[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/* Touch: no dragging; the ⋮ holds Move up, Move down and Remove, and rows are 44 px tall (2.3) */
+html.touch .elist-del        { display: none; }
+html.touch .elist-more       { display: inline-flex; }
+html.touch .elist-row        { min-height: var(--touch); }
+html.touch .elist-rows       { gap: var(--space-2); }
+
+/* ---------- Repeated block ----------
+   RULE: one card per repetition, its title and a small bin at its top right; the dashed Add button under the last.
+   The block sits in a group box, whose legend carries the "!" of an error about the number of cards (4.7). */
+.repeat                      { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.repeat-cards                { display: flex; flex-direction: column; gap: var(--space-3); }
+.repeat-card                 { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-3) var(--space-3);
+                               background: var(--card2); border: 1px solid var(--line); border-radius: var(--radius-m); min-width: 0; }
+.repeat-head                 { display: flex; align-items: center; gap: var(--space-2); }
+.repeat-title                { flex: 1 1 auto; min-width: 0; margin: 0; font-size: .9rem; font-weight: 600; overflow-wrap: anywhere;
+                               color: var(--text); text-transform: none; letter-spacing: normal; }
+.repeat-head > .btn          { flex: none; }
+.repeat-body                 { min-width: 0; }
+.repeat-add                  { align-self: flex-start; }
+.repeat[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.repeat[aria-readonly="true"] .repeat-card { background: var(--readonly-bg); border-color: transparent; }
+
+/* ---------- Signature ----------
+   RULE (Frasquito, 2026-11-17): the box has the look of a field, taller (3:1), with a base line and "Sign here". The
+   paper is always light and the ink always dark, in the dark scheme too: a signature looks like one on paper. The
+   page never scrolls while a finger draws on it. No min-height: with the 3:1 it would become a min-width (96 px tall
+   makes 288 px wide), and a fieldset round the box, or a card on a small phone, would stick out. */
+.sign                        { display: flex; flex-direction: column; min-width: 0;
+                               --sign-paper: #FBF8F1; --sign-ink: #1B1F2A; --sign-dim: #5A5F6C; }
+.sign .err-wrap              { display: block; }
+.sign-pad                    { position: relative; width: 100%; aspect-ratio: 3 / 1; max-height: 240px; box-sizing: border-box;
+                               background: var(--sign-paper); border: 1px solid var(--field-line); border-radius: var(--radius-s);
+                               touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; overflow: hidden;
+                               color: var(--sign-dim); --text: var(--sign-ink); --text-dim: var(--sign-dim); }
+.sign-pad:hover              { border-color: var(--text-dim); }
+.sign-pad:focus-visible      { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.sign-pad[aria-invalid="true"] { border-color: var(--danger); }
+.sign-ink                    { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--sign-ink);
+                               stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.sign-line                   { position: absolute; left: 6%; right: 6%; bottom: 26%; border-top: 1px solid var(--sign-dim); opacity: .5; pointer-events: none; }
+.sign-hint                   { position: absolute; left: 6%; bottom: 8%; font-size: .8rem; color: var(--sign-dim); pointer-events: none; }
+.sign-pad.has-ink .sign-hint { display: none; }
+.sign-tools                  { position: absolute; right: 4px; bottom: 4px; display: flex; gap: 2px; }
+.sign-tools > .btn           { background: color-mix(in srgb, var(--sign-paper) 80%, transparent); }
+.sign-typed > .input         { font-style: italic; }
+.sign[aria-readonly="true"] .sign-pad { cursor: default; border-color: transparent; }
+.sign[aria-disabled="true"]  { opacity: .45; pointer-events: none; }
+html.touch .sign-tools       { gap: var(--space-2); }
+/* The phone's dialog: the box as wide as the screen; held upright, a note says turning it gives more room */
+.sign-dialog .body           { display: flex; flex-direction: column; justify-content: center; gap: var(--space-3); }
+.sign-big                    { max-height: none; }
+.sign-turn                   { margin: 0; text-align: center; }
+@media (orientation: landscape) { .sign-turn { display: none; } }

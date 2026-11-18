@@ -132,8 +132,9 @@
         try { v = localStorage.getItem( cfg.keys.install ); } catch ( _ ) {}
         if( isStandalone() || v === "installed" ) return "installed";
         if( deferredInstall )                     return "prompt";
-        if( Ayni.isIOS() )                             return "ios";
+        // In-app first: an iPhone's Instagram is iOS too, and can never follow Safari's steps
         if( isInAppBrowser() )                    return "inapp";
+        if( Ayni.isIOS() )                        return "ios";
         if( /android/i.test( navigator.userAgent ) ) return "android";
         return "unsupported";
     }
@@ -359,7 +360,9 @@
         var manual = !! opts.manual;
         var mode   = installMode();
 
-        if( manual ) installTries = 0;      // asked on purpose: it gets its own patience
+        // Asked on purpose: it gets its own patience - once, not on each wait below
+        // (opts.again), or a manual offer held with nothing on screen never gives up.
+        if( manual && ! opts.again ) installTries = 0;
 
         if( ! manual )
         {
@@ -383,7 +386,7 @@
             setTimeout( function ()
             {
                 installPending = false;
-                offerInstall( opts );
+                offerInstall( Object.assign( {}, opts, { again: true } ) );
             }, 800 );
             return;
         }

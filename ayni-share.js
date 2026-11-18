@@ -119,6 +119,7 @@
                         del.type      = "button";
                         del.className = "share-drop";
                         Ayni.setTip( del, t( "ayni.share.stop" ) );
+                        del.setAttribute( "aria-label", t( "ayni.share.stop" ) );   // setTip names only a .btn; this × has no text
                         del.innerHTML = Ayni.icon( "close" );
                         del.addEventListener( "click", function ()
                         {

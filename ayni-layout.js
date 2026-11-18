@@ -360,18 +360,26 @@ const splitter = (el, opts = {}) => {
 /* ---------- More fields: the line that folds the rarely used half of a long form away ---------- */
 const moreOf = new WeakMap();
 
+/* What the line folds: by its id in the page, or, in a form built in code and not on the page yet, in the same tree */
+const foldedBy = (btn) => {
+  const id = btn.getAttribute('aria-controls'); if (!id) return null;
+  const top = btn.getRootNode();
+  return document.getElementById(id) || (top !== document && top.querySelector ? top.querySelector(`[id="${CSS.escape(id)}"]`) : null);
+};
 const initMore = (btn, o = {}) => {
   if (!btn.children.length) btn.innerHTML = '<span class="more-pill"><span class="more-chevron">\u203a</span><span class="more-label"></span></span><span class="more-line"></span>';
   const label = $('.more-label', btn);
   const set = (on) => {
     btn.setAttribute('aria-expanded', on);
-    const target = document.getElementById(btn.getAttribute('aria-controls')); if (target) target.hidden = !on;
+    const target = foldedBy(btn); if (target) target.hidden = !on;
     if (label) label.textContent = on ? o.less ?? tx('more.hide') : o.more ?? tx('more.show');
   };
   const api = { get open() { return btn.getAttribute('aria-expanded') === 'true'; }, set };
   btn.addEventListener('click', () => { const on = !api.open; set(on); fire(btn, 'ayni:more', { open: on }); o.onToggle?.(on); });
   moreOf.set(btn, { api, o });
   set(api.open);
+  /* A line made alone in code, put beside its part right after: fold it once the code that made it is done */
+  if (!foldedBy(btn)) queueMicrotask(() => set(api.open));
   return api;
 };
 

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni forms family only</title>
+<!-- A page that takes the base, the buttons, notifications, dialogs, menus, fields and the optional forms family,
+     with ayni-lists.css for the drop marks, ayni-layout.css for the group box round the repeated block (after
+     ayni-fields.css, so its rule meets that family's red edge) and ayni-icons-more.js for the signature's buttons,
+     and nothing else (no ayni.css, no ayni.js). L holds what the pieces tell, in order; refuseAdd = true makes the
+     page refuse every add. -->
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-menus.css">
+<link rel="stylesheet" href="../ayni-lists.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<link rel="stylesheet" href="../ayni-layout.css">
+<link rel="stylesheet" href="../ayni-forms.css">
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-icons-more.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-menus.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
+<script src="../ayni-forms.js" defer></script>
+<script type="module">
+  await Ayni.ready;
+  const $ = (s) => document.querySelector(s);
+  window.L = [];
+  let n = 0;
+  const rows = (...texts) => texts.map((text, i) => ({ id: 'o' + (i + 1), text }));
+  window.list = Ayni.editList($('#opts'), { items: rows('Madrid', 'Barcelona', 'Valencia'), addLabel: 'Add option', newId: () => 'n' + ++n,
+    onChange: (items, c) => L.push(`${c.action} ${c.id}: ${items.map((x) => x.id + '=' + x.text).join(',')}`) });
+  window.ro = Ayni.editList($('#ro'), { items: rows('Small', 'Large') });
+  window.dis = Ayni.editList($('#dis'), { items: rows('Small', 'Large') });
+  window.inDialog = Ayni.editList($('#dlg-list'), { items: rows('One'), newId: () => 'd' + ++n });
+  $('#dlg-ok').addEventListener('click', () => L.push('dialog ok'));
+  document.addEventListener('ayni:change', (e) => { if (e.target.id === 'opts') L.push('event ' + e.detail.action); });
+  /* The repeated block: a name per card; the page refuses to remove a card named "Keep" */
+  const person = (body, card, data = {}) => body.append(Ayni.h('div', 'field', Ayni.h('label', { attrs: { for: 'p' + card.dataset.key }, text: 'Name' }),
+    Ayni.h('input', { class: 'input', id: 'p' + card.dataset.key, value: data.name || '' })));
+  window.rep = Ayni.repeat($('#rep'), { min: 1, max: 3, addLabel: 'Add attendee', itemLabel: 'Attendee', build: person, items: [{ name: 'Ana' }],
+    title: (i, card) => { const n = card.querySelector('input')?.value.trim(); return n ? `Attendee ${i + 1} · ${n}` : `Attendee ${i + 1}`; } });
+  $('#rep').addEventListener('input', () => rep.retitle());
+  window.refuseAdd = false;
+  $('#rep').addEventListener('ayni:add', (e) => { if (refuseAdd) { e.preventDefault(); L.push('refused add' + (e.detail.undo ? ' undo' : '')); } else L.push('add ' + e.detail.index + (e.detail.undo ? ' undo' : '')); });
+  $('#rep').addEventListener('ayni:remove', (e) => { if (e.detail.card.querySelector('input').value === 'Keep') { e.preventDefault(); L.push('refused'); } else L.push('remove ' + e.detail.index); });
+  $('#rep').addEventListener('ayni:change', (e) => L.push('count ' + e.detail.count));
+  Ayni.repeat($('#rep-ro'), { itemLabel: 'Child', build: person, items: [{ name: 'Luis' }] });
+  /* The signature: a small cap of points, to see it stop */
+  window.sig = Ayni.signature($('#sig'), { name: 'Ana Morales', maxPoints: 40, onChange: (v) => L.push('sig ' + (v ? v.kind : 'none')) });
+  window.sigRo = Ayni.signature($('#sig-ro'), { value: { kind: 'drawn', w: 600, h: 200, strokes: [[10, 10, 300, 100]] } });
+</script>
+<style>body { padding: 16px; font-family: var(--font-sans); background: var(--bg); color: var(--text); } .col { width: 320px; display: flex; flex-direction: column; gap: 16px; }</style>
+</head>
+<body>
+<div class="col">
+  <div id="opts" aria-label="Options"></div>
+  <div id="ro" aria-label="Sizes" aria-readonly="true"></div>
+  <div id="dis" aria-label="Sizes" aria-disabled="true"></div>
+  <fieldset class="group" id="rep"><legend>Attendees</legend></fieldset>
+  <fieldset class="group" id="rep-ro" aria-readonly="true"><legend>Children</legend></fieldset>
+  <div class="field"><label id="sig-l">Signature</label><div id="sig" aria-labelledby="sig-l"></div></div>
+  <div id="sig-ro" aria-label="Signed" aria-readonly="true"></div>
+  <div style="height: 1600px" aria-hidden="true"></div>
+</div>
+<dialog class="panel" id="dlg">
+  <header><h2>Options</h2></header>
+  <div class="body"><div id="dlg-list" aria-label="In a dialog"></div></div>
+  <footer><button class="btn" data-close aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button>
+    <button class="btn primary" id="dlg-ok" aria-label="Accept" data-tip="Accept"><span class="icon" data-icon="check"></span></button></footer>
+</dialog>
+</body>
+</html>

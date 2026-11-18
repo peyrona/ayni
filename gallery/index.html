@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="../ayni-pickers.css">
 <link rel="stylesheet" href="../ayni-layout.css">
 <link rel="stylesheet" href="../ayni-schemes.css">
+<link rel="stylesheet" href="../ayni-forms.css">
 <link rel="stylesheet" href="../ayni.css">
 <link rel="stylesheet" href="gallery.css">
 <script src="../ayni-icons.js" defer></script>
@@ -36,6 +37,7 @@
 <script src="../ayni-pickers.js" defer></script>
 <script src="../ayni-layout.js" defer></script>
 <script src="../ayni-schemes.js" defer></script>
+<script src="../ayni-forms.js" defer></script>
 <script src="../icons/lucide.js" defer></script>
 <script src="gallery.js" type="module"></script>
 </head>
@@ -62,6 +64,7 @@
     <button role="tab" id="t-feedback" aria-controls="feedback"><span class="icon" data-icon="bell"></span>Feedback</button>
     <button role="tab" id="t-help" aria-controls="help"><span class="icon" data-icon="help"></span>Help</button>
     <button role="tab" id="t-layout" aria-controls="layout"><span class="icon" data-icon="layout"></span>Layout</button>
+    <button role="tab" id="t-forms" aria-controls="forms"><span class="icon" data-icon="edit"></span>Forms</button>
     <button role="tab" id="t-icons" aria-controls="icons"><span class="icon" data-icon="star"></span>Icons</button>
   </div>
 
@@ -743,6 +746,50 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
         <fieldset class="group" disabled><legend>Delivery (disabled)</legend>
           <div class="field"><label for="st-g1">Street</label><input id="st-g1" class="input" value="Calle Sierpes 21"></div>
           <label class="switch">Leave with a neighbour<input type="checkbox" role="switch" checked></label></fieldset></div>
+    </div>
+  </div>
+
+  <!-- ===== FORMS (optional: ayni-forms.css, ayni-forms.js) ===== -->
+  <div role="tabpanel" id="forms" aria-labelledby="t-forms" hidden>
+    <div class="specimens">
+      <div class="spec"><h3>Editable list</h3>
+        <p class="rule">Short texts the user writes, like the options of a question. Click a row, or press F2 or Enter on it, to edit it in place. Enter keeps the text and opens the next row, a new one after the last; Enter on an empty row ends. Backspace in an empty row removes it; Esc puts the old text back. Paste several lines to get one row each. The × removes a row with Undo. Drag a row with the mouse, or press Ctrl+Shift+Up and Down; on touch each row has a ⋮ with Move up, Move down and Remove. Each row keeps its id whatever happens to it.</p>
+        <div class="field"><label id="el-l">Options of "How do you come?"</label>
+          <div id="el-demo" aria-labelledby="el-l"></div></div>
+        <p class="out" id="el-out"></p></div>
+      <div class="spec"><h3>A repeated row</h3>
+        <p class="rule">A row that repeats another one (case and accents aside) shows the field error "!": hover or click it to read why. It is kept until the user changes it. A row left empty goes by itself.</p>
+        <div id="el-dup" aria-label="Answers"></div></div>
+      <div class="spec"><h3>Empty</h3>
+        <p class="rule">Only the dashed text button, named by the page.</p>
+        <div id="el-empty" aria-label="Stops"></div></div>
+      <div class="spec" style="grid-column: 1 / -1"><h3>Repeated block</h3>
+        <p class="rule">One card per attendee, with its own fields. The bin removes a card with no question, with Undo; Add puts a new card under the last and the focus in its first field. Here between 1 and 3 cards: at 3, Add is off and its tooltip says why; at 1, so is the bin. A card is named by what it holds once there is a name.</p>
+        <fieldset class="group" id="rp-demo"><legend>Attendees</legend></fieldset>
+        <p class="out" id="rp-out"></p></div>
+      <div class="spec"><h3>The page says no</h3>
+        <p class="rule">The page may refuse an add or a remove, as in the tree: this one keeps the first card, and says why.</p>
+        <fieldset class="group" id="rp-refuse"><legend>Stops</legend></fieldset></div>
+      <div class="spec"><h3>Repeated block: states</h3>
+        <p class="rule">An error about the number of cards colours the group's border, with the "!" next to its title. Read-only: no bin and no Add. Disabled: faded.</p>
+        <fieldset class="group" id="rp-err" aria-invalid="true" aria-describedby="rp-err-msg"><legend>Children</legend><span class="error" id="rp-err-msg">Add at least 2.</span></fieldset>
+        <fieldset class="group" id="rp-ro" aria-readonly="true"><legend>Read-only</legend></fieldset>
+        <fieldset class="group" id="rp-dis" aria-disabled="true" disabled><legend>Disabled</legend></fieldset></div>
+      <div class="spec"><h3>Signature</h3>
+        <p class="rule">Draw with the mouse, a pen or a finger; the page does not scroll meanwhile. Clear shows once there is a signature; Type my name swaps the box for a text field (Draw comes back). On a phone (try Touch preview at phone width) a tap opens a big dialog to sign with room. The paper is light and the ink dark in the dark scheme too. Only the strokes are kept.</p>
+        <div class="field"><label id="sg-l">Signature of the mother, father or guardian</label><div id="sg-demo" aria-labelledby="sg-l"></div></div>
+        <p class="out" id="sg-out"></p></div>
+      <div class="spec"><h3>Signature: states</h3>
+        <p class="rule">Signed. Typed. Required and empty: the field error, with the "!" at the top right. Read-only: the signature with no buttons. Disabled: faded.</p>
+        <div class="field"><label id="sg-l1">Signed</label><div id="sg-signed" aria-labelledby="sg-l1"></div></div>
+        <div class="field"><label id="sg-l2">Typed</label><div id="sg-typed" aria-labelledby="sg-l2"></div></div>
+        <div class="field"><label id="sg-l3">Required <span class="req" aria-hidden="true">*</span></label><div id="sg-req" aria-labelledby="sg-l3"></div></div>
+        <div class="field"><label id="sg-l4">Read-only</label><div id="sg-ro" aria-labelledby="sg-l4" aria-readonly="true"></div></div>
+        <div class="field"><label id="sg-l5">Disabled</label><div id="sg-dis" aria-labelledby="sg-l5" aria-disabled="true"></div></div></div>
+      <div class="spec"><h3>States</h3>
+        <p class="rule">Read-only: the texts, with no ×, ⋮ or Add, and nothing to edit. Disabled: faded.</p>
+        <div class="field"><label id="el-ro-l">Read-only</label><div id="el-ro" aria-labelledby="el-ro-l" aria-readonly="true"></div></div>
+        <div class="field"><label id="el-dis-l">Disabled</label><div id="el-dis" aria-labelledby="el-dis-l" aria-disabled="true"></div></div></div>
     </div>
   </div>
 

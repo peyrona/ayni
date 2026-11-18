@@ -16,7 +16,8 @@
  *     AyniBaseMap.add( map, {
  *         print:   true,    // keep the WebGL picture, so window.print() can capture it
  *         onReady: fn,      // the first view is fully drawn
- *         onFail:  fn       // not even the OSM pictures load (no real internet)
+ *         onFail:  fn       // an OSM picture did not load (no real internet): called for EACH tile
+ *                           //   that fails, so act on the first call (Trips swaps in its offline note)
  *     } );                  // every option is optional
  *
  * Call it before or after the map's first setView / fitBounds.

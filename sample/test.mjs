@@ -41,6 +41,22 @@ try {
   await c.evaluate(`dispatchEvent(new Event('online')), true`);
   for (let i = 0; i < 40 && file().length < 2; i++) await sleep(250);
   check('back online it is saved', file().length === 2, file());
+  /* A read while a save waits (offline): a save made DURING that read is what the read gives - never the older one.
+     Save 2 starts 0 to 30 promise steps after the read, so it lands at every point of the read's own look */
+  await c.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+  const race = await c.evaluate(`(async () => {
+    const s = AyniStore.createStore({}), P = 'data/race.json', stale = [];
+    for (let i = 0; i < 31; i++) {
+      await s.write(P, 'one-' + i);
+      let over = false; const r = s.read(P); r.then(() => { over = true; });
+      for (let k = 0; k < i; k++) await Promise.resolve();
+      const during = !over, w = s.write(P, 'two-' + i), got = (await r).body; await w;
+      if (during && got !== 'two-' + i) stale.push(got);
+    }
+    return stale;
+  })()`);
+  check('a save made while a read runs is what that read gives', race.length === 0, race);
+  await c.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
 } finally { await b.kill(); server.kill(); fs.rmSync(DATA, { recursive: true, force: true }); }
 console.log(bad ? `${bad} failed` : 'ALL GREEN');
 process.exit(bad ? 1 : 0);

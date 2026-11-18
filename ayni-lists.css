@@ -35,6 +35,8 @@ html.touch :where(.lb, .picker-pop) [role="option"], html.touch [role="treeitem"
 [role="treeitem"][aria-selected="true"] > .ti { background: var(--accent-soft); }
 [role="treeitem"][aria-expanded="false"] > [role="group"] { display: none; }
 .ti .icon { --icon: 16px; }
+/* A mark at the end of a row (mark: { icon, tip }): small and quieter than the name, it says something about the item */
+.ti > .tree-mark { --icon: 14px; flex: none; color: var(--text-dim); }
 .ti .tw { transition: transform .15s; order: -2; }
 [role="treeitem"]:not([aria-expanded]) > .ti .tw { visibility: hidden; }
 [role="treeitem"][aria-expanded="true"] > .ti .tw { transform: rotate(90deg); }

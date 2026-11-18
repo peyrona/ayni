@@ -2,6 +2,17 @@
 
 All notable changes to Ayni are listed here. Versions follow [Semantic Versioning](https://semver.org/); until 1.0 the markup and the API may still change.
 
+## Unreleased
+
+- `AyniBoot.wireRefresh`: the new `watch` option (a file path) re-reads the page as soon as that file changes on the server, with no click. The server answers `GET <api>watch?file=<path>&etag=<tag>` (see `ayni-boot.js`, `watchFile`). Over plain HTTP the page asks every 10 s instead of keeping a request open.
+- `AyniStore`: `store.heldTag(path)`, the version the page's copy came from, so a page does not read its own save again.
+- Forms family, optional (`ayni-forms.css`, `ayni-forms.js`): `Ayni.editList`, the editable list: rows edited in place, Enter for the next one, pasted lines, × with Undo, drag or Ctrl+Shift+arrows, ⋮ on touch (guidelines 20.1). `Ayni.repeat`, the repeated block: one card per repetition, a bin with Undo that brings back the same card, min and max, `ayni:add` and `ayni:remove` the page may refuse (20.2). `Ayni.signature`: drawn with a finger, a pen or the mouse, or typed; a 600 × 200 box with 200 strokes and 3000 points at most, and `set()` holds a value to the same box and limits (20.3).
+- One scheme only: `data-theme-lock="light"` (or `"dark"`) on `<html>` keeps that scheme, writes no `ayni-theme`, follows neither the system, the sun nor the other tabs, and hides the light/dark toggles; `Ayni.theme.locked`.
+- Tree from data: `tip`, the row's tooltip, and `mark: { icon, tip }`, a small icon at the end of the row, its tip also read out as the item's description; both come back in `data()`.
+- A group box with an error keeps its red edge; an empty state draws only its own glyph at 44 px, not the icon of a button in it; `Ayni.moreFields` on a line not on the page yet folds its part too.
+- `AyniPhoto.review(files, opts)`: the step before a photo goes. Crop and Rotate (one photo), Read text (the page hands in the OCR, `opts.ocr`), then Photo, Text or Both. It writes nothing: it resolves `{ files, text, caption, edited }`, or null on ×; an untouched photo is the same File. Also `AyniPhoto.crop`, `AyniPhoto.turn` and `AyniPhoto.fullLayer` (a full-screen layer); `ayni.photo.*` strings; styles in `ayni-image.css`.
+- Splitter: the bar is 11 px again, side by side and top and bottom (0.4.0 made it 13 px); the glyphs still fit inside it.
+
 ## 0.4.0
 
 - Text size: `Ayni.textSize` scales the text of every page, per device.

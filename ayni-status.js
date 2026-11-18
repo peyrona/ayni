@@ -21,8 +21,10 @@
     // ayni-status.css picks the half to draw from that same state class, so an app only
     // ever toggles the classes it already toggled. The markup lives here, not in
     // 14 copies of the same <svg>: applySyncDots() fills every `.sync-indicator`
-    // it finds, and the MutationObserver below catches the ones built later (a title row
-    // built in code).
+    // it finds. Nothing calls it by itself: the page calls Ayni.plug.draw() once
+    // it has started, and Ayni.plug.draw( node ) for a title row it builds later
+    // (Nayive's shared/ui.js does both, the second from its MutationObserver).
+    // Until then the plug stays hidden (ayni-status.css shows only .sy-show).
 
     var SYNC_GLYPH =
         '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +

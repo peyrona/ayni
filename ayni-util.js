@@ -64,9 +64,12 @@ const uniqueName = (name, taken) => {
   while (taken.has(`${stem} (${i})${ext}`)) i++;
   return `${stem} (${i})${ext}`;
 };
+/* The search rule's folding is Ayni.fold (ayni-base.js). Where base is not loaded (a service worker), the same rule */
+const FOLD_MORE = { ß: 'ss', œ: 'oe', æ: 'ae', '‘': "'", '’': "'" };
+const fold0 = (s) => (Ayni.fold ? Ayni.fold(s) : String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[ßœæ‘’]/g, (c) => FOLD_MORE[c]));
 /* "Córdoba 2026" -> "cordoba-2026": accents go, the letters stay, anything else becomes one "-" */
 const slugify = (s, fallback, max) => {
-  let out = Ayni.fold(s || '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  let out = fold0(s || '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   if (max) out = out.slice(0, max);
   return out || fallback || 'item';
 };
@@ -85,7 +88,9 @@ const fmtBytes = (n) => {
   let i = 0;
   n = Math.max(0, n || 0);
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return `${n < 10 && i ? decimal(n) : Math.round(n)} ${u[i]}`;
+  /* Decided on the shown number: 1023.9 KB is "1.0 MB", not "1024 KB", and 9.99 KB is "10 KB", not "10.0 KB" */
+  if (Math.round(n) >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${i && Math.round(n * 10) < 100 ? decimal(n) : Math.round(n)} ${u[i]}`;
 };
 /* 65 -> "1:05", 3725 -> "1:02:05" */
 const fmtClock = (seconds) => {

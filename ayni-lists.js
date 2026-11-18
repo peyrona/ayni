@@ -569,13 +569,20 @@ const TW = () => icon('chev-right', 'tw');
 const trees = new WeakMap();
 let treeClip = null, treeMenuOwner = null, treeMenus = 0; // Cut / Copy keep { tree, items, cut } here until Paste
 const nameOf = (it) => ($(':scope > .ti > .tn', it) || $(':scope > .ti', it)).textContent.trim();
-/* One tree item from data: { name, id, icon (false for none), leaf, hidden, lock, disabled, open, lazy, root, children } */
+/* One tree item from data: { name, id, icon (false for none), tip, mark, leaf, hidden, lock, disabled, open, lazy, root,
+   children }. RULE (Frasquito, 2026-11-17): mark { icon, tip } is a small icon at the end of the row that says something
+   about the item (it has a condition); its tip is its tooltip and the item's description, so it is heard too */
 const treeItem = (d, icons = true) => {
   const name = d.icon ?? (icons ? (d.leaf ? 'file' : 'folder') : false);
   const li = document.createElement('li'), ic = name ? icon(name) : '';
   li.setAttribute('role', 'treeitem');
   li.innerHTML = `<div class="ti">${TW()}${ic}<span class="tn"></span></div>`;
   $('.tn', li).textContent = d.name;
+  if (d.tip) $('.ti', li).dataset.tip = d.tip;   // the row's tooltip, as in a navigation tree
+  if (d.mark?.icon) {
+    $('.ti', li).insertAdjacentHTML('beforeend', icon(d.mark.icon, 'tree-mark'));
+    if (d.mark.tip) { $('.ti > .tree-mark', li).dataset.tip = d.mark.tip; li.setAttribute('aria-description', d.mark.tip); }
+  }
   if (d.id != null) li.dataset.id = d.id;
   [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy'], ['root', 'data-root']].forEach(([k, a]) => d[k] && li.setAttribute(a, ''));
   if (d.disabled) li.setAttribute('aria-disabled', 'true');
@@ -584,8 +591,10 @@ const treeItem = (d, icons = true) => {
   return li;
 };
 const treeData = (li, icons = true) => {
-  const d = { name: nameOf(li) }, ic = $(':scope > .ti > .icon:not(.tw)', li), nm = ic ? iconName(ic) : false;
+  const d = { name: nameOf(li) }, ic = $(':scope > .ti > .icon:not(.tw):not(.tree-mark)', li), nm = ic ? iconName(ic) : false;
   if (li.dataset.id) d.id = li.dataset.id;
+  const tip = $(':scope > .ti', li)?.dataset.tip; if (tip) d.tip = tip;
+  const mk = $(':scope > .ti > .tree-mark', li); if (mk) d.mark = { icon: iconName(mk), ...(mk.dataset.tip ? { tip: mk.dataset.tip } : {}) };
   if (nm !== (icons ? (li.hasAttribute('data-leaf') ? 'file' : 'folder') : false)) d.icon = nm; // only when it is not the usual one
   [['leaf', 'data-leaf'], ['hidden', 'data-hidden'], ['lock', 'data-lock'], ['lazy', 'data-lazy']].forEach(([k, a]) => { if (li.hasAttribute(a)) d[k] = true; });
   if (li.getAttribute('aria-disabled') === 'true') d.disabled = true;
@@ -696,7 +705,7 @@ const initTree = (tree) => {
     const done = (items = []) => {
       if (settled) return; settled = true;
       it.removeAttribute('aria-busy'); it.removeAttribute('data-lazy');
-      $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > .icon:not(.tw)', tree)))); tidy(it); ensureStop(); syncBars();
+      $(':scope > .state-msg', g)?.remove(); g.prepend(...items.map((d) => treeItem(d, !!$('.ti > .icon:not(.tw):not(.tree-mark)', tree)))); tidy(it); ensureStop(); syncBars();
     };
     const fail = (text = tx('tree.loadFailed')) => {
       if (settled) return; settled = true;
@@ -755,7 +764,7 @@ const initTree = (tree) => {
   };
   const insertNew = (at) => {
     if (reason('new', [])) return;
-    const { p, ref } = insertAt(at), icons = !!$('.ti > .icon:not(.tw)', tree);
+    const { p, ref } = insertAt(at), icons = !!$('.ti > .icon:not(.tw):not(.tree-mark)', tree);
     const it = treeItem({ name: tree.dataset.newName || tx('tree.newItem'), icon: icons ? tree.dataset.newIcon || 'folder' : false });
     if (p) expand(p);
     putIn(p, it, ref); if (p) p.setAttribute('aria-expanded', 'true');
@@ -770,7 +779,7 @@ const initTree = (tree) => {
     err.className = 'error'; err.hidden = true; err.id = `ayni-tree-err-${++treeMenus}`;
     inp.setAttribute('aria-label', tx('tree.itemName')); inp.setAttribute('aria-describedby', err.id);
     tn.hidden = true; tn.after(inp, err);
-    Ayni.core.errors?.init(inp); setCurrent(it, false); inp.focus(); inp.select();
+    if (once('error', inp)) Ayni.core.errors?.init(inp); setCurrent(it, false); inp.focus(); inp.select();
     const check = () => {
       const v = inp.value.trim();
       const msg = !v ? tx('tree.typeName')
@@ -1088,11 +1097,11 @@ const initTree = (tree) => {
     element: tree, refresh,
     build: (opts) => { if (editing) editing.finish(false, false); tree.replaceChildren(...treeNodes(opts)); refresh(); },
     data: () => {
-      const icons = !!$('.ti > .icon:not(.tw)', tree), r = rootItem(), out = (d) => ({ ...(icons ? {} : { icons: false }), ...d });
+      const icons = !!$('.ti > .icon:not(.tw):not(.tree-mark)', tree), r = rootItem(), out = (d) => ({ ...(icons ? {} : { icons: false }), ...d });
       if (!r) return out({ root: null, items: kids(null).map((k) => treeData(k, icons)) });
       const { children = [], ...root } = treeData(r, icons); return out({ root, items: children });
     },
-    add: (parent, d, index) => { const it = treeItem(d, !!$('.ti > .icon:not(.tw)', tree) || !all().length); putIn(parent || rootItem(), it, kids(parent || rootItem())[index] || null); normaliseItem(it); ensureStop(); return it; },
+    add: (parent, d, index) => { const it = treeItem(d, !!$('.ti > .icon:not(.tw):not(.tree-mark)', tree) || !all().length); putIn(parent || rootItem(), it, kids(parent || rootItem())[index] || null); normaliseItem(it); ensureStop(); return it; },
     remove: (it) => { const p = parentOf(it); it.remove(); tidy(p); ensureStop(); },
     rename: (it, name) => { $(':scope > .ti > .tn', it).textContent = name; },
     move: (it, parent, index) => { const p = parentOf(it), ref = kids(parent).filter((x) => x !== it)[index] || null; putIn(parent, it, ref); tidy(p); ensureStop(); },

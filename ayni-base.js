@@ -125,7 +125,11 @@ const addIcons = (set) => {
    The user's own schemes ('ayni-schemes': { schemes: [{ id, tokens }], activeLight, activeDark }) set the colours
    in SCHEME_KEYS over the built-in ones. Every change reaches the other tabs of the site through the 'storage'
    event, sets <meta name="theme-color"> to --bg, and fires ayni:theme { theme } on document, so a page can repaint
-   what CSS cannot reach. */
+   what CSS cannot reach.
+   RULE (Frasquito, 2026-11-17): a page may keep one scheme, whatever is picked elsewhere: data-theme-lock="light" (or
+   "dark") on <html>. It never writes 'ayni-theme' for that, and follows neither the system, the sun nor the other
+   tabs, also with the storage blocked; its light/dark toggles do not show (ayni-base.css). The user's own scheme for
+   that mode still colours it. */
 const THEME_KEY = 'ayni-theme', SUN_KEY = 'ayni-theme-sun', PLACE_KEY = 'ayni-place', SCHEMES_KEY = 'ayni-schemes';
 const SCHEME_KEYS = ['--bg', '--card', '--card2', '--line', '--accent', '--on-accent'];
 const darkMq = matchMedia('(prefers-color-scheme: dark)'), themeBtns = [];
@@ -133,6 +137,7 @@ const readKey = (k) => { try { return localStorage.getItem(k); } catch { return 
 const writeKey = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch {} };
 const readJson = (k) => { try { return JSON.parse(readKey(k) || 'null'); } catch { return null; } };
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : darkMq.matches; };
+const locked = () => { const v = document.documentElement.dataset.themeLock; return v === 'light' || v === 'dark' ? v : null; };
 const chosen = () => { const t = readKey(THEME_KEY); return t === 'light' || t === 'dark' ? t : null; };
 const isSun = () => readKey(SUN_KEY) === '1';
 const themeMode = () => (isSun() ? 'sun' : readKey(THEME_KEY) || null);
@@ -150,7 +155,7 @@ const showTheme = () => themeBtns.forEach((b) => {
 let shownTheme = null;
 const applyTheme = () => {
   const root = document.documentElement;
-  root.dataset.theme = chosen() || (darkMq.matches ? 'dark' : 'light');
+  root.dataset.theme = locked() || chosen() || (darkMq.matches ? 'dark' : 'light');
   const dark = isDark(), s = activeScheme(dark);
   SCHEME_KEYS.forEach((k) => (s?.tokens?.[k] ? root.style.setProperty(k, s.tokens[k]) : root.style.removeProperty(k)));
   const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
@@ -235,7 +240,7 @@ const sunState = (now) => {
    A timer does not survive a sleeping phone, so focus, visibilitychange and pageshow look again too. */
 const sunTick = () => {
   clearTimeout(sunTimer); sunTimer = null;
-  if (!isSun()) return;
+  if (!isSun() || locked()) return;   // a locked page leaves the shared choice to the pages that follow it
   const st = sunState(new Date());
   if (!st) return;   // the zone table is loading; it calls back
   if (st.mode !== readKey(THEME_KEY)) { writeKey(THEME_KEY, st.mode); applyTheme(); }
@@ -257,6 +262,8 @@ const initThemeToggle = (b) => {
 };
 const theme = {
   mode: themeMode,
+  /* 'light' or 'dark' when the page keeps one scheme (data-theme-lock on <html>), else null */
+  get locked() { return locked(); },
   /* The device's place for Sun mode, rounded to one decimal (~10 km): all a sunrise needs, and not an address */
   setPlace: (lat, lon) => { writeKey(PLACE_KEY, JSON.stringify({ lat: Math.round(lat * 10) / 10, lon: Math.round(lon * 10) / 10 })); sunTick(); },
   hasPlace: () => !!sunPlace(),
@@ -300,6 +307,7 @@ const initTheme = () => {
     if (e.key === SUN_KEY || e.key === PLACE_KEY) { applyTheme(); sunTick(); }
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) sunTick(); });
+  new MutationObserver(() => { applyTheme(); sunTick(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-lock'] });
   addEventListener('focus', sunTick);
   addEventListener('pageshow', sunTick);
 };

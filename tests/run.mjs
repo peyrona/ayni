@@ -166,6 +166,24 @@ try {
   check('a saved choice wins on the next load: light on a dark device', (await t.evaluate('document.documentElement.dataset.theme')) === 'light');
   await t.evaluate(`Ayni.setTheme(null), true`);
 
+  /* A page that keeps one scheme: data-theme-lock on <html> */
+  await t.evaluate(`(localStorage.removeItem('ayni-theme'), document.documentElement.dataset.themeLock = 'light', true)`); await t.evaluate('new Promise((r) => setTimeout(r, 50))');
+  check('a locked page shows its scheme on a dark device, and writes no ayni-theme', (await t.evaluate(`[document.documentElement.dataset.theme, localStorage.getItem('ayni-theme') ?? '-', Ayni.theme.locked, Ayni.isDark()].join()`)) === 'light,-,light,false');
+  check('…its light/dark toggle does not show', (await t.evaluate(`getComputedStyle(document.querySelector('#theme-btn')).display`)) === 'none');
+  got = await tokens(t, Object.keys(LIGHT));
+  check('…the light colours', Object.keys(LIGHT).every((k) => got[k] === LIGHT[k]), got);
+  await t2.evaluate(`Ayni.setTheme('dark'), true`); await t.evaluate('new Promise((r) => setTimeout(r, 150))');
+  check('…another tab picking dark leaves it light', (await t.evaluate(`[document.documentElement.dataset.theme, localStorage.getItem('ayni-theme')].join()`)) === 'light,dark');
+  await scheme(t, 'light'); await scheme(t, 'dark'); await t.evaluate('new Promise((r) => setTimeout(r, 50))');
+  check('…and so does the system', (await t.evaluate('document.documentElement.dataset.theme')) === 'light');
+  check('…also with the storage blocked', (await t.evaluate(`(async () => { const html = document.documentElement, was = Object.getOwnPropertyDescriptor(window, 'localStorage'), tick = () => new Promise((r) => setTimeout(r, 30));
+    Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });
+    try { html.dataset.themeLock = 'dark'; await tick(); const a = html.dataset.theme; html.dataset.themeLock = 'light'; await tick(); return a + ',' + html.dataset.theme; }
+    finally { if (was) Object.defineProperty(window, 'localStorage', was); else delete window.localStorage; } })()`)) === 'dark,light');
+  await t.evaluate(`(delete document.documentElement.dataset.themeLock, true)`); await t.evaluate('new Promise((r) => setTimeout(r, 50))');
+  check('without the lock it follows the choice again', (await t.evaluate(`[Ayni.theme.locked ?? '-', document.documentElement.dataset.theme, getComputedStyle(document.querySelector('#theme-btn')).display !== 'none'].join()`)) === '-,dark,true');
+  await t.evaluate(`Ayni.setTheme(null), true`);
+
   section('Own schemes');
   await t.evaluate(`Ayni.theme.schemes = { schemes: [{ id: 'sea', tokens: { '--accent': '#123456', '--bg': '#0A1B2C' } }], activeDark: 'sea' }, true`);
   got = await tokens(t, ['--accent', '--bg', '--card']);
@@ -294,8 +312,8 @@ try {
   await eq('followPath: same, moved, inside a moved one, a look-alike', `(() => { const m = [['a/b', 'c/b'], ['x', 'y']]; return [Ayni.followPath('q', m), Ayni.followPath('a/b', m), Ayni.followPath('a/b/d.txt', m), Ayni.followPath('a/bc', m)]; })()`, ['q', 'c/b', 'c/b/d.txt', 'a/bc']);
   await eq('uniqueName', `[Ayni.uniqueName('a.jpg', new Set()), Ayni.uniqueName('a.jpg', new Set(['a.jpg'])), Ayni.uniqueName('a.jpg', new Set(['a.jpg', 'a (2).jpg'])), Ayni.uniqueName('noext', new Set(['noext'])), Ayni.uniqueName('.hid', new Set(['.hid']))]`, ['a.jpg', 'a (2).jpg', 'a (3).jpg', 'noext (2)', '.hid (2)']);
   await eq('slugify', `[Ayni.slugify('Córdoba 2026'), Ayni.slugify(' ¡Hola! '), Ayni.slugify('¿?'), Ayni.slugify('¿?', 'x'), Ayni.slugify('abcdef', '', 3), Ayni.slugify(null)]`, ['cordoba-2026', 'hola', 'item', 'x', 'abc', 'item']);
-  await eq('fmtBytes', `[Ayni.fmtBytes(0), Ayni.fmtBytes(null), Ayni.fmtBytes(-5), Ayni.fmtBytes(512), Ayni.fmtBytes(1536), Ayni.fmtBytes(15 * 1048576 + 300000), Ayni.fmtBytes(5 * 1073741824), Ayni.fmtBytes(1023), Ayni.fmtBytes(1024 ** 4 * 2000)]`,
-    ['0 B', '0 B', '0 B', '512 B', '1.5 KB', '15 MB', '5.0 GB', '1023 B', '2000 TB']);
+  await eq('fmtBytes', `[Ayni.fmtBytes(0), Ayni.fmtBytes(null), Ayni.fmtBytes(-5), Ayni.fmtBytes(512), Ayni.fmtBytes(1536), Ayni.fmtBytes(15 * 1048576 + 300000), Ayni.fmtBytes(5 * 1073741824), Ayni.fmtBytes(1023), Ayni.fmtBytes(1024 ** 4 * 2000), Ayni.fmtBytes(10239), Ayni.fmtBytes(1048575)]`,
+    ['0 B', '0 B', '0 B', '512 B', '1.5 KB', '15 MB', '5.0 GB', '1023 B', '2000 TB', '10 KB', '1.0 MB']);
   await eq('fmtBytes: the decimal mark follows the language, the unit does not', `(() => { const was = Ayni.i18n.lang, out = ['es', 'fr', 'de', 'pt', 'en'].map((l) => { Ayni.i18n.lang = () => l; return Ayni.fmtBytes(1536); }); Ayni.i18n.lang = was; return out; })()`,
     ['1,5 KB', '1,5 KB', '1,5 KB', '1,5 KB', '1.5 KB']);
   await eq('fmtClock', `[Ayni.fmtClock(0), Ayni.fmtClock(5), Ayni.fmtClock(65.9), Ayni.fmtClock(3725), Ayni.fmtClock(-1), Ayni.fmtClock(NaN), Ayni.fmtClock(Infinity)]`, ['0:00', '0:05', '1:05', '1:02:05', '0:00', '0:00', '0:00']);
@@ -345,7 +363,25 @@ try {
     await t3.close();
     await t.send('Page.bringToFront');   // a tab behind gets no dialog close events
   }
-  await eq('a service worker can load the helpers (no page, no base)', `new Promise((res) => { const src = "importScripts('" + location.origin + "/ayni-util.js'); postMessage([Ayni.fmtClock(65), Ayni.fmtBytes(1536), Ayni.esc('<'), Ayni.dates.today().length, typeof Ayni.isMac]);"; const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' }))); w.onmessage = (e) => { w.terminate(); res(e.data); }; w.onerror = (e) => { w.terminate(); res(String(e.message)); }; })`, ['1:05', '1.5 KB', '&lt;', 10, 'boolean']);
+  await eq('a service worker can load the helpers (no page, no base)', `new Promise((res) => { const src = "importScripts('" + location.origin + "/ayni-util.js'); postMessage([Ayni.fmtClock(65), Ayni.fmtBytes(1536), Ayni.esc('<'), Ayni.dates.today().length, typeof Ayni.isMac, Ayni.slugify('Córdoba Straße')]);"; const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' }))); w.onmessage = (e) => { w.terminate(); res(e.data); }; w.onerror = (e) => { w.terminate(); res(String(e.message)); }; })`, ['1:05', '1.5 KB', '&lt;', 10, 'boolean', 'cordoba-strasse']);
+  /* The live re-read (AyniBoot.wireRefresh's watch), as over HTTPS, with a fake server and store: a read that fails
+     (the store says "error") is tried again by itself; a server that answers at once with the version it was given is
+     not asked again and again with no pause. The fake fetch stays until the next page */
+  await eq('watch: a failed push read is tried again; a same-version answer at once is not asked for ever', `(async () => {
+    const src = (await (await fetch('/ayni-boot.js')).text()).replace(/var hold *=[^;]+;/, 'var hold = true;').replace('window.AyniBoot =', 'window.AyniBootW =');
+    const W = { n: 0, reads: 0, fail: 1, same: false, waiters: [] }, S = { state: 'synced', held: null, heldTag() { return this.held; } };
+    const reply = (x) => ({ ok: true, json: async () => ({ etag: x }) });
+    window.fetch = () => { W.n++; return W.same ? new Promise((r) => setTimeout(() => r(reply('"s"')), 0)) : new Promise((r) => W.waiters.push((x) => r(reply(x)))); };
+    (0, eval)(src);
+    AyniBootW.wireRefresh({ watch: 'f', store: S, guard: () => false, throttleMs: 1,
+      read: async () => { W.reads++; if (W.fail > 0) { W.fail--; S.state = 'error'; } else { S.state = 'synced'; S.held = W.last; } } });
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms)), answer = (x) => { W.last = x; W.waiters.shift()?.(x); };
+    await sleep(50); answer('"v1"'); await sleep(2600);
+    const retried = W.reads === 2 && S.state === 'synced';
+    W.same = true; answer('"s"'); await sleep(300);
+    const n0 = W.n; await sleep(1500);
+    return [retried, W.n - n0 < 10];
+  })()`, [true, true]);
   await t.open(BASE + '/tests/fields-only.html');
   await eq('with the fields, Ayni.dates is whole', `[Ayni.dates.iso(new Date(2026, 0, 5)), Ayni.dates.today().length, typeof Ayni.dates.formatLong, Ayni.dates.formatDateTime(new Date(2026, 0, 5, 9, 7)), Ayni.dates.iso(Ayni.dates.parseDateTime('2026-01-05 09:07'))]`, ['2026-01-05', 10, 'function', '2026-01-05 09:07', '2026-01-05']);
   await t.open(BASE + '/tests/menus-only.html');
@@ -1693,6 +1729,17 @@ try {
     check('editable tree: Enter saves a good name', (await log()).includes('insert Music'), await log());
     await key('Insert');
     check('editable tree: the Insert key no longer makes an item', !(await ev(`!!document.querySelector('#ed .tree-edit')`)));
+    check('a tree from data: an item\'s tip is its row\'s tooltip, and comes back in data()', await ev(`(() => { const d = document.createElement('ul'); d.setAttribute('aria-label', 'T'); document.body.append(d);
+      try { const c = Ayni.tree(d, { items: [{ id: 'q1', name: 'Name', tip: 'Shows if Age ≥ 18', leaf: true }, { id: 'q2', name: 'Age', leaf: true }] }), out = c.data().items;
+        return d.querySelector('[data-id="q1"] > .ti').dataset.tip === 'Shows if Age ≥ 18' && !('tip' in d.querySelector('[data-id="q2"] > .ti').dataset) && out[0].tip === 'Shows if Age ≥ 18' && !('tip' in out[1]);
+      } finally { d.remove(); } })()`));
+    check('…a mark at the end of its row: its tip, heard as the item\'s description; not taken for the item\'s icon; back in data()', await ev(`(() => { const d = document.createElement('ul'); d.setAttribute('aria-label', 'T'); document.body.append(d);
+      try { const c = Ayni.tree(d, { items: [{ id: 'q1', name: 'Name', leaf: true, icon: false, mark: { icon: 'info', tip: 'Shows if Age ≥ 18' } }, { id: 'q2', name: 'Age', leaf: true, icon: false }] });
+        const li = d.querySelector('[data-id="q1"]'), m = li.querySelector(':scope > .ti > .tree-mark'), out = c.data();
+        return !!m && m.dataset.icon === 'info' && m.dataset.tip === 'Shows if Age ≥ 18' && li.getAttribute('aria-description') === 'Shows if Age ≥ 18' && m.previousElementSibling.matches('.tn')
+          && getComputedStyle(m).getPropertyValue('--icon').trim() === '14px' && !d.querySelector('[data-id="q2"]').hasAttribute('aria-description')
+          && out.icons === false && JSON.stringify(out.items[0].mark) === '{"icon":"info","tip":"Shows if Age ≥ 18"}' && !('icon' in out.items[0]) && !('mark' in out.items[1]);
+      } finally { d.remove(); } })()`));
     await click('#ed [role="treeitem"] > .ti', 0, 'right'); await wait(80);
     check('editable tree: its menu shows Alt+N for New', (await ev(`document.querySelector('.panel.menu:popover-open [data-tree-act="new"] kbd')?.textContent`)) === (await ev(`Ayni.keyLabel('Alt+N')`)), await ev(`document.querySelector('.panel.menu:popover-open [data-tree-act="new"] kbd')?.textContent`));
     await reset();
@@ -2738,7 +2785,7 @@ try {
     check('the top and bottom bar says so', await ev(`document.querySelector('#s2 > .splitter').getAttribute('aria-orientation') === 'horizontal' && document.querySelector('#s2 > .splitter').classList.contains('rows')`));
     check('three glyphs, each named', await ev(`[...document.querySelectorAll(${JSON.stringify(BAR + ' .split-ctl button')})].map((b) => b.getAttribute('aria-label')).join('|')`) === 'Collapse left pane|Reset sizes|Collapse right pane');
     check('.split: data-default is the first pane\'s size', (await size('s1')) === 35 && (await size('s2')) === 50);
-    check('the bar is 13 px and holds its glyphs', (await ev(`(() => { const b = document.querySelector(${JSON.stringify(BAR)}), r = b.getBoundingClientRect(); return getComputedStyle(b).width === '13px' && [...b.querySelectorAll('button')].every((g) => { const c = g.getBoundingClientRect(); return c.left >= r.left && c.right <= r.right; }); })()`)));
+    check('the bar is 11 px and holds its glyphs', (await ev(`(() => { const b = document.querySelector(${JSON.stringify(BAR)}), r = b.getBoundingClientRect(); return getComputedStyle(b).width === '11px' && [...b.querySelectorAll('button')].every((g) => { const c = g.getBoundingClientRect(); return c.left >= r.left && c.right <= r.right; }); })()`)));
     { await into('#s1'); const w = await ev(`document.getElementById('s1').getBoundingClientRect().width`);
       const [x, y] = await ev(`(() => { const r = document.querySelector(${JSON.stringify(BAR)}).getBoundingClientRect(); return [r.left + 3, r.top + 6]; })()`);
       await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseMoved', x + w * .2, y);
@@ -2810,7 +2857,7 @@ try {
     await drag('#host1 > .splitter', 2000);
     check('px limits hold', await ev(`m.c.size === 500`));
     await click('#host1 > .splitter [data-to="last"]');
-    check('collapse on a bare bar: hidden, the other fills whatever the page sized it to', await ev(`m.b.hidden && m.a.classList.contains('split-fill') && Math.abs(m.a.getBoundingClientRect().width - m.host.clientWidth + 13) < 2`), await ev(`m.a.getBoundingClientRect().width`));
+    check('collapse on a bare bar: hidden, the other fills whatever the page sized it to', await ev(`m.b.hidden && m.a.classList.contains('split-fill') && Math.abs(m.a.getBoundingClientRect().width - m.host.clientWidth + 11) < 2`), await ev(`m.a.getBoundingClientRect().width`));
     check('the collapsed pane is saved beside the size', (await ev(`localStorage.getItem('w1.fold')`)) === 'last');
     await ev(`(window.m2 = mk({ min: 200, max: 500, def: 300, key: 'w1' }), true)`);
     check('a new page puts both back', await ev(`m2.c.size === 500 && m2.c.collapsed === 'last' && m2.b.hidden`));
@@ -2898,6 +2945,13 @@ try {
     await click('#mf2');
     check('onToggle hears the user; its own word for open', (await ev(`S.at(-1)`)) === 'toggle true' && await ev(`mf2.textContent.includes('Hide extras')`));
     check('a line written open stays open at load', await ev(`more.open`));
+    check('a line wired in a form built in code, not on the page yet, folds its part too', await ev(`(() => { const box = document.createElement('div');
+      box.innerHTML = '<button type="button" id="mf3" aria-controls="mf3-box"></button><div id="mf3-box">Extra</div>';
+      const m = Ayni.moreFields(box.querySelector('#mf3')), shut = box.querySelector('#mf3-box').hidden;
+      document.body.append(box); box.querySelector('#mf3').click(); const open = !box.querySelector('#mf3-box').hidden; box.remove(); return shut && open && m.open; })()`));
+    check('…and a line made alone, put beside its part right after', await ev(`(async () => { const b = document.createElement('button'), part = document.createElement('div'), box = document.createElement('div');
+      b.type = 'button'; b.setAttribute('aria-controls', 'mf4-box'); part.id = 'mf4-box'; Ayni.moreFields(b); box.append(b, part);
+      await Promise.resolve(); return part.hidden && b.getAttribute('aria-expanded') === 'false'; })()`));
 
     /* ---------- Choice rows, tags ---------- */
     check('a choice row wraps', (await ev(`getComputedStyle(document.getElementById('ch')).flexWrap`)) === 'wrap');
@@ -2907,7 +2961,7 @@ try {
     /* ---------- Touch ---------- */
     await ev(`(Ayni.setTouchPreview(true), true)`); await wait(40);
     check('touch: tabs are 44 px high', (await ev(`document.querySelector('#t4 > [role="tab"]').getBoundingClientRect().height`)) >= 44);
-    check('touch: the bar keeps 13 px, with a 44 px hit area', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '13px' && (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)}), '::before').left`)) === '-16px');
+    check('touch: the bar keeps 11 px, with a 44 px hit area', (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)})).width`)) === '11px' && (await ev(`getComputedStyle(document.querySelector(${JSON.stringify(BAR)}), '::before').left`)) === '-16px');
     check('touch: a top and bottom bar the same, across', (await ev(`getComputedStyle(document.querySelector('#s2 > .splitter'), '::before').top`)) === '-16px');
     check('touch: each glyph has its own 44 px, none overlaps', await ev(`(() => { for (const s of ['#s1', '#s2']) { const v = s === '#s1', r = [...document.querySelectorAll(s + ' > .splitter .split-ctl button')].map((b) => b.getBoundingClientRect()); for (let i = 0; i < 3; i++) if ((v ? r[i].height : r[i].width) < 44 || (i && (v ? r[i].top < r[i - 1].bottom : r[i].left < r[i - 1].right))) return false; } return true; })()`));
     check('touch: a choice row keeps 8 px between targets', (await ev(`getComputedStyle(document.getElementById('ch')).gap`)) === '8px');
@@ -2916,9 +2970,10 @@ try {
 
     /* ---------- Languages ---------- */
     check('no untranslated keys in the layout family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
-    await ev(`(document.body.insertAdjacentHTML('beforeend', '<div class="empty-state" id="es"><span class="icon" data-icon="file"></span><p class="empty-title">None</p><p>Press +</p></div><p class="section-label" id="sl">Group</p><div class="card-row" id="cr">Row</div>'), Ayni.init(document.body), true)`); await wait(40);
+    await ev(`(document.body.insertAdjacentHTML('beforeend', '<div class="empty-state" id="es"><span class="icon" data-icon="file"></span><p class="empty-title">None</p><p>Press +</p><button type="button" class="btn text" id="es-add"><span class="icon" data-icon="plus"></span><span>New</span></button></div><p class="section-label" id="sl">Group</p><div class="card-row" id="cr">Row</div>'), Ayni.init(document.body), true)`); await wait(40);
     check('empty state: centred, its glyph 44 px and faint', await ev(`(() => { const s = getComputedStyle(es), g = es.querySelector('svg').getBoundingClientRect(); return s.alignItems === 'center' && g.width === 44 && getComputedStyle(es.querySelector('svg')).opacity === '0.6'; })()`));
-    check('empty state: the first line bold, the second smaller', await ev(`(() => { const a = getComputedStyle(es.querySelector('.empty-title')), b = getComputedStyle(es.querySelector('p:last-child')); return +a.fontWeight === 600 && parseFloat(a.fontSize) > parseFloat(b.fontSize); })()`));
+    check('…the icon of a text button under it keeps its own size', await ev(`(() => { const g = document.querySelector('#es-add svg').getBoundingClientRect(); return g.width > 0 && g.width < 30 && getComputedStyle(document.querySelector('#es-add svg')).opacity === '1'; })()`), await ev(`document.querySelector('#es-add svg').getBoundingClientRect().width`));
+    check('empty state: the first line bold, the second smaller', await ev(`(() => { const a = getComputedStyle(es.querySelector('.empty-title')), b = getComputedStyle(es.querySelector('p:last-of-type')); return +a.fontWeight === 600 && parseFloat(a.fontSize) > parseFloat(b.fontSize); })()`));
     check('section label: uppercase, small', await ev(`(() => { const s = getComputedStyle(sl); return s.textTransform === 'uppercase' && parseFloat(s.fontSize) < 12; })()`));
     check('card row: a row on its own card', await ev(`(() => { const s = getComputedStyle(cr); return s.display === 'flex' && s.borderTopStyle === 'solid' && parseFloat(s.borderTopLeftRadius) > 0; })()`));
     await ev(`(es.remove(), sl.remove(), cr.remove(), true)`);
@@ -3319,6 +3374,340 @@ try {
     }
     check('look only: no errors or warnings', t.logs.length === 0, t.logs.slice());
     await size(1280, 900);
+  }
+
+  section('Forms family (base + buttons + notifications + dialogs + menus + fields + forms)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await t.open(BASE + '/tests/forms-only.html');
+    check('a page with the forms family starts with no errors or warnings', t.logs.length === 0, t.logs.slice());
+    const ev = (js) => t.evaluate(js);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const KEYS = { Escape: 27, Enter: 13, Tab: 9, Backspace: 8, Delete: 46, F2: 113, ArrowUp: 38, ArrowDown: 40, Home: 36, End: 35 };
+    const CTRL = 2, SHIFT = 8;
+    const key = async (k, mods = 0) => {
+      const code = k.length === 1 ? 'Key' + k.toUpperCase() : k, vk = KEYS[k] || (k.length === 1 ? k.toUpperCase().charCodeAt(0) : 0);
+      await t.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, modifiers: mods, ...(k === 'Enter' ? { text: '\r' } : {}) });
+      await t.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk, modifiers: mods });
+      await wait(60);
+    };
+    const type = async (s) => { await t.send('Input.insertText', { text: s }); await wait(40); };
+    const mouse = (type, x, y) => t.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
+    const mid = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+    const click = async (sel) => { const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await mouse('mouseReleased', x, y); await wait(100); };
+    const row = (id, part = '.elist-text') => `#opts .elist-row[data-id="${id}"] ${part}`;
+    const texts = (sel = '#opts') => ev(`[...document.querySelectorAll('${sel} .elist-row')].map((r) => r.querySelector('.elist-input')?.value ?? r.querySelector('.elist-text').textContent).join()`);
+    const ids = () => ev(`[...document.querySelectorAll('#opts .elist-row')].map((r) => r.dataset.id).join()`);
+    const log = () => ev(`L.splice(0).join('|')`);
+    const active = () => ev(`(() => { const a = document.activeElement; return a.classList.contains('elist-input') ? 'input:' + a.closest('li').dataset.id : a.classList.contains('elist-text') ? 'row:' + a.closest('li').dataset.id : a.classList.contains('elist-add') ? 'add' : a.tagName; })()`);
+
+    check('the family works without ayni.css and ayni.js', await ev(`typeof Ayni.editList === 'function' && !document.querySelector('link[href$="/ayni.css"], script[src$="/ayni.js"]')`));
+    check('rows, and the dashed Add button the page names', (await texts()) === 'Madrid,Barcelona,Valencia' && await ev(`(() => { const b = document.querySelector('#opts .elist-add'); return b.classList.contains('dashed') && b.classList.contains('text') && b.textContent === 'Add option'; })()`));
+    check('the rows are one Tab stop', await ev(`[...document.querySelectorAll('#opts .elist-text')].map((x) => x.tabIndex).join()`) === '0,-1,-1');
+    check('a list without a name gets one; the page\'s stays', await ev(`document.querySelector('#opts').getAttribute('aria-label') === 'Options' && document.querySelector('#opts').getAttribute('role') === 'group'`));
+
+    /* Editing in place: Enter keeps and opens the next row, a new one after the last */
+    const box = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.height)]; })()`);
+    const was = await box(row('o1'));
+    await click(row('o1'));
+    const now = await box(row('o1', '.elist-input'));
+    check('a click edits in place: a field in the same box, nothing moves', (await active()) === 'input:o1' && was.join() === now.join(), [was, now]);
+    await type(' Centro'); await key('Enter');
+    check('Enter keeps the text and opens the next row', (await texts()) === 'Madrid Centro,Barcelona,Valencia' && (await active()) === 'input:o2');
+    check('…and tells it, with the same id', (await log()) === 'edit o1: o1=Madrid Centro,o2=Barcelona,o3=Valencia|event edit');
+    await key('Enter'); await key('Enter');
+    check('Enter on the last row opens a new one after it', (await active()) === 'input:n1' && (await ids()) === 'o1,o2,o3,n1');
+    await type('Sevilla'); await key('Enter');
+    check('…and so on: ten options without the mouse', (await active()) === 'input:n2');
+    await key('Enter');
+    check('Enter on an empty row ends: it goes, the focus waits on Add', (await ids()) === 'o1,o2,o3,n1' && (await active()) === 'add');
+    check('only the kept row is told', (await log()) === 'add n1: o1=Madrid Centro,o2=Barcelona,o3=Valencia,n1=Sevilla|event add');
+    await click(row('o2')); await type('XX'); await key('Escape');
+    check('Esc puts the old text back', (await texts()) === 'Madrid Centro,Barcelona,Valencia,Sevilla' && (await active()) === 'row:o2' && (await log()) === '');
+    await click(row('n1'));
+    await ev(`(() => { const i = document.activeElement; i.value = ''; i.dispatchEvent(new Event('input')); return true; })()`);
+    await key('Backspace');
+    check('Backspace in an empty row removes it and goes to the row above', (await ids()) === 'o1,o2,o3' && (await active()) === 'input:o3' && (await log()).startsWith('remove n1'));
+    await key('Escape');
+
+    /* Pasting lines */
+    await click(row('o3'));
+    await ev(`(() => { const i = document.activeElement, dt = new DataTransfer(); dt.setData('text/plain', '• Bilbao\\r\\n2) Soria\\n\\n- Cádiz\\n'); i.setSelectionRange(i.value.length, i.value.length); i.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); return true; })()`);
+    await wait(60);
+    check('pasted lines: one row each after a row with text, without bullets or numbers', (await texts()) === 'Madrid Centro,Barcelona,Valencia,Bilbao,Soria,Cádiz', await texts());
+    check('…the focus on the last, and one change told', (await active()) === 'row:n5' && (await log()) === 'paste o3: o1=Madrid Centro,o2=Barcelona,o3=Valencia,n3=Bilbao,n4=Soria,n5=Cádiz|event paste');
+    await click('#opts .elist-add');
+    await ev(`(() => { const i = document.activeElement, dt = new DataTransfer(); dt.setData('text/plain', 'Lugo\\nLeón'); i.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); return true; })()`);
+    await wait(60);
+    check('into an empty new row, the first line goes in it', (await ids()) === 'o1,o2,o3,n3,n4,n5,n6,n7' && (await texts()).endsWith('Cádiz,Lugo,León') && (await log()).startsWith('add n6'));
+
+    /* A repeated row */
+    await click('#opts .elist-add'); await type('BARCELONA');
+    await ev(`(document.activeElement.blur(), true)`); await wait(60);
+    const dup = '#opts .elist-row[data-id="n8"]';
+    check('a repeated row (case aside) shows the "!", the first one does not', await ev(`document.querySelector('${dup} .elist-text').getAttribute('aria-invalid') === 'true' && !document.querySelector('${dup} .err-mark').hidden && document.querySelector('${row('o2')}').getAttribute('aria-invalid') === 'false'`));
+    check('…its message says why', await ev(`document.querySelector('${dup} .error').textContent === '“BARCELONA” is in the list already.'`));
+    await ev(`(document.querySelector('${dup} .elist-text').focus(), true)`); await wait(60);
+    check('…and pops up while it has the focus', await ev(`document.getElementById('ayni-err').matches(':popover-open')`));
+    await key('Delete'); await log();
+
+    /* Remove with ×, and Undo */
+    await click(row('o2', '.elist-del'));
+    check('the × removes the row at once, with Undo', (await ids()) === 'o1,o3,n3,n4,n5,n6,n7' && await ev(`[...document.querySelectorAll('.toast')].some((x) => x.textContent.includes('Removed “Barcelona”.') && x.querySelector('.act'))`));
+    await ev(`([...document.querySelectorAll('.toast')].find((x) => x.textContent.includes('Barcelona')).querySelector('.act').click(), true)`); await wait(60);
+    check('Undo puts it back in its place, with its id', (await ids()) === 'o1,o2,o3,n3,n4,n5,n6,n7' && (await log()).includes('restore o2'));
+
+    /* Keys on a row at rest */
+    await ev(`(document.querySelector('${row('o1')}').focus(), true)`);
+    await key('ArrowDown');
+    check('Down moves to the next row', (await active()) === 'row:o2');
+    await key('ArrowDown', CTRL | SHIFT);
+    check('Ctrl+Shift+Down moves the row down, keeping the focus on it', (await ids()) === 'o1,o3,o2,n3,n4,n5,n6,n7' && (await active()) === 'row:o2' && (await log()).startsWith('move o2'));
+    await key('ArrowUp', CTRL | SHIFT);
+    check('Ctrl+Shift+Up moves it back', (await ids()) === 'o1,o2,o3,n3,n4,n5,n6,n7');
+    await key('End');
+    check('End goes to the last row', (await active()) === 'row:n7');
+    await key('F2');
+    check('F2 edits, with the text selected', (await active()) === 'input:n7' && await ev(`document.activeElement.selectionStart === 0 && document.activeElement.selectionEnd === 4`));
+    await key('Escape');
+    await key('Delete');
+    check('Delete removes the row', (await ids()) === 'o1,o2,o3,n3,n4,n5,n6' && (await active()) === 'row:n6');
+    await key('z', CTRL);
+    check('Ctrl+Z on a row runs the Undo', (await ids()) === 'o1,o2,o3,n3,n4,n5,n6,n7');
+    await log();
+
+    /* Dragging with a mouse */
+    const [px, py] = await mid(row('o1'));
+    await mouse('mouseMoved', px, py); await mouse('mousePressed', px, py); await mouse('mouseReleased', px - 400, py); await wait(40);
+    check('a row pressed with a mouse can be dragged', await ev(`document.querySelector('#opts .elist-row[data-id="o1"]').draggable === true`));
+    const drag = await ev(`(() => {
+      const L2 = document.querySelector('#opts .elist-row[data-id="o1"]'), T = document.querySelector('#opts .elist-row[data-id="o3"]'), dt = new DataTransfer();
+      const r = T.getBoundingClientRect(), y = r.bottom - 2;
+      L2.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }));
+      T.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: y }));
+      const marked = T.classList.contains('drop-after');
+      T.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientY: y }));
+      L2.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt }));
+      return marked && !document.querySelector('#opts .drop-after, #opts .drop-before');
+    })()`);
+    check('dragging shows the line after a row, and drops there', drag && (await ids()) === 'o2,o3,o1,n3,n4,n5,n6,n7' && (await log()).startsWith('move o1'));
+
+    /* set() tells nothing */
+    await ev(`(list.set([{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }]), true)`);
+    check('set() replaces the rows and tells nothing', (await texts()) === 'A,B' && (await log()) === '' && await ev(`list.items.map((x) => x.id).join() === 'a,b'`));
+
+    /* A person's click, with time between press and release, while a row is being edited */
+    const slow = async (sel) => { const [x, y] = await mid(sel); await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y); await wait(80); await mouse('mouseReleased', x, y); await wait(100); };
+    await ev(`(list.set([{ id: 'a', text: 'Yes' }, { id: 'b', text: 'No' }, { id: 'c', text: 'yes' }]), true)`);
+    await click(`#opts .elist-row[data-id="a"] .elist-text`);
+    await slow(`#opts .elist-row[data-id="b"] .elist-text`);
+    check('editing a row, a click on another one edits that one', (await active()) === 'input:b' && t.logs.length === 0, t.logs.slice());
+    await click(`#opts .elist-row[data-id="c"] .elist-text`);
+    await slow(`#opts .elist-row[data-id="a"] .elist-del`);
+    check('…and a click on another row\'s × removes it', (await ids()) === 'b,c', await ids());
+    await click(`#opts .elist-row[data-id="c"] .elist-text`); await ev(`(list.set([{ id: 'a', text: 'Yes' }, { id: 'b', text: 'No' }, { id: 'c', text: 'yes' }]), true)`);
+    await click(`#opts .elist-row[data-id="c"] .elist-text`); await type('s');
+    check('a repeated row put right in its field keeps no "!"', await ev(`[...document.querySelectorAll('#opts .elist-row[data-id="c"] .err-mark')].every((m) => m.hidden)`));
+    const focused = await ev(`(() => { try { list.focus(); return true; } catch { return false; } })()`);
+    check('focus() while a row is edited', focused && (await active()) === 'input:c');
+    await key('Escape'); await log();
+    check('a number from newId works as an id', await ev(`(() => { const d = document.createElement('div'); d.setAttribute('aria-label', 'Numbers'); document.body.append(d);
+      try { let k = 0; const n = Ayni.editList(d, { items: [], newId: () => ++k }); n.add('One'); n.add('Two');
+        return d.querySelectorAll('.elist-row').length === 2 && n.items.map((x) => typeof x.id).join() === 'string,string'; } catch { return false; } finally { d.remove(); } })()`));
+
+    /* In a dialog: Enter and Esc in a row never reach the dialog */
+    await ev(`(document.getElementById('dlg').showModal(), true)`); await wait(60);
+    await click('#dlg-list .elist-text'); await type(' more'); await key('Enter');
+    check('in a dialog, Enter in a row opens the next one, not the default button', await ev(`document.getElementById('dlg').open && !L.includes('dialog ok') && document.activeElement.classList.contains('elist-input')`));
+    await key('Escape');
+    check('…and Esc on the new row takes it away, the dialog stays', await ev(`document.getElementById('dlg').open && document.querySelectorAll('#dlg-list .elist-row').length === 1 && document.querySelector('#dlg-list .elist-text').textContent === 'One more'`));
+    await ev(`(document.getElementById('dlg').close(), true)`);
+
+    /* States */
+    await click('#ro .elist-text');
+    check('read-only: no field opens, no ×, ⋮ or Add', await ev(`!document.querySelector('#ro .elist-input') && [...document.querySelectorAll('#ro .btn')].every((b) => getComputedStyle(b).display === 'none')`));
+    check('disabled: faded', await ev(`getComputedStyle(document.querySelector('#dis')).opacity === '0.45'`));
+    check('disabled: no row takes the focus (2.4)', await ev(`[...document.querySelectorAll('#dis .elist-text')].every((x) => x.tabIndex === -1)`));
+    check('disabled repeated block and signature: their buttons stay, faded and refused; the box takes no focus', await ev(`(() => {
+      const f = document.createElement('fieldset'), g = document.createElement('div'); f.className = 'group'; f.innerHTML = '<legend>X</legend>';
+      [f, g].forEach((x) => { x.setAttribute('aria-disabled', 'true'); document.body.append(x); });
+      try { Ayni.repeat(f, { build: () => {}, items: [{}] }); Ayni.signature(g, { value: { kind: 'drawn', w: 600, h: 200, strokes: [[1, 1, 50, 50]] } });
+        const on = (b) => !b.hidden && b.getAttribute('aria-disabled') === 'true';
+        return on(f.querySelector('.repeat-add')) && on(f.querySelector('.repeat-del')) && on(g.querySelector('.sign-clear')) && g.querySelector('.sign-pad').tabIndex === -1;
+      } finally { f.remove(); g.remove(); } })()`));
+    check('signature: a value with a bad number loses that point only, the pairs after it stay', await ev(`(() => {
+      sig.set({ kind: 'drawn', w: 600, h: 200, strokes: [[10, 20, 'x', 40, 50, 60]] }); const s = sig.value.strokes[0].join(); sig.set(null); return s === '10,20,50,60'; })()`));
+
+    /* Touch: no dragging; the ⋮ */
+    await ev(`(Ayni.setTouchPreview(true), list.set([{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }, { id: 'c', text: 'C' }]), true)`); await wait(60);
+    check('touch: the ⋮ instead of the ×, rows at least 44 px', await ev(`(() => { const r = document.querySelector('#opts .elist-row'); return getComputedStyle(r.querySelector('.elist-del')).display === 'none' && getComputedStyle(r.querySelector('.elist-more')).display !== 'none' && r.getBoundingClientRect().height >= 44; })()`));
+    await click('#opts .elist-row[data-id="a"] .elist-more');
+    const menu = await ev(`[...document.querySelectorAll('#ayni-menu [role="menuitem"]')].map((m) => m.textContent.trim() + (m.getAttribute('aria-disabled') === 'true' ? '(off)' : '')).join()`);
+    check('the ⋮ menu: Move up (off on the first), Move down, Remove', menu === 'Move up(off),Move down,Remove', menu);
+    await ev(`([...document.querySelectorAll('#ayni-menu [role="menuitem"]')].find((m) => m.textContent.includes('Move down')).click(), true)`); await wait(60);
+    check('Move down from the menu', (await ids()) === 'b,a,c' && (await log()).startsWith('move a'));
+    await ev(`(document.querySelector('#opts .elist-row').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' })), true)`);
+    check('touch: a row is never draggable', await ev(`document.querySelector('#opts .elist-row').draggable === false`));
+    await ev(`(Ayni.setTouchPreview(false), true)`);
+
+    /* ---------- The repeated block (#rep: at least 1, at most 3, one card for Ana; it refuses to remove "Keep") ---------- */
+    const into = (sel) => ev(`(document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center' }), true)`);
+    const press = async (sel) => { await into(sel); await click(sel); };
+    const keys = () => ev(`[...document.querySelectorAll('#rep .repeat-card')].map((c) => c.dataset.key)`);
+    const card = (i, part = '') => `#rep .repeat-card:nth-child(${i + 1})${part ? ' ' + part : ''}`;
+    const undoOf = (text) => ev(`(() => { const x = [...document.querySelectorAll('.toast')].findLast((x) => x.textContent.includes(${JSON.stringify(text)})); x?.querySelector('.act')?.click(); return !!x; })()`);
+    const setName = (i, v) => ev(`(() => { const i = document.querySelector(${JSON.stringify(card(i, 'input'))}); i.value = ${JSON.stringify(v)}; i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+    const seen = new Set();
+    const note = async () => (await keys()).forEach((k) => seen.add(k));
+    await log(); await note();
+    check('repeated block: a block that needs cards starts with that many', await ev(`(() => { const f = document.createElement('fieldset'); f.className = 'group'; f.innerHTML = '<legend>X</legend>'; document.body.append(f);
+      try { Ayni.repeat(f, { min: 2, build: () => {} }); return f.querySelectorAll('.repeat-card').length === 2; } finally { f.remove(); } })()`));
+    check('…cards, titles and the dashed Add the page names', (await keys()).length === 1 && await ev(`document.querySelector('${card(0, '.repeat-title')}').textContent === 'Attendee 1 · Ana' && (() => { const b = document.querySelector('#rep .repeat-add'); return b.classList.contains('dashed') && b.textContent === 'Add attendee'; })()`));
+    check('at the least, the bin is off and its tooltip says why', await ev(`(() => { const b = document.querySelector('${card(0, '.repeat-del')}'); return b.getAttribute('aria-disabled') === 'true' && b.dataset.tip === 'Remove Attendee 1 · Ana: at least 1 are needed'; })()`));
+    await press(card(0, '.repeat-del'));
+    check('…and a press on it does nothing', (await keys()).length === 1 && (await log()) === '');
+    await press('#rep .repeat-add'); await note();
+    check('Add puts a card under the last one, the focus on its first field', (await keys()).length === 2 && await ev(`document.activeElement === document.querySelector('${card(1, 'input')}')`) && (await log()) === 'add 1|count 2');
+    await type('Luis');
+    check('…the page names the card by what it holds', await ev(`document.querySelector('${card(1, '.repeat-title')}').textContent === 'Attendee 2 · Luis'`));
+    await press('#rep .repeat-add'); await note();
+    check('at the most, Add is off and its tooltip says why', (await keys()).length === 3 && await ev(`(() => { const b = document.querySelector('#rep .repeat-add'); return b.getAttribute('aria-disabled') === 'true' && b.dataset.tip === 'Add attendee: there can be 3 at most'; })()`) && (await log()) === 'add 2|count 3');
+    await press('#rep .repeat-add');
+    check('…and a press on it adds nothing, and asks nothing', (await keys()).length === 3 && (await log()) === '');
+    await ev(`(window.gone = document.querySelector('${card(1)}'), true)`);
+    await press(card(1, '.repeat-del'));
+    check('the bin removes at once, no question, with Undo', (await keys()).length === 2 && await ev(`!document.querySelector('dialog[open]') && !document.querySelector('${card(0)}').isSameNode(gone) && !gone.isConnected && [...document.querySelectorAll('.toast')].some((x) => x.textContent.includes('Removed “Attendee 2 · Luis”.') && x.querySelector('.act'))`) && (await log()) === 'remove 1|count 2');
+    await undoOf('Attendee 2 · Luis'); await wait(60);
+    check('Undo puts back the same card in its place, with what it held', await ev(`document.querySelector('${card(1)}') === gone && gone.querySelector('input').value === 'Luis' && document.activeElement === gone.querySelector('input')`) && (await log()) === 'add 1 undo|count 3');
+    await setName(2, 'Keep'); await log();
+    await press(card(2, '.repeat-del'));
+    check('the page may refuse a remove (ayni:remove)', (await keys()).length === 3 && (await log()) === 'refused');
+    await press(card(1, '.repeat-del')); await log();
+    await ev(`(refuseAdd = true, true)`);
+    await press('#rep .repeat-add');
+    check('…and an add (ayni:add)', (await keys()).length === 2 && (await log()) === 'refused add');
+    await undoOf('Attendee 2 · Luis'); await wait(60);
+    check('…and the Undo of a remove (ayni:add with undo: true)', (await keys()).length === 2 && !(await ev(`gone.isConnected`)) && (await log()) === 'refused add undo');
+    await ev(`(refuseAdd = false, true)`);
+    await press('#rep .repeat-add');
+    const fresh = (await keys())[2];
+    check('a card\'s key is never used again', !seen.has(fresh) && seen.size === 3 && (await keys()).every((k) => seen.has(k) || k === fresh), [...seen, fresh]);
+    await log();
+    await setName(2, '<img src=x onerror="window.hacked=1">'); await wait(60);
+    check('a title with code in it is text', await ev(`document.querySelector('${card(2, '.repeat-title')}').textContent === 'Attendee 3 · <img src=x onerror="window.hacked=1">' && !document.querySelector('#rep .repeat-head img')`));
+    await press(card(2, '.repeat-del')); await wait(60);
+    check('…and in the notification too', await ev(`[...document.querySelectorAll('.toast')].some((x) => x.textContent.includes('Removed “Attendee 3 · <img src=x onerror="window.hacked=1">”.')) && !document.querySelector('.toast img') && !window.hacked`));
+    await log();
+    /* An error about the number of cards, from the page: the "!" next to the legend and the red edge */
+    await ev(`(() => { const r = document.getElementById('rep'); r.insertAdjacentHTML('beforeend', '<span class="error" id="rep-err" hidden>Add a second attendee.</span>'); r.setAttribute('aria-describedby', 'rep-err'); Ayni.init(r); r.setAttribute('aria-invalid', 'true'); return true; })()`); await wait(60);
+    check('an error on the block: the "!" next to the legend', await ev(`!!document.querySelector('#rep > legend > .err-mark:not([hidden])') && document.querySelectorAll('#rep > legend > .err-mark').length === 1`));
+    check('…and the red edge (a group box keeps it)', await ev(`(() => { const s = getComputedStyle(document.getElementById('rep')), p = document.createElement('i'); p.style.color = 'var(--danger)'; document.body.append(p); const d = getComputedStyle(p).color; p.remove();
+      return ['Top', 'Right', 'Bottom', 'Left'].every((e) => s['border' + e + 'Color'] === d && s['border' + e + 'Style'] === 'solid'); })()`));
+    await ev(`(document.getElementById('rep').setAttribute('aria-invalid', 'false'), true)`);
+    check('read-only: no bin, no Add', await ev(`document.querySelectorAll('#rep-ro .repeat-card').length === 1 && [...document.querySelectorAll('#rep-ro .repeat-del, #rep-ro .repeat-add')].every((b) => getComputedStyle(b).display === 'none')`));
+    check('disabled: faded', await ev(`(() => { const f = document.createElement('fieldset'); f.className = 'group'; f.setAttribute('aria-disabled', 'true'); document.body.append(f);
+      try { Ayni.repeat(f, { build: () => {}, items: [{}] }); return getComputedStyle(f).opacity === '0.45'; } finally { f.remove(); } })()`));
+
+    /* ---------- The signature (#sig: 40 points at most, to see it stop; #sig-ro: read-only) ---------- */
+    const PAD = '#sig .sign-pad';
+    const padBox = () => ev(`(() => { const r = document.querySelector('${PAD}').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()`);
+    const stroke = async (from, to, steps) => {
+      const [l, tp, w, h] = await padBox(), at = (f) => [l + f[0] * w, tp + f[1] * h];
+      const [x0, y0] = at(from); await mouse('mouseMoved', x0, y0); await mouse('mousePressed', x0, y0);
+      for (let i = 1; i <= steps; i++) { const [x, y] = at([from[0] + (to[0] - from[0]) * i / steps, from[1] + (to[1] - from[1]) * i / steps]); await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'left', buttons: 1 }); }
+      const [x1, y1] = at(to); await mouse('mouseReleased', x1, y1); await wait(60);
+    };
+    const pts = () => ev(`(sig.value?.strokes || []).reduce((n, s) => n + s.length / 2, 0)`);
+    await into(PAD); await log();
+    check('signature: empty, it says "Sign here" and has no Clear', await ev(`(() => { const h = document.querySelector('#sig .sign-hint'), c = document.querySelector('#sig .sign-clear');
+      return h.textContent === 'Sign here' && getComputedStyle(h).display !== 'none' && getComputedStyle(c).display === 'none' && sig.value === null; })()`));
+    check('the box is 3 to 1, and the value\'s box 600 × 200 unless the page says otherwise', await ev(`(() => { const r = document.querySelector('${PAD}').getBoundingClientRect(); return Math.abs(r.width / r.height - 3) < 0.05 && document.querySelector('#sig .sign-ink').getAttribute('viewBox') === '0 0 600 200'; })()`));
+    await stroke([0.2, 0.5], [1.3, 0.2], 8);
+    const drawn = await ev(`sig.value`);
+    check('drawing with the mouse: one stroke of whole numbers inside the box, even past its edge', drawn?.kind === 'drawn' && drawn.w === 600 && drawn.h === 200 && drawn.strokes.length === 1 && drawn.strokes[0].length >= 6
+      && drawn.strokes[0].every((n, i) => Number.isInteger(n) && n >= 0 && n <= (i % 2 ? 200 : 600)) && drawn.strokes[0].at(-2) === 600, drawn);
+    check('…told once, at the end of the stroke; "Sign here" goes and Clear comes', (await log()) === 'sig drawn' && await ev(`getComputedStyle(document.querySelector('#sig .sign-hint')).display === 'none' && getComputedStyle(document.querySelector('#sig .sign-clear')).display !== 'none'`));
+    await stroke([0.05, 0.9], [0.95, 0.9], 70);
+    const most = await pts(), strokes = await ev(`sig.value.strokes.length`);
+    await stroke([0.5, 0.1], [0.6, 0.3], 4);
+    check('past the most points the drawing stops', most === 40 && (await pts()) === 40 && (await ev(`sig.value.strokes.length`)) === strokes, [most, strokes]);
+    await press('#sig .sign-clear'); await log();
+    check('Clear empties it, and the focus goes back to the box', (await ev(`sig.value`)) === null && await ev(`document.activeElement === document.querySelector('${PAD}')`));
+    /* A finger: the page does not move while it draws (a real touch drag; on the spacer below the same drag scrolls) */
+    await t.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const finger = async (pts2) => {
+      await t.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: pts2[0][0], y: pts2[0][1] }] });
+      for (const [x, y] of pts2.slice(1)) { await t.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] }); await wait(16); }
+      await t.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(200);
+    };
+    const line = (x, y0, y1, n = 8) => Array.from({ length: n + 1 }, (_, i) => [x, y0 + (y1 - y0) * i / n]);
+    await ev(`(scrollTo(0, 0), document.querySelector('${PAD}').scrollIntoView({ block: 'start' }), scrollBy(0, -20), true)`); await wait(60);
+    const y0 = await ev(`scrollY`), [pl, pt2, pw, ph] = await padBox();
+    await finger(line(pl + pw * 0.3, pt2 + ph * 0.8, pt2 + ph * 0.15));
+    const y1 = await ev(`scrollY`), drew = await ev(`sig.value?.strokes?.length`);
+    const below = await ev(`(() => { const r = document.querySelector('#sig-ro').getBoundingClientRect(); return [r.left + 40, Math.min(innerHeight - 40, r.bottom + 200)]; })()`);
+    await finger(line(below[0], below[1], below[1] - 200));
+    const y2 = await ev(`scrollY`);
+    check('touch: a finger drawing on the box draws, and the page does not scroll (the same drag below it does)', y1 === y0 && y2 > y1 && drew === 1 && (await log()) === 'sig drawn', [y0, y1, y2, drew]);
+    await t.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await ev(`(sig.clear(), true)`); await log();
+    /* "Type my name" with the keyboard alone */
+    await ev(`(document.querySelector('${PAD}').focus(), true)`);
+    await key('Tab');
+    check('keyboard: Tab from the box reaches "Type my name"', await ev(`document.activeElement === document.querySelector('#sig .sign-type')`));
+    await key('Enter');
+    check('…Enter swaps the box for a field with the name the page gave, selected', await ev(`(() => { const i = document.activeElement; return i.matches('#sig .sign-typed > .input') && i.value === 'Ana Morales' && i.selectionStart === 0 && i.selectionEnd === 11 && document.querySelector('${PAD}').hidden; })()`)
+      && JSON.stringify(await ev(`sig.value`)) === '{"kind":"typed","name":"Ana Morales"}' && (await log()) === 'sig typed');
+    await type('Ana M. Ruiz'); await key('Tab');
+    check('…typed over, and Tab reaches "Draw the signature"', (await ev(`sig.value.name`)) === 'Ana M. Ruiz' && await ev(`document.activeElement === document.querySelector('#sig .sign-draw')`));
+    await key('Enter');
+    check('…which brings the box back, with the focus', await ev(`document.activeElement === document.querySelector('${PAD}') && !document.querySelector('${PAD}').hidden && sig.value === null`));
+    await log();
+    /* The error "!", once, at the box's top right */
+    await ev(`(Ayni.init(document.body), sig.error('Sign, please.'), true)`); await wait(60);
+    check('error(): the "!" at the box\'s top right', await ev(`(() => { const m = [...document.querySelectorAll('#sig .err-mark')].find((x) => !x.hidden), b = document.querySelector('${PAD}').getBoundingClientRect(); if (!m) return false; const r = m.getBoundingClientRect();
+      return document.querySelector('${PAD}').getAttribute('aria-invalid') === 'true' && b.right - r.right < 16 && r.top - b.top < 16 && r.top >= b.top; })()`));
+    check('…one "!" for the box and one for the typed field, after Ayni.init() again', await ev(`document.querySelectorAll('#sig .err-mark').length === 2`));
+    check('…also inside a card of a repeated block', await ev(`(() => { const f = document.createElement('fieldset'); f.className = 'group'; f.innerHTML = '<legend>X</legend>'; document.body.append(f);
+      try { Ayni.repeat(f, { items: [{}], build: (body) => { const d = document.createElement('div'); body.append(d); Ayni.signature(d, {}); } }); Ayni.init(f); return f.querySelectorAll('.err-mark').length === 2; } finally { f.remove(); } })()`));
+    await ev(`(sig.error(''), true)`);
+    check('read-only: the signature, no buttons', await ev(`document.querySelectorAll('#sig-ro .sign-ink path').length === 1 && [...document.querySelectorAll('#sig-ro button:not(.err-mark)')].every((b) => getComputedStyle(b).display === 'none')`));
+    /* set(): numbers inside the box only, and the same limits as drawing */
+    const setTo = (v) => ev(`(sig.set(${JSON.stringify(v)}), JSON.stringify(sig.value?.strokes ?? null))`);
+    check('set() keeps only numbers inside the box, a whole point at a time', (await ev(`(sig.set({ kind: 'drawn', w: 600, h: 200, strokes: [[10, 20, 'x', 40, 50, 60, -5, 10, 700, 10, 30, 250, 100.4, 100, null, 1, NaN, 2, Infinity, 3, '7', 8], 'bad', [[1, 2]], [5], { 0: 1, 1: 2 }] }), JSON.stringify(sig.value.strokes))`)) === '[[10,20,50,60,100,100]]');
+    check('…and a value in another box is drawn to scale', (await setTo({ kind: 'drawn', w: 300, h: 100, strokes: [[150, 50, 300, 100]] })) === '[[300,100,600,200]]');
+    check('set() cuts the points where drawing would have stopped (40 here)', (await setTo({ kind: 'drawn', w: 600, h: 200, strokes: [Array.from({ length: 60 }, (_, i) => i), Array.from({ length: 60 }, (_, i) => i)] })) === JSON.stringify([Array.from({ length: 60 }, (_, i) => i), Array.from({ length: 20 }, (_, i) => i)]));
+    check('…the page\'s limits by default: a 600 × 200 box, 200 strokes, 3000 points', await ev(`(() => { const d = document.createElement('div'); document.body.append(d);
+      try { const s = Ayni.signature(d, {}), n = (v) => v.strokes.reduce((a, x) => a + x.length / 2, 0);
+        s.set({ kind: 'drawn', w: 600, h: 200, strokes: [Array.from({ length: 6002 }, (_, i) => (i % 2 ? 100 : i % 600))] }); const a = n(s.value);
+        s.set({ kind: 'drawn', w: 600, h: 200, strokes: Array.from({ length: 201 }, () => [1, 1]) }); const b = s.value.strokes.length;
+        s.set({ kind: 'drawn', w: 600, h: 200, strokes: [...Array.from({ length: 199 }, () => Array(20).fill(5)), Array(2400).fill(5)] }); const c = s.value;
+        return a === 3000 && b === 200 && n(c) === 3000 && c.strokes.length === 200 && c.strokes[199].length === 2020 && c.w === 600 && c.h === 200 && d.querySelector('.sign-ink').getAttribute('viewBox') === '0 0 600 200';
+      } finally { d.remove(); } })()`));
+    await ev(`(sig.set(null), true)`); await log();
+    /* The dark scheme: the paper stays light and the ink dark */
+    await ev(`(document.documentElement.dataset.theme = 'dark', sig.set({ kind: 'drawn', w: 600, h: 200, strokes: [[10, 10, 300, 100]] }), true)`); await wait(60);
+    check('dark scheme: the page goes dark, the paper stays light and the ink dark', await ev(`(() => { const lum = (c) => { const [r, g, b] = c.match(/[\\d.]+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+      const page = lum(getComputedStyle(document.body).backgroundColor), paper = getComputedStyle(document.querySelector('${PAD}')).backgroundColor, ink = lum(getComputedStyle(document.querySelector('#sig .sign-ink')).stroke);
+      return page < 60 && paper === 'rgb(251, 248, 241)' && ink < 60; })()`));
+    await ev(`(document.documentElement.dataset.theme = 'light', sig.set(null), true)`); await log();
+    /* A phone: a tap opens the big dialog; Done closes it with the signature */
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 800, deviceScaleFactor: 1, mobile: true });
+    await ev(`(Ayni.setTouchPreview(true), true)`); await wait(100);
+    await press(PAD); await wait(150);
+    check('phone: a tap on the box opens the big dialog, which says turning gives more room', await ev(`(() => { const d = document.querySelector('dialog.sign-dialog[open]'); return !!d && !!d.querySelector('.sign-big') && getComputedStyle(d.querySelector('.sign-turn')).display !== 'none'; })()`));
+    const big = await ev(`(() => { const r = document.querySelector('dialog[open] .sign-big').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()`);
+    await mouse('mouseMoved', big[0] + big[2] * 0.2, big[1] + big[3] * 0.5); await mouse('mousePressed', big[0] + big[2] * 0.2, big[1] + big[3] * 0.5);
+    for (let i = 1; i <= 6; i++) await t.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: big[0] + big[2] * (0.2 + i * 0.08), y: big[1] + big[3] * 0.5, button: 'left', buttons: 1 });
+    await mouse('mouseReleased', big[0] + big[2] * 0.7, big[1] + big[3] * 0.5); await wait(60);
+    await press('dialog.sign-dialog[open] [data-close]'); await wait(150);
+    check('…Done closes it, and the box shows the signature', await ev(`!document.querySelector('dialog[open]') && document.querySelector('${PAD}').classList.contains('has-ink') && document.querySelectorAll('${PAD} .sign-ink path').length === 1 && sig.value?.kind === 'drawn'`) && (await log()).startsWith('sig drawn'));
+    await ev(`(Ayni.setTouchPreview(false), sig.set(null), true)`);
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    check('a narrow column: the box keeps 3 to 1 and never sticks out of a group box', await ev(`(() => { const w = document.createElement('div'), f = document.createElement('fieldset'), d = document.createElement('div'); w.style.width = '200px'; f.className = 'group'; f.innerHTML = '<legend>X</legend>'; f.append(d); w.append(f); document.body.prepend(w);
+      try { Ayni.signature(d, {}); const p = d.querySelector('.sign-pad').getBoundingClientRect(); return f.getBoundingClientRect().width <= 200 && Math.abs(p.width / p.height - 3) < 0.05; } finally { w.remove(); } })()`));
+    check('the forms family: no errors or warnings', t.logs.length === 0, t.logs.slice());
   }
 
   section('Desktop page');

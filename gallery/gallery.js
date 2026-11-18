@@ -551,3 +551,44 @@ coarse.addEventListener('change', syncSim); sim.addEventListener('change', () =>
 
 /* Colour schemes */
 document.getElementById('schemes-btn').addEventListener('click', () => Ayni.schemeDialog());
+
+/* ---------- Forms (optional family): the editable list ---------- */
+{
+  const rows = (...texts) => texts.map((text, i) => ({ id: 'o' + (i + 1), text }));
+  let n = 10;
+  Ayni.editList($('#el-demo'), { items: rows('By car', 'By train', 'By bus'), addLabel: 'Add option', newId: () => 'o' + ++n,
+    onChange: (items, c) => { say('el-out', `${c.action} ${c.id} → ${items.map((x) => x.text).join(', ')}`); status(`Options: ${c.action}`); } });
+  Ayni.editList($('#el-dup'), { items: rows('Yes', 'No', 'yes'), addLabel: 'Add answer' });
+  Ayni.editList($('#el-empty'), { items: [], addLabel: 'Add stop' });
+  Ayni.editList($('#el-ro'), { items: rows('Small', 'Medium', 'Large') });
+  Ayni.editList($('#el-dis'), { items: rows('Small', 'Medium', 'Large') });
+}
+
+/* ---------- Forms (optional family): the repeated block and the signature ---------- */
+{
+  const person = (body, card, data = {}) => {
+    const k = card.dataset.key;
+    body.append(Ayni.h('div', 'field', Ayni.h('label', { attrs: { for: 'rp-n' + k }, text: 'Name' }),
+      Ayni.h('input', { class: 'input', id: 'rp-n' + k, value: data.name || '', attrs: { autocomplete: 'off' } })));
+  };
+  const nameOf = (card) => card.querySelector('.repeat-body input')?.value.trim();
+  const rp = Ayni.repeat($('#rp-demo'), { min: 1, max: 3, addLabel: 'Add attendee', itemLabel: 'Attendee', build: person,
+    items: [{ name: 'Ana' }], title: (i, card) => (nameOf(card) ? `Attendee ${i + 1} · ${nameOf(card)}` : `Attendee ${i + 1}`) });
+  $('#rp-demo').addEventListener('input', () => rp.retitle());
+  $('#rp-demo').addEventListener('ayni:change', (e) => say('rp-out', `${e.detail.count} card(s)`));
+  const stop = (body, card, data = {}) => body.append(Ayni.h('div', 'field', Ayni.h('label', { attrs: { for: 'st-' + card.dataset.key }, text: 'Town' }),
+    Ayni.h('input', { class: 'input', id: 'st-' + card.dataset.key, value: data.town || '' })));
+  Ayni.repeat($('#rp-refuse'), { max: 4, addLabel: 'Add stop', itemLabel: 'Stop', build: stop, items: [{ town: 'Madrid' }, { town: 'Soria' }] });
+  $('#rp-refuse').addEventListener('ayni:remove', (e) => { if (e.detail.index === 0) { e.preventDefault(); Ayni.toast('warn', 'The first stop is where the bus leaves: it stays.'); } });
+  Ayni.repeat($('#rp-err'), { addLabel: 'Add child', itemLabel: 'Child', build: person, items: [{ name: 'Luis' }] });
+  Ayni.repeat($('#rp-ro'), { itemLabel: 'Child', build: (b, c, d) => { person(b, c, d); b.querySelector('input').readOnly = true; }, items: [{ name: 'Luis' }] });
+  Ayni.repeat($('#rp-dis'), { itemLabel: 'Child', build: person, items: [{ name: 'Luis' }] });
+
+  const wave = { kind: 'drawn', w: 600, h: 200, strokes: [[60, 140, 90, 90, 120, 130, 150, 80, 180, 140, 210, 100, 260, 120, 320, 110], [340, 150, 380, 70, 420, 150], [450, 120, 540, 115]] };
+  Ayni.signature($('#sg-demo'), { name: 'Ana Morales', onChange: (v) => say('sg-out', v ? (v.kind === 'typed' ? `typed: ${v.name}` : `${v.strokes.length} stroke(s), ${v.strokes.reduce((n, s) => n + s.length / 2, 0)} points`) : 'empty') });
+  Ayni.signature($('#sg-signed'), { value: wave });
+  Ayni.signature($('#sg-typed'), { value: { kind: 'typed', name: 'Ana Morales' } });
+  Ayni.signature($('#sg-req')).error('Sign here, or type your name.');
+  Ayni.signature($('#sg-ro'), { value: wave });
+  Ayni.signature($('#sg-dis'), { value: wave });
+}

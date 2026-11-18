@@ -24,7 +24,10 @@ function ayniDeskMode()
 function ayniWantDesk( mode )
 {
     var mq = function ( q ) { return window.matchMedia( q ).matches; };
-    if( mode === 'never' || mq( '(max-width: 640px)' ) ) return false;
-    if( mode === 'always' ) return mq( '(min-width: 1024px) and (min-height: 600px)' ) || mq( '(min-width: 600px) and (min-height: 1024px)' );
+    if( mode === 'never' ) return false;
+    // A tablet held upright, 600 to 640 px wide, before the phone test: no phone is 1024 px tall
+    if( mode === 'always' && mq( '(min-width: 600px) and (min-height: 1024px)' ) ) return true;
+    if( mq( '(max-width: 640px)' ) ) return false;
+    if( mode === 'always' ) return mq( '(min-width: 1024px) and (min-height: 600px)' );
     return mq( '(min-width: 1024px) and (min-height: 600px) and (any-pointer: fine)' );
 }

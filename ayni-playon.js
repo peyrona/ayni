@@ -75,7 +75,7 @@ var AyniPlayOn = ( function ()
             media.setSinkId( id ).then( function ()
             {
                 try { if( id ) localStorage.setItem( SINK_KEY, id ); else localStorage.removeItem( SINK_KEY ); } catch( e ) {}
-            } ).catch( function () { Ayni.toast( "err", Ayni.t( "media.outFail" ) ); } );
+            } ).catch( function () { Ayni.toast( "err", Ayni.t( "ayni.media.outFail" ) ); } );
         }
 
         // Names come only with the microphone permission: ask, drop the stream
@@ -86,7 +86,7 @@ var AyniPlayOn = ( function ()
             {
                 s.getTracks().forEach( function ( t ) { t.stop(); } );
                 openMenu();
-            } ).catch( function () { Ayni.toast( "err", Ayni.t( "media.outFail" ) ); } );
+            } ).catch( function () { Ayni.toast( "err", Ayni.t( "ayni.media.outFail" ) ); } );
         }
 
         // Chrome answers "dismissed" at once when it has nothing to offer, the
@@ -98,7 +98,7 @@ var AyniPlayOn = ( function ()
             media.remote.prompt().catch( function ( e )
             {
                 if( e && e.name === "NotAllowedError" && Date.now() - t0 > 700 ) return;   // the person closed the picker
-                Ayni.toast( "warn", Ayni.t( "media.outNone" ) );
+                Ayni.toast( "warn", Ayni.t( "ayni.media.outNone" ) );
             } );
         }
 

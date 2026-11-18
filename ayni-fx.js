@@ -75,7 +75,9 @@
     const KEY     = 'ayni-fx';
     const MAX_AGE = 6 * 3600e3;
 
-    // kept = { fetched, sources: [ { source, ok, asOf, rates: { CODE: n } } | { source, ok: false, reason } ] }
+    // kept = { fetched, codes, sources: [ { source, ok, asOf, rates: { CODE: n } } | { source, ok: false, reason } ] }
+    // codes: the CODES it was fetched for. A currency added since (DOP) is in no kept source: fetch again at once,
+    // not 6 hours later.
     let kept      = null;
     let verified  = {};       // CODE -> EUR->CODE, from kept
     let isOffline = false;
@@ -195,7 +197,7 @@
 
         // Nothing kept yet: the failed answers are shown (the sheet says why),
         // but not stamped nor saved, so the next refresh tries again.
-        kept     = { fetched: answered < 2 ? 0 : Date.now(), sources: sources };
+        kept     = { fetched: answered < 2 ? 0 : Date.now(), codes: CODES.slice(), sources: sources };
         verified = verifyAll( sources );
         if( answered >= 2 ) try { localStorage.setItem( KEY, JSON.stringify( kept ) ); } catch( e ) {}
         isOffline = answered < 2;
@@ -204,7 +206,8 @@
 
     function refresh( force )
     {
-        if( ! force && kept && Date.now() - kept.fetched < MAX_AGE ) return Promise.resolve();
+        const forCodes = kept && Array.isArray( kept.codes ) && CODES.every( function( c ) { return kept.codes.indexOf( c ) >= 0; } );
+        if( ! force && kept && forCodes && Date.now() - kept.fetched < MAX_AGE ) return Promise.resolve();
         if( ! busy ) busy = fetchAll().finally( function() { busy = null; } );
         return busy;
     }

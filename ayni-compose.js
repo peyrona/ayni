@@ -134,6 +134,8 @@
                     ":*": "😘", ":-*": "😘", ":|": "😐", ":-|": "😐", ":/": "😕", ":-/": "😕",
                     "B-)": "😎", "8-)": "😎", "XD": "😆", "xD": "😆", ">:(": "😠", ">:-(": "😠",
                     "O:)": "😇", "O:-)": "😇", "^^": "😊", "^_^": "😊", "<3": "❤️", "</3": "💔" };
+    // Own keys only: "constructor" or "toString" are words too, not smileys
+    function smiley( w ) { return Object.hasOwn( SMILEYS, w ) ? SMILEYS[ w ] : null; }
     A.smileys = function ( textarea )
     {
         var lastSwap = null;       // { at: caret after the swap, emoji, word }
@@ -145,8 +147,8 @@
             var ta = textarea(), pos = ta.selectionStart;
             if( pos !== ta.selectionEnd || pos < 2 || ! /\s/.test( ta.value.charAt( pos - 1 ) ) ) return;
             var m = /(^|\s)(\S+)$/.exec( ta.value.slice( 0, pos - 1 ) );
-            if( ! m || ! SMILEYS[ m[ 2 ] ] ) return;
-            var start = pos - 1 - m[ 2 ].length, emoji = SMILEYS[ m[ 2 ] ];
+            if( ! m || ! smiley( m[ 2 ] ) ) return;
+            var start = pos - 1 - m[ 2 ].length, emoji = smiley( m[ 2 ] );
             ta.setRangeText( emoji, start, pos - 1, "end" );
             var at = start + emoji.length + 1;
             ta.setSelectionRange( at, at );
@@ -168,7 +170,7 @@
         function tail( text )
         {
             var m = /(^|\s)(\S+)$/.exec( text );
-            return m && SMILEYS[ m[ 2 ] ] ? text.slice( 0, text.length - m[ 2 ].length ) + SMILEYS[ m[ 2 ] ] : text;
+            return m && smiley( m[ 2 ] ) ? text.slice( 0, text.length - m[ 2 ].length ) + smiley( m[ 2 ] ) : text;
         }
 
         return { input: input, undo: undo, tail: tail };

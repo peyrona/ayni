@@ -77,6 +77,8 @@
 html.touch { --touch: 44px; --ctl-h: 44px; }
 /* RULE: hidden means gone, whatever display a control sets for itself (a .btn is inline-grid) */
 [hidden] { display: none !important; }
+/* A page that keeps one scheme (data-theme-lock on <html>) has no light/dark toggle */
+[data-theme-lock] [data-theme-toggle] { display: none !important; }
 /* On a phone, Safari zooms the page in on a field whose text is under 16px and never zooms back out */
 @media (max-width: 599px) { html.touch { --field-fs: 16px; } }
 @media (prefers-reduced-motion: reduce) { :root { --tr-fast: 0s; --tr-move: 0s; } }

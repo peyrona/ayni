@@ -5,7 +5,8 @@
 /* ---------- Empty states, section labels and card rows (12.5) ---------- */
 /* What a list shows with nothing to list: a faint glyph, a bold line and a quieter one. Toggle it with hidden */
 .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 10px 18px; color: var(--text-faint); }
-.empty-state svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: .6; }
+/* The big glyph only: the icon of a text button under it keeps its own size */
+.empty-state > svg, .empty-state > .icon > svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: .6; }
 .empty-state p { margin: 4px 0 0; font-size: .8rem; }
 .empty-state .empty-title, .empty-state p:first-of-type { margin: 0; font-size: .93rem; font-weight: 600; color: var(--text-dim); }
 .empty-state .btn.text { margin-top: 14px; }
@@ -62,6 +63,8 @@ html.touch .choices { gap: 8px; }
 /* ---------- Group boxes ---------- */
 fieldset.group { border: var(--panel-border); border-radius: var(--ctl-radius); padding: 8px 12px 12px; }
 fieldset.group legend { padding: 0 4px; margin: 0; }
+/* A group with an error keeps the red edge (4.7): fieldset.group above is as strong as ayni-fields.css's fieldset[aria-invalid] */
+fieldset.group[aria-invalid="true"] { border-color: var(--danger); }
 
 /* ---------- More fields: a pill on a line folds the rarely used half of a long form away (12.3) ---------- */
 .more-toggle { display: flex; align-items: center; gap: 8px; width: 100%; margin: 4px 0 14px; padding: 6px 0; background: none; border: 0;

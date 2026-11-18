@@ -738,8 +738,10 @@
         cw.open = function ( url, target, features )
         {
             url = url || '';
-            if( url && ! h.appOf( url ) ) return real.call( cw, url, target, features );
-            var abs = url ? new URL( url, cw.location.href ).href : 'about:blank';
+            // A URL of the app's own ("?file=b.docx", "view.html") is read against the app's frame, not the desktop
+            var abs = 'about:blank';
+            if( url ) try { abs = new URL( url, cw.location.href ).href; } catch( e ) { return real.call( cw, url, target, features ); }
+            if( url && ! h.appOf( abs ) ) return real.call( cw, url, target, features );
             var w = sameImage( abs ) || sameDoc( abs );
             if( w ) focus( w ); else w = openApp( abs, { fresh: true } );
             return /noopener/.test( features || '' ) ? null : w.frame.contentWindow;
@@ -1066,7 +1068,8 @@
         {
             if( wins.indexOf( w ) < 0 ) return;           // closed while tiled
             w.el.classList.toggle( 'max', !! st.max );
-            w.el.hidden = !! st.min;
+            // "Show the desk" stays on: what it hid stays hidden (its button would stay pressed over windows in view)
+            w.el.hidden = !! st.min || !! ( deskHid && deskHid.indexOf( w ) >= 0 );
             w.pre   = st.pre || null;
             w.scale = !! st.scale;
             w.nat   = st.nat || null;

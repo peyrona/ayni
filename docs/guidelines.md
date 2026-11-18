@@ -8,7 +8,7 @@ This book is the rule set for Ayni, a CUA (Common User Access) interface built w
 
 It is written for designers and developers. Designers use it to decide what a screen looks like and how it behaves. Developers use it to build controls that behave the same everywhere. Where a rule names markup (an attribute or a class), that is the way the gallery implements it today.
 
-**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, type and icons, sizes, states, keyboard, touch, scrolling, language, helpers and pages inside frames. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 covers the page around the controls, and chapter 19 lists what is still to be defined, and the appendix lists decisions that were considered and not taken, so they are not proposed again.
+**How to read it.** Chapter 1 gives the principles that every other rule follows. Chapter 2 sets the foundations shared by all controls: colour, type and icons, sizes, states, keyboard, touch, scrolling, language, helpers and pages inside frames. Chapters 3 to 16 cover one control family each, and chapter 17 covers desktop mode. Chapter 18 covers the page around the controls, and chapter 19 lists what is still to be defined. Chapter 20 covers the optional pieces for forms (the editable list, the repeated block and the signature), and the appendix lists decisions that were considered and not taken, so they are not proposed again.
 
 **Words used in this book.**
 
@@ -110,7 +110,9 @@ For Sun, `Ayni.theme.askPlace()` asks the device where it is, from a user's pres
 
 A round button in the title row (a toggle, `data-theme-toggle`) switches between light and dark: it shows a moon while light is on and a sun while dark is on, and its tooltip says what it will do ("Dark mode"). Pressing it is a choice by hand, so it also ends System and Sun modes. The choice is kept on the device (`ayni-theme`) and every open tab and window of the same site follows it at once. The browser's own bar (`<meta name="theme-color">`) takes the Bg colour. Each change fires `ayni:theme` on `document`, so a page can repaint widgets that CSS cannot reach.
 
-**No flash.** A short inline script in the page's `<head>` applies the saved choice, or the system's, before the first paint. From then on `data-theme` on `<html>` always says which scheme is showing (`light` or `dark`), so a page can style either one with a plain selector.
+**One scheme only.** An app may keep one scheme whatever is picked elsewhere (a form meant to look like paper): `data-theme-lock="light"` (or `"dark"`) on `<html>`. It does not change the other apps of the site, and follows neither the system, the sun nor the other tabs, also when the device blocks storage. It has no light/dark toggle. The user's own scheme for that mode still colours it (Frasquito, 2026-11-17).
+
+**No flash.** A short inline script in the page's `<head>` applies the saved choice, or the system's, before the first paint (a page with one scheme writes `data-theme` itself instead). From then on `data-theme` on `<html>` always says which scheme is showing (`light` or `dark`), so a page can style either one with a plain selector.
 
 **Colour carries meaning only through icons and borders.** Danger, success and warning colour the icon of a button, never its fill. Errors colour the border of the field or group and a small red "!" circle that holds the message.
 
@@ -1189,12 +1191,12 @@ Move to…, Copy to… and Save in… open a dialog with the same tree in a box,
 
 The tree uses the shared states (2.4 and 8.9): disabled items are faded and skipped, a read-only tree has the soft tint and allows no change, a loading tree shows the spinner row, an empty tree says so in the middle, and an error colours its border and puts the red "!" next to its label.
 
-Inside a side pane the tree sits plain on the pane and fills it; in a form or a dialog it is boxed (border and Panel colour). Rows are 30 px tall with a mouse and 44 px on touch. A long name ends in "…" in a pane of fixed width.
+Inside a side pane the tree sits plain on the pane and fills it; in a form or a dialog it is boxed (border and Panel colour). Rows are 30 px tall with a mouse and 44 px on touch. A long name ends in "…" in a pane of fixed width. A row may end in a small mark, a quieter icon that says something about the item (in a form's outline: it has a condition); the mark's tooltip says what, and it is read out as the item's description (Frasquito, 2026-11-17).
 
 ### 16.12 For developers
 
 - Every change the user makes is announced to the page before it happens (`ayni:move`, `ayni:insert`, `ayni:delete`, `ayni:rename`, `ayni:hide`), and the page can refuse it, for example when the server says no. The tree also tells the page about selection (`ayni:select`), opening a leaf (`ayni:open`), loading (`ayni:load`) and showing hidden items (`ayni:showhidden`).
-- A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it. An item from data: `{ id, name, icon, leaf, hidden, lock, disabled, open, lazy, root, children, count, tail: { icon, tip, on }, heading, noMenu, noDrag, tip }`.
+- A tree can be written as markup or built from data (`Ayni.tree(element, { root, items })`), and it can give its current shape back as data, to save it. An item from data: `{ id, name, icon, leaf, hidden, lock, disabled, open, lazy, root, children, count, tail: { icon, tip, on }, heading, noMenu, noDrag, tip, mark: { icon, tip } }` (`tip` is the row's tooltip; `mark` the mark at its end, in a tree built from data).
 - A navigation tree drawn by the page from its own data: `Ayni.tree(element, { nav: true, items, current, go, isOpen, setOpen, menu, keys, drag, drop, tail, sheet })`. `current()` names where you are, `go(id)` goes there, `isOpen`/`setOpen` keep the open folders in the page, `menu(id, x, y)` opens a row's menu, `keys: true` lets the item list's keys act on the focused folder (the list names the tree with its own `tree` option), `drag(id)` gives the ids a row drags, `drop` is a `dropZone` setting (8.10), `sheet` is the side pane that slides in on phones. The page calls `build()` after its data changes.
 - `Ayni.pickNode({ title, items, current, lit, disabled, okLabel, note, extra })` opens Move to… and resolves with the picked id, or `null`.
 
@@ -1388,6 +1390,60 @@ To be done after the full design is closed:
 - **Windows High Contrast mode:** redraw selection, check squares, switches, the triangle and the dot with borders and system colours.
 
 The full list is kept in [accessibility-backlog.md](accessibility-backlog.md).
+
+## 20. Form pieces
+
+`ayni-forms.css` and `ayni-forms.js`, optional, add what a form designer and a long form need beyond the fields: the editable list, the repeated block and the signature. A page that does not use them does not load them. They need the fields family (the error "!"), notifications (Undo), menus (the ⋮ menu), dialogs (the phone's signing dialog), `ayni-lists.css` (the line between rows) and, for the signature's buttons, `ayni-icons-more.js`.
+
+### 20.1 Editable list
+
+A list of short texts the user writes: the options of a question, the stops of a route.
+
+- **Rows:** each row is a text edited in place (4.8): a click, F2 or Enter turns it into a field in the same box, so nothing moves.
+- **Writing many:** Enter keeps the text and opens the next row; on the last row it opens a new one, so ten options are written without the mouse. Enter on an empty row ends: the row goes and the focus waits on Add. Backspace in an empty row removes it and goes back to the row above. Esc puts the old text back; a new row goes.
+- **Pasting:** several lines pasted into a row (from Word or Excel) make one row each, without their bullets or numbers. Into an empty row the first line goes in it; a row with text keeps it, and the lines come after it.
+- **Adding:** under the last row, the dashed text button "Add option" (3.9); the page names it.
+- **Removing:** a small × at the end of the row, as in the sharing dialog (18.8). No question: a notification with Undo (11.2), which puts the row back in its place with its id.
+- **Order:** with a mouse or pen, by dragging the row, with the lists' line between rows (8.8); from the keyboard, Ctrl+Shift+Up and Ctrl+Shift+Down, as in the tree (16.5). On touch nothing is dragged (8.8): each row has a small ⋮ instead of the ×, with Move up, Move down and Remove.
+- **Empty and repeated:** a row left empty goes by itself. A row that repeats another one (case and accents aside) shows the field error "!" (4.7) with its message; it is kept.
+- **Ids:** each row has an id that never changes, moved or renamed, so the page keeps its data by it (the answers of an option).
+- **Keyboard:** the rows are one Tab stop (2.5); Up, Down, Home and End move between them; Delete removes the row. Enter and Esc in a row's field never reach the Panel's default button or close a dialog.
+- **States:** read-only shows the texts with no ×, ⋮ or Add, and nothing can be edited; disabled is faded. On touch every row is at least 44 px tall.
+
+### 20.2 Repeated block
+
+A group of fields that repeats once per thing: "Attendee 1", "Attendee 2".
+
+- **Cards:** each repetition is a card with its title and, at its top right, a small round button with the bin that removes it. No question: a notification with Undo, which puts the card back in its place with everything it held.
+- **Adding:** under the last card, the dashed text button "Add attendee" (3.9); the page names it. The new card takes the focus on its first field.
+- **Limits:** at the most cards, Add is disabled and its tooltip says why ("Add attendee: there can be 8 at most"); at the least, so is each remove button (3.6). A block that needs cards starts with that many.
+- **The page decides:** it may refuse an add or a remove, as in the tree (16.12), for example when the server says no.
+- **Titles:** "Attendee 1", "Attendee 2", numbered again when one goes; the page may name a card by what it holds (the child's name).
+- **Errors:** the block sits in a group box (12.2); an error about the number of cards colours its border and puts the "!" next to its title (4.7). The fields in a card show their own errors.
+- **States:** read-only shows the cards with no bin and no Add; disabled is faded.
+
+### 20.3 Signature
+
+A box to sign in, for a consent or a delivery note.
+
+- **Look:** the box has the look of a field, taller (three times as wide as it is high), with a base line and "Sign here". The paper is always light and the ink always dark, in the dark scheme too, so a signature looks like one on paper and prints the same (Frasquito, 2026-11-17).
+- **Drawing:** with a finger, a pen or the mouse. While drawing, the page does not scroll.
+- **On a phone:** a tap on the box opens a big dialog (10.3) to sign with room; held upright, a short line says that turning the phone gives more. Done closes it, and the box shows the signature.
+- **Buttons inside the box** (round, as in every field, 4.1): Clear, only while there is a signature, and Type my name, which swaps the box for a text field, so a signature can also be given with the keyboard or by someone who cannot draw. The text field has Draw the signature at its end, to come back. The page may fill the name in.
+- **What is kept:** only the strokes, the points of each line in a fixed box, with a top number of strokes and of points; past it the drawing stops. It is small, fits in a form's answers and prints sharp. It is shown by drawing those points, never pasted into the page as markup. A signature the page gives back is held to the same box and limits, so the box never shows one that would not be accepted.
+- **States:** required and empty, the field error (4.7) with the "!" at the box's top right; read-only, the signature with no buttons; disabled, faded.
+
+### 20.4 For developers
+
+| Need | Code |
+| --- | --- |
+| Editable list | `Ayni.editList(element, { items, newId, addLabel, label, placeholder, onChange })`: `items` is `[{ id, text }]`; `newId()` makes the id of a new row; returns `{ items, set(items), add(text, at), edit(id), focus(id) }` |
+| What changed | `onChange(items, { action, id })` and `ayni:change { items, action, id }` on the element after each change the user makes: `add`, `edit`, `remove`, `move`, `paste`, `restore` (an Undo); never on `set()` |
+| Repeated block | `Ayni.repeat(element, { min, max, items, addLabel, itemLabel, title(i, card), build(body, card, data) })` on a `fieldset.group` with its legend; `build` fills a new card's body, `items` are the data of the cards it starts with; returns `{ cards(), add(data), remove(card), retitle(), focus(card) }` (calls from code ask nothing) |
+| A card's key | `card.dataset.key`, never used again: ids inside a card are made from it, so they do not move when a card before it goes |
+| Refusing | `ayni:add` and `ayni:remove { card, index }` on the element, cancelable, before each change the user makes: `ayni:add` is `{ index, data }` for Add and `{ index, card, undo: true }` for the Undo of a remove (the same card comes back); then `ayni:change { count }` |
+| Signature | `Ayni.signature(element, { value, name, label, w, h, maxStrokes, maxPoints, onChange })`; returns `{ value, set(value), clear(), error(message), focus() }`; the value is `null`, `{ kind: 'drawn', w, h, strokes: [[x, y, x, y…]…] }` or `{ kind: 'typed', name }`; `onChange(value)` and `ayni:change { value }` after each change; the box is 600 × 200 with 200 strokes and 3000 points at most unless the page says otherwise; `set(value)` keeps only the points that are numbers inside the value's box, within the same limits, cut off where drawing would have stopped |
+| States | `aria-readonly="true"` or `aria-disabled="true"` on the element, for all three |
 
 ## Appendix: decisions not taken
 

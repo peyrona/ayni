@@ -188,7 +188,9 @@
         var root  = el( "div", "ie", host );
         // Toolbars at the top, as in every app: the tools (when the app keeps
         // no place for them), then the open tool's options, then the picture.
-        var bar     = opts.tools ? null : el( "div", "ie-bar ie-tools", root );
+        // The bar is there when either the tools or undo / redo have no place in
+        // the app's header: opts.tools alone must not leave undo / redo off the page.
+        var bar     = opts.tools && opts.head ? null : el( "div", "ie-bar ie-tools", root );
         var optsBar = el( "div", "ie-bar ie-opts", root );
         optsBar.hidden = true;
         var main  = el( "div", "ie-main", root );
