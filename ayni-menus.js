@@ -428,11 +428,18 @@ const longTap = (root, sel, fn) => {
     }, HOLD_MS);
   };
   const move = (x, y) => { if (timer && Math.hypot(x - start.x, y - start.y) > MOVE_SLOP) stop(); };
-  /* Lifted after the hold: its one click is swallowed, the next tap counts */
-  const lift = () => { stop(); if (held) { held = false; swallowUntil = performance.now() + 350; swallowOne = true; } };
+  /* Lifted after the hold: its one click is swallowed wherever it lands - fn may have opened a menu under the finger,
+     and that click would pick a row of it - the next tap counts */
+  const lift = () => { stop(); if (held) { held = false; swallowUntil = performance.now() + 350; swallowIn = [document.documentElement]; swallowOne = true; } };
   root.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) { stop(); return; } const t = e.touches[0]; begin(e.target, t.clientX, t.clientY); }, { passive: true });
   root.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY); }, { passive: true });
-  root.addEventListener('touchend', lift);
+  /* A held finger's touchend is cancelled: no mousedown / click is made from it, which would land after fn's menu
+     opened (on release, a moment later on a busy device) and close it as a press outside */
+  /* With no click coming, none is waited for: the next tap counts at once */
+  root.addEventListener('touchend', (e) => {
+    if (held && e.cancelable) { e.preventDefault(); stop(); held = false; swallowUntil = 0; swallowOne = false; return; }
+    lift();
+  });
   root.addEventListener('touchcancel', lift);
   root.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'touch' || (e.pointerType === 'mouse' && !isTouch()) || e.button !== 0 || !e.isPrimary) return;

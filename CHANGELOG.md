@@ -4,6 +4,7 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
 
 ## Unreleased
 
+- `Ayni.longTap`: a menu its callback opens no longer closes by itself on a busy device. The held finger's `touchend` is cancelled (no mousedown / click is made from it, which landed after the menu opened and closed it as a press outside), and the one click left is swallowed wherever it lands, also on that menu.
 - From Nayive (it had them in its own copy; Nayive now links to Ayni instead):
   - `Ayni.dock(el, { key, edge, onClose })`: a panel moved by its grip that docks on a window edge (the page makes room) or floats; where it sits is kept under `key`.
   - `AyniVault` + `AyniPasskey` (`ayni-vault.js`, `ayni-passkey.js`): one key for every locked document (a lock password, passkeys, a recovery code); `AyniCrypt` v2 documents (`isV2`, `newDocLock`, `docLockFrom`, `vaultIdOf`); the padlock in `AyniDoc` seals under the vault, and v1 documents move to it on their next save.
