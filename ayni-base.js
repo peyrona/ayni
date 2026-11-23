@@ -324,7 +324,8 @@ const supported = () => {
 };
 
 /* ---------- Touch ---------- */
-/* Browsers can't read the system double-click time, so a fixed 250 ms window is used */
+/* Browsers can't read the system double-click time, so a fixed 250 ms window is used. A long tap takes 400 ms, Android's
+   own touch-and-hold time (iOS waits 500 ms); every hold a page times itself uses it too: Ayni.holdMs */
 const HOLD_MS = 400, DBL_MS = 250, coarse = matchMedia('(pointer: coarse)');
 let touchPreview = false;
 const isTouch = () => coarse.matches || touchPreview;
@@ -445,6 +446,16 @@ let embedded = false;
 try { embedded = window.self !== window.top; } catch { embedded = true; }
 const windowed = !!window.frameElement?.hasAttribute('data-ayni-window');
 if (embedded) document.documentElement.classList.add(windowed ? 'is-windowed' : 'is-embedded');
+/* A window copies the desktop's look switches from its <html>: .bevel (raised controls) or .flat (none), live. A pane
+   copies them from the page that holds it (Planner's Calendar, Tasks, Habits), which copies them from the desktop. */
+if (embedded) try {
+  const top = window.parent.document.documentElement;
+  const look = () => { for (const c of ['bevel', 'flat']) document.documentElement.classList.toggle(c, top.classList.contains(c)); };
+  look();
+  const mo = new MutationObserver(look);
+  mo.observe(top, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('pagehide', () => mo.disconnect());
+} catch { /* a foreign host: not ours to copy */ }
 if (embedded && !windowed) try {
   const wide = window.top.matchMedia('(min-width: 641px)');
   const sync = () => { document.documentElement.classList.toggle('is-embedded-wide', wide.matches); };
@@ -459,7 +470,7 @@ const owner = () => { try { if (embedded && window.top.location.pathname) return
 
 Object.assign(window.Ayni ??= {}, {
   version: '0.4.0', init, $, $$, icon, setIcon, isDark, setTheme, theme, supported,
-  textSize: { get: textSize, set: setTextSize, sizes: TEXT_SIZES }, frame: { embedded, windowed, owner }, isTouch, setTouchPreview, setTip, fold, matcher,
+  textSize: { get: textSize, set: setTextSize, sizes: TEXT_SIZES }, frame: { embedded, windowed, owner }, isTouch, setTouchPreview, holdMs: HOLD_MS, setTip, fold, matcher,
   icons: { use: useIcons, add: addIcons, names: ICONS, get set() { return iconSet; } },
   /* For Ayni's own family files */
   core: { fire, wired, once, each, tx, txf, LOCALE, iconName, drawIcons, family, isRO, layer, isTouch, HOLD_MS, DBL_MS, retip, fold },

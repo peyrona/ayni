@@ -37,6 +37,8 @@
 .media-card-sub       { font-size: 0.76rem; color: var(--text-dim); }
 
 /* "You are looking at <folder> [x]" - the pill above a scoped library. */
+/* The row Ayni.media's scope chip sits in (the page sets its own margins) */
+.scope-bar  { display: flex; align-items: center; }
 .scope-chip
 {
     display: inline-flex;

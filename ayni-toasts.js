@@ -132,8 +132,29 @@ const progress = (text, { pct = null, onStop } = {}) => {
   return { set, end };
 };
 
+/* ---------- Over a bottom bar ----------
+   On a phone the notifications sit at the bottom of the screen. A bar along the bottom (a player, a message box, a
+   sheet's tabs) marks itself data-toasts-above, and its height lifts them over it (--toasts-lift, ayni-toasts.css).
+   Asked again whenever such a bar changes size, shows or hides, is added later, and on resize. */
+const lifts = window.ResizeObserver ? new ResizeObserver(() => liftToasts()) : null;
+const liftToasts = () => {
+  let h = 0; const H = innerHeight;
+  $$('[data-toasts-above]').forEach((el) => { const r = el.getBoundingClientRect(); if (r.height && r.bottom >= H - 2) h = Math.max(h, H - r.top); });
+  document.documentElement.style.setProperty('--toasts-lift', Math.round(h) + 'px');
+};
+const watchLifts = (root) => {
+  if (!lifts || !root.querySelectorAll) return;
+  if (root.matches?.('[data-toasts-above]')) lifts.observe(root);
+  root.querySelectorAll('[data-toasts-above]').forEach((el) => lifts.observe(el));
+};
+
 /* ---------- Wire up ---------- */
 const setup = () => {
+  watchLifts(document.body);
+  new MutationObserver((muts) => { for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) watchLifts(n); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+  addEventListener('resize', liftToasts);
+
   stack().setAttribute('aria-label', tx('notifications'));   // the texts are in now
 
   /* Ctrl+Z (⌘Z) runs the Undo on show, outside text fields; a page that handles the key itself calls preventDefault */

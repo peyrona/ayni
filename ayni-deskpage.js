@@ -4,7 +4,7 @@
    (.desktop, #desk, #bar, #tasks, #menu, #menuBtn, #snapGhost, and the rest of the "more" menu ids).
      var D = Ayni.deskPage( hooks )
    hooks: appName; APPS { app: { name, svg } }; NARROW, SHORT { app: px }; appsReady, a promise; appOf( url ); openMenu(), closeMenu(), openMoreHere();
-   placeUnread(), pokeUnread(), placeMail(), askMail(); loadLocker(), loadScript( url ), weatherEngine(). D holds what the page needs back.
+   placeUnread(), pokeUnread(), placeMail(), askMail(), placePlanner() (optional); loadLocker(), loadScript( url ), weatherEngine(). D holds what the page needs back.
    A page in a window says what it holds with window.ayniDocPath, and may hold the close with window.ayniBeforeClose. Rules: chapter 17.4. */
 ( function ()
 {
@@ -170,6 +170,7 @@
         focus( w );
         h.placeUnread();
         h.placeMail();
+        if( h.placePlanner ) h.placePlanner();
         retile();
         upright();
         return w;
@@ -194,10 +195,10 @@
         if( w.url !== want ) w.frame.src = want;
     }
 
-    function setTitle( w, text, tip )
+    function setTitle( w, text, tip, pill )
     {
         w.el.querySelector( '.win-title' ).textContent = text;
-        w.main.querySelector( 'span:not(.icon)' ).textContent = text;
+        w.main.querySelector( 'span:not(.icon)' ).textContent = pill || text;
         w.chip.setAttribute( 'aria-label', text );
         setTip( w.main, tip || text );
     }
@@ -290,6 +291,7 @@
         paint();
         h.placeUnread();
         h.placeMail();
+        if( h.placePlanner ) h.placePlanner();
         if( w.app === 'email' ) h.askMail();
         if( tiled ) { tiled.snaps.delete( w ); if( ! wins.length ) { autoWant = !! tiled.auto; tiled = null; } }   // see UPRIGHT
         paintTile();
@@ -479,7 +481,9 @@
             // Chat's "(3) Chat": the count is already on the button's red disc.
             var tt   = doc.title && doc.title !== 'about:blank' ? doc.title.replace( /^\(\d+\+?\)\s*/, '' ) : '';
             var text = name || tt || w.name;
-            setTitle( w, text, text === w.name ? w.name : w.name + ' - ' + text );
+            // The bar button: the file name only - no folders, no extension, 15 characters at most.
+            var pill = name ? Array.from( name.replace( /^.*[\\/]/, '' ).replace( /(.)\.[^.]+$/, '$1' ) ).slice( 0, 15 ).join( '' ) : '';
+            setTitle( w, text, text === w.name ? w.name : w.name + ' - ' + text, pill );
         }
         update();
         var mo = new cw.MutationObserver( update ), opt = { childList: true, characterData: true, subtree: true };
@@ -670,6 +674,8 @@
             if( w.frame.contentWindow !== cw ) { mo.disconnect(); return; }
             if( ! head || ! head.isConnected ) head = findHead( doc );
             if( ! head ) return;
+            // mark it: in a window it gets a title bar's own colour (app.css)
+            if( ! head.hasAttribute( 'data-win-head' ) ) head.setAttribute( 'data-win-head', '' );
             // a finger on it drags the window: the browser must not take it for a scroll
             if( head.style.touchAction !== 'none' ) head.style.touchAction = 'none';
             if( ! w.el.classList.contains( 'chromeless' ) ) { w.el.classList.add( 'chromeless' ); paint(); }
@@ -1168,6 +1174,14 @@
     stickyChk.checked = set.sticky !== false;
     stickyChk.addEventListener( 'change', function () { set.sticky = stickyChk.checked; saveSet(); } );
 
+    // BEVEL - this device's choice (set.bevel, default on): <html> carries .bevel (raised controls) or .flat (none, the
+    // splitter too); every window's page copies the class from here (Ayni's base, "A page inside a frame").
+    var bevelChk = document.getElementById( 'bevelChk' );
+    function applyBevel() { var on = set.bevel !== false; document.documentElement.classList.toggle( 'bevel', on ); document.documentElement.classList.toggle( 'flat', ! on ); }
+    bevelChk.checked = set.bevel !== false;
+    applyBevel();
+    bevelChk.addEventListener( 'change', function () { set.bevel = bevelChk.checked; saveSet(); applyBevel(); } );
+
     // SCALE ON OPEN - this device's choice (set.scaleNew); see SCALE.
     var scaleNewChk = document.getElementById( 'scaleNewChk' );
     scaleNewChk.checked = !! set.scaleNew;
@@ -1203,27 +1217,33 @@
     }
     if( finePtr.addEventListener ) finePtr.addEventListener( 'change', onFineChange );
 
-    // THE CLOCK AND THE BAR - every change applies at once; the menu stays open,
-    // and follows the bar when it moves or changes size.
+    // THE CLOCK AND THE BAR - every change applies at once; the menu (and the
+    // CLOCK AND DATE dialog) stays open, the menu follows the bar when it moves or
+    // changes size. The clock's rows live in that dialog (below).
     var F = {
-        dow:  document.getElementById( 'setDow' ), date: document.getElementById( 'setDate' ),
-        secs: document.getElementById( 'setSecs' ), bar: document.getElementById( 'setBar' ),
-        barH: document.getElementById( 'setBarH' )
+        dow:  document.getElementById( 'setDow' ), date: document.getElementById( 'setDateFmt' ),
+        secs: document.getElementById( 'setSecs' ), pad: document.getElementById( 'setPad' ),
+        h12:  document.getElementById( 'clk12' ), h24: document.getElementById( 'clk24' ),
+        bar:  document.getElementById( 'setBar' ), barH: document.getElementById( 'setBarH' )
     };
     var barHOut = document.getElementById( 'setBarHOut' );
-    F.date.checked = !! set.date; F.secs.checked = !! set.secs;
+    F.secs.checked = !! set.secs; F.pad.checked = set.hourPad !== false;
+    F.h12.checked = !! set.h12; F.h24.checked = ! set.h12;
     F.barH.value = set.barH; barHOut.textContent = set.barH + ' px';
-    // The weekday and the bar's side are Ayni list pickers: set once Ayni has started
+    // The weekday, the date and the bar's side are Ayni list pickers: set once Ayni has started
     document.addEventListener( 'DOMContentLoaded', function () { if( window.Ayni ) Ayni.ready.then( function ()
     {
         Ayni.picker( F.dow ).set( set.dow ); Ayni.picker( F.bar ).set( set.bar );
-        loadTz2(); h.loadLocker();
+        loadDateFmts(); loadZones(); h.loadLocker();
     } ); } );
     Object.keys( F ).forEach( function ( k )
     {
-        F[ k ].addEventListener( k === 'barH' ? 'input' : k === 'dow' || k === 'bar' ? 'ayni:change' : 'change', function ()
+        F[ k ].addEventListener( k === 'barH' ? 'input' : k === 'dow' || k === 'bar' || k === 'date' ? 'ayni:change' : 'change', function ()
         {
-            set.dow = Ayni.picker( F.dow ).value; set.date = F.date.checked; set.secs = F.secs.checked;
+            var df = Ayni.picker( F.date ).value || 'none';
+            set.dow = Ayni.picker( F.dow ).value; set.secs = F.secs.checked;
+            set.date = df !== 'none'; if( set.date ) set.dateFmt = df;      // the format is kept while the date is off
+            set.hourPad = F.pad.checked; set.h12 = F.h12.checked;
             set.bar = Ayni.picker( F.bar ).value; set.barH = +F.barH.value;
             barHOut.textContent = set.barH + ' px';
             saveSet();
@@ -1233,47 +1253,110 @@
         } );
     } );
 
-    // THE SECOND CLOCK's rows: the switch shows the zone's list; the list is
-    // filled at each menu open (ui.js is deferred), its first pick UTC.
-    var tz2On = document.getElementById( 'setTz2On' ), tz2Sel = document.getElementById( 'setTz2' ),
-        tz2Wrap = document.getElementById( 'tz2Wrap' );
-    function loadTz2()
+    // OTHER CLOCKS' rows (2026-11-23): one per zone of set.zones (ZONES_MAX at most, the bar's order), each
+    // an Ayni filtered list of the time zones and a bin; "+" adds one (UTC) and opens its list at once, to
+    // type the city. Made again at each menu open (ui.js is deferred) and after an add or a remove.
+    var ZONES_MAX = 5;
+    if( ! Array.isArray( set.zones ) ) set.zones = [];
+    set.zones = set.zones.filter( function ( z ) { return typeof z === 'string' && z; } ).slice( 0, ZONES_MAX );
+    delete set.tz2; delete set.tz2On;      // the one second clock until 2026-11-23: not carried over (his call)
+    var zoneRows = document.getElementById( 'zoneRows' ), zoneAdd = document.getElementById( 'zoneAdd' ), zoneOpts = null;
+    function zoneItem( z ) { return { value: z, text: z.replace( /_/g, ' ' ) }; }
+    function zoneOptions()
     {
-        if( ! window.Ayni || ! Ayni.picker ) return;      // an Ayni filtered list; called again once Ayni has started
-        var pk = Ayni.picker( tz2Sel );
-        var zones = Ayni.dates.zones().slice();
-        if( set.tz2 && zones.indexOf( set.tz2 ) < 0 ) zones.unshift( set.tz2 );
-        if( zones.indexOf( 'UTC' ) < 0 ) zones.unshift( 'UTC' );
-        if( pk.options.length !== zones.length )
-            pk.options = zones.map( function ( z ) { return { value: z, text: z.replace( /_/g, ' ' ) }; } );
-        pk.set( set.tz2 || 'UTC' );
-        tz2On.checked = !! set.tz2On;
-        tz2Wrap.hidden = ! set.tz2On;
+        if( ! zoneOpts )
+        {
+            var zones = Ayni.dates.zones().slice();
+            if( zones.indexOf( 'UTC' ) < 0 ) zones.unshift( 'UTC' );
+            zoneOpts = zones.map( zoneItem );
+        }
+        // a saved zone the browser's list lacks still shows
+        var extra = set.zones.filter( function ( z ) { return ! zoneOpts.some( function ( o ) { return o.value === z; } ); } );
+        return extra.filter( function ( z, i ) { return extra.indexOf( z ) === i; } ).map( zoneItem ).concat( zoneOpts );
     }
-    function saveTz2()
+    function loadZones()
     {
-        set.tz2On = tz2On.checked; set.tz2 = Ayni.picker( tz2Sel ).value || 'UTC';
-        tz2Wrap.hidden = ! set.tz2On;
+        zoneAdd.disabled = set.zones.length >= ZONES_MAX;
+        if( ! window.Ayni || ! Ayni.picker ) return;      // called again once Ayni has started
+        zoneRows.textContent = '';
+        var opts = zoneOptions();
+        return set.zones.map( function ( z, i )
+        {
+            var row = document.createElement( 'div' ), el = document.createElement( 'div' ), del = document.createElement( 'button' );
+            row.className = 'set-row';
+            el.className = 'picker'; el.dataset.picker = 'filter'; el.setAttribute( 'aria-label', t( 'ayni.desktop.clock2Zone' ) );
+            del.type = 'button'; del.className = 'btn'; del.innerHTML = Ayni.icon( 'trash' );
+            del.dataset.tip = t( 'ayni.desktop.clockDel' ); del.setAttribute( 'aria-label', del.dataset.tip );
+            row.append( el, del );
+            zoneRows.append( row );
+            var pk = Ayni.picker( el );
+            pk.options = opts; pk.set( z );
+            el.addEventListener( 'ayni:change', function () { set.zones[ i ] = pk.value || 'UTC'; saveSet(); tick(); } );
+            del.addEventListener( 'click', function ()
+            {
+                set.zones.splice( i, 1 );
+                saveSet(); loadZones(); tick(); placeMore();
+                zoneAdd.focus();
+            } );
+            return pk;
+        } );
+    }
+    zoneAdd.addEventListener( 'click', function ()
+    {
+        if( set.zones.length >= ZONES_MAX ) return;
+        set.zones.push( 'UTC' );
         saveSet();
-        tick();
-        placeMore();
-    }
-    // SHOW THE CLOCK - off (set.clockOff) hides both clocks; its rows stay, greyed.
-    var clockChk = document.getElementById( 'setClock' ), clockRows = document.getElementById( 'clockRows' );
-    function clockShown() { clockChk.checked = ! set.clockOff; clockRows.inert = !! set.clockOff; }
+        var pks = loadZones() || [];
+        tick(); placeMore();
+        var pk = pks[ pks.length - 1 ];
+        if( pk ) { pk.field.focus(); if( pk.field.select ) pk.field.select(); pk.open(); }
+    } );
+    // SHOW THE CLOCK - off (set.clockOff) hides all the clocks, disables the cog before it (CLOCK AND DATE)
+    // and greys the other clocks' rows.
+    var clockChk = document.getElementById( 'setClock' ), clockSetBtn = document.getElementById( 'clockSetBtn' ),
+        clock2Rows = document.getElementById( 'clock2Rows' );
+    function clockShown() { clockChk.checked = ! set.clockOff; clockSetBtn.disabled = !! set.clockOff; clock2Rows.inert = !! set.clockOff; }
     clockShown();
     clockChk.addEventListener( 'change', function () { set.clockOff = ! clockChk.checked; clockShown(); saveSet(); tick(); placeMore(); } );
-    tz2On.addEventListener( 'change', saveTz2 );
-    tz2Sel.addEventListener( 'ayni:change', saveTz2 );
-    loadTz2();
-    moreBtn.addEventListener( 'click', loadTz2 );
+    loadZones();
+    moreBtn.addEventListener( 'click', loadZones );
+
+    // CLOCK AND DATE (2026-11-23) - the cog in the menu's clock row: a close-only
+    // dialog with the clock as the bar shows it on top (drawn by tick), then the
+    // time (24 h / 12 h, two-digit hour, seconds) and the date (weekday, format)
+    // of the main clock; the second clock stays in the menu, always short. The cog is a button inside the row's <label>: a press on
+    // it never flips the switch (a label leaves its buttons alone).
+    var clkBack = document.getElementById( 'clkBackdrop' ), clkPrev = document.getElementById( 'clkPreview' );
+    clockSetBtn.addEventListener( 'click', function ()
+    {
+        closeMore();
+        loadDateFmts();
+        clkBack.showModal();
+        tick();
+    } );
+    clkBack.addEventListener( 'close', function () { moreBtn.focus(); } );      // its cog went with the menu
+    // THE DATE's list: "Don't show", then today in each format, grouped by what comes first (so
+    // 05/06 and 06/05 never look alike); the month's name in the interface language.
+    function loadDateFmts()
+    {
+        if( ! window.Ayni || ! Ayni.picker ) return;      // called again once Ayni has started
+        var now = new Date(), items = [ { value: 'none', text: t( 'ayni.desktop.weekdayNone' ) } ];
+        DATE_GROUPS.forEach( function ( g )
+        {
+            items.push( { heading: t( g[ 0 ] ) } );
+            g[ 1 ].forEach( function ( f ) { items.push( { value: f, text: dateText( now, f ) } ); } );
+        } );
+        var pk = Ayni.picker( F.date );
+        pk.options = items;
+        pk.set( set.date ? set.dateFmt || 'iso' : 'none' );
+    }
 
     //------------------------------------------------------------------------//
     // WEATHER - this device's choice (set.weatherBar, the "⋮" menu): the sky
     // now as an icon on the bar, again every 30 min; a press opens today's
     // forecast beside it, fetched then (never on its own). The place, the units
-    // and who gives it are the screen locker's (Bellas artes' settings, per
-    // user), and so is the engine: shared/lockers/culture.js, loaded only when
+    // and who gives it are ONE per user (data/weather.json, set below in this
+    // menu, read by both lockers too); the engine is Bellas artes': shared/lockers/culture.js, loaded only when
     // this is on. Its cache too ("nv-culture:"): the locker reuses our call.
 
     var wxBtn = document.getElementById( 'wxBtn' ), wxPop = document.getElementById( 'wxPop' ),
@@ -1332,7 +1415,7 @@
         return h.weatherEngine();
     }
 
-    // The locker's settings, the place, the weather. `fresh`: a new call (the
+    // The weather settings (data/weather.json), the place, the weather. `fresh`: a new call (the
     // 30-min turn, a press); else the cache while under 30 min old (a reload).
     // The place keeps its own long cache (no new name lookup each time).
     function wxGet( fresh )
@@ -1342,7 +1425,7 @@
             var E = S.engine;
             wxCached = wxCached || E.store( 'nv-culture:' );
             var get = fresh ? function ( k, ttl, fn ) { return wxCached( k, 0, fn ); } : wxCached;
-            return S.read().then( function ( cfg )
+            return S.weatherRead().then( function ( cfg )
             {
                 return E.placeOf( cfg, wxCached ).then( function ( p )
                 {
@@ -1438,6 +1521,119 @@
     wxApply();
 
     wxPop.addEventListener( 'toggle', function ( e ) { if( e.newState === 'open' ) wxOpen(); else wxPopGen++; } );
+
+    // WEATHER SETTINGS in the "⋮" menu (2026-11-11): where, who gives it,
+    // units - ONE per user (data/weather.json via the engine's weatherUpdate),
+    // for the bar and both lockers. Read again at each menu open; each change
+    // saved at once, version-checked. A read that failed shows nothing to
+    // change (a stand-in saved would replace the real settings, F6).
+    var wxsPlace = document.getElementById( 'wxPlace' ), wxsBy = document.getElementById( 'wxBy' ),
+        wxsUnits = document.getElementById( 'wxUnits' ),
+        wxsCity = document.getElementById( 'wxCity' ), wxsMsg = document.getElementById( 'wxMsg' ),
+        wxsS = null, wxsCfg = null, wxsGen = 0, wxsOff = true;
+    function wxsSay( text ) { wxsMsg.hidden = ! text; wxsMsg.textContent = text || ''; }
+    function wxsLock( off )
+    {
+        [ wxsPlace, wxsBy, wxsUnits ].forEach( function ( x ) { Ayni.picker( x ).disabled = off; } );
+        wxsOff = off;
+        wxsCityOn();
+    }
+    // The city field is always shown; usable only while "A city" is picked.
+    function wxsCityOn()
+    {
+        var off = wxsOff || ! wxsCfg || wxsCfg.place !== 'city';
+        wxsCity.disabled = off;
+        document.getElementById( 'wxFind' ).ariaDisabled = off ? 'true' : null;
+    }
+    function wxsDraw()
+    {
+        var c = wxsCfg, W = wxsS.WEATHER;
+        var pp = Ayni.picker( wxsPlace );
+        pp.options = [ { value: 'geo', text: t( 'ayni.weather.placeGeo' ) }, { value: 'city', text: t( 'ayni.weather.placeCity' ) } ];
+        pp.set( c.place );
+        var pb = Ayni.picker( wxsBy );
+        pb.options = Object.keys( W ).map( function ( k ) { return { value: k, text: W[ k ].name }; } );
+        pb.set( c.weather );
+        var pu = Ayni.picker( wxsUnits );
+        pu.options = [ { value: 'c', text: t( 'ayni.weather.metric' ) }, { value: 'f', text: t( 'ayni.weather.imperial' ) } ];   // 'c'/'f' kept: the saved value
+        pu.set( c.units );
+        wxsCityOn();
+        if( document.activeElement !== wxsCity ) wxsCity.value = c.city ? c.city.name : '';
+        placeMore();
+    }
+    function wxsFill()
+    {
+        var g = ++wxsGen;
+        wxEngine().then( function ( S ) { return S.weatherReadStrict().then( function ( c ) { return { S: S, c: c }; } ); } ).then( function ( d )
+        {
+            if( g !== wxsGen ) return;
+            wxsS = d.S; wxsCfg = d.c;
+            wxsLock( false );
+            wxsDraw();
+        }, function () { if( g === wxsGen ) { wxsCfg = null; wxsLock( true ); wxsSay( t( 'ayni.weather.readFail' ) ); } } );
+    }
+    // One change: laid over the settings as they are on the server now.
+    function wxsSave( patch )
+    {
+        if( ! wxsS || ! wxsCfg ) return;
+        Object.keys( patch ).forEach( function ( k ) { wxsCfg[ k ] = patch[ k ]; } );
+        wxsDraw();
+        wxsS.weatherUpdate( function ( now )
+        {
+            var out = JSON.parse( JSON.stringify( now ) );
+            Object.keys( patch ).forEach( function ( k ) { out[ k ] = patch[ k ]; } );
+            return out;
+        } ).then( function ( out )
+        {
+            wxsCfg = out;
+            if( set.weatherBar ) wxTick( true );
+        }, function ( e ) { Ayni.toast( e && e.read ? 'err' : 'warn', t( e && e.read ? 'ayni.weather.notSaved' : 'ayni.weather.saveFail' ) ); } );
+    }
+    // "Where this computer is" asks the browser now, while someone is at the keyboard.
+    function wxsAskHere()
+    {
+        if( ! navigator.geolocation ) { wxsSay( t( 'ayni.weather.geoDenied' ) ); return; }
+        wxsSay( '…' );
+        navigator.geolocation.getCurrentPosition( function ( g )
+        {
+            wxsSay( '✓' );
+            if( window.NayiveUI && NayiveUI.townName )
+                NayiveUI.townName( Math.round( g.coords.latitude * 100 ) / 100, Math.round( g.coords.longitude * 100 ) / 100 )
+                    .then( function ( n ) { if( n ) wxsSay( '✓ ' + n ); }, function () {} );
+        }, function () { wxsSay( t( 'ayni.weather.geoDenied' ) ); }, { timeout: 20000, maximumAge: 30 * 6e4 } );
+    }
+    function wxsFind()
+    {
+        var name = wxsCity.value.trim();
+        if( ! name || ! wxsCfg || wxsCity.disabled ) return;
+        wxsSay( '…' );
+        var lang = window.Ayni ? String( Ayni.i18n.lang() ).slice( 0, 2 ) : 'en';
+        fetch( 'https://geocoding-api.open-meteo.com/v1/search?count=10&language=' + encodeURIComponent( lang ) + '&name=' + encodeURIComponent( name ) )
+            .then( function ( r ) { return r.json(); } )
+            .then( function ( d )
+            {
+                // The biggest of the namesakes ("Lisboa": Lisbon, not a village in Mozambique).
+                var r = ( d.results || [] ).reduce( function ( a, b ) { return ! a || ( b.population || 0 ) > ( a.population || 0 ) ? b : a; }, null );
+                if( ! r ) { wxsSay( t( 'ayni.weather.cityNone' ) ); return; }
+                wxsCity.value = r.name;
+                wxsSay( '✓ ' + [ r.name, r.admin1, r.country ].filter( Boolean ).join( ', ' ) );
+                wxsSave( { place: 'city', city: { name: r.name, lat: Math.round( r.latitude * 100 ) / 100, lon: Math.round( r.longitude * 100 ) / 100, tz: r.timezone } } );
+            }, function () { wxsSay( t( 'ayni.weather.cityNone' ) ); } );
+    }
+    wxsPlace.addEventListener( 'ayni:change', function ( e )
+    {
+        var v = e.detail.value;
+        if( ! wxsCfg ) return;
+        wxsSay( '' );
+        if( v === 'geo' ) { wxsSave( { place: 'geo' } ); wxsAskHere(); return; }
+        if( wxsCfg && wxsCfg.city ) wxsSave( { place: 'city' } );
+        else { wxsCfg.place = 'city'; wxsDraw(); wxsCity.focus(); }      // saved once a city is found
+    } );
+    wxsBy.addEventListener( 'ayni:change', function ( e ) { wxsSave( { weather: e.detail.value } ); } );
+    wxsUnits.addEventListener( 'ayni:change', function ( e ) { wxsSave( { units: e.detail.value } ); } );
+    document.getElementById( 'wxFind' ).addEventListener( 'click', wxsFind );
+    wxsCity.addEventListener( 'keydown', function ( e ) { if( e.key === 'Enter' ) { e.preventDefault(); wxsFind(); } } );
+    moreBtn.addEventListener( 'click', function () { wxsSay( '' ); wxsFill(); } );
 
     //------------------------------------------------------------------------//
     // BATTERY - this device's choice (set.battBar, the first row of the "⋮"
@@ -1625,16 +1821,71 @@
     hookAlt( window );
 
     //------------------------------------------------------------------------//
-    // THE CLOCK - "<weekday> <yyyy-mm-dd> <hh:mm[:ss]>", weekday and date as the
-    // settings say, the weekday in the interface language. A press on the time
-    // opens the countdown (below), on the weekday / date the month (THE MONTH).
+    // THE CLOCK - "<weekday> <date> <time>", as CLOCK AND DATE says: the weekday
+    // short or long, the date in one of DATE_GROUPS' formats (yyyy-mm-dd until
+    // 2026-11-23, still the first), the time 24 h or 12 h, with or without the
+    // hour's leading zero and the seconds; names in the interface language. A
+    // press on the time opens the countdown (below), on the weekday / date the
+    // month (THE MONTH).
 
     var clock = document.getElementById( 'clock' ), clockTimer = 0;
     var pad = Ayni.dates.pad, isoDate = Ayni.dates.iso;
+    // The date formats, by what comes first: [ heading, [ format... ] ].
+    var DATE_GROUPS = [
+        [ 'ayni.desktop.dateYearFirst',  [ 'iso', 'ymd/' ] ],
+        [ 'ayni.desktop.dateDayFirst',   [ 'dmy/', 'dmy.', 'dmy-', 'dmyy/', 'dm/' ] ],
+        [ 'ayni.desktop.dateMonthFirst', [ 'mdy/', 'mdyy/', 'md/' ] ],
+        [ 'ayni.desktop.dateNamed',      [ 'dMMMy', 'dMMMMy', 'dMMM', 'dMMMM' ] ]
+    ];
+    var NAMED = { dMMMy:  { day: 'numeric', month: 'short', year: 'numeric' }, dMMMMy: { day: 'numeric', month: 'long', year: 'numeric' },
+                  dMMM:   { day: 'numeric', month: 'short' },                  dMMMM:  { day: 'numeric', month: 'long' } };
+    function uiLang() { return window.Ayni && Ayni.i18n.lang ? Ayni.i18n.lang() : undefined; }
     function dayName( d, style )
     {
         var iso = d.getDay() || 7;
         return window.Ayni ? Ayni.i18n.weekday( iso, style ) : d.toLocaleDateString( undefined, { weekday: style } );
+    }
+    function dateText( d, f )
+    {
+        if( NAMED[ f ] ) { try { return d.toLocaleDateString( uiLang(), NAMED[ f ] ); } catch( e ) { f = 'iso'; } }
+        var y = String( d.getFullYear() ), m = pad( d.getMonth() + 1 ), dd = pad( d.getDate() ), sep = f.slice( -1 );
+        switch( f )
+        {
+            case 'ymd/':  return y + sep + m + sep + dd;
+            case 'dmy/': case 'dmy.': case 'dmy-': return dd + sep + m + sep + y;
+            case 'dmyy/': return dd + sep + m + sep + y.slice( -2 );
+            case 'dm/':   return dd + sep + m;
+            case 'mdy/':  return m + sep + dd + sep + y;
+            case 'mdyy/': return m + sep + dd + sep + y.slice( -2 );
+            case 'md/':   return m + sep + dd;
+            default:      return isoDate( d );
+        }
+    }
+    // "AM" / "PM" in the interface language ("a. m." in Spanish), for 12 h.
+    var dayPeriods = {};
+    function dayPeriod( hr )
+    {
+        var k = ( uiLang() || '' ) + ( hr < 12 ? 'a' : 'p' );
+        if( ! dayPeriods[ k ] )
+        {
+            try
+            {
+                var part = new Intl.DateTimeFormat( uiLang(), { hour: 'numeric', hour12: true, timeZone: 'UTC' } )
+                    .formatToParts( new Date( Date.UTC( 2024, 0, 1, hr < 12 ? 9 : 21 ) ) )
+                    .filter( function ( x ) { return x.type === 'dayPeriod'; } )[ 0 ];
+                dayPeriods[ k ] = part ? part.value : '';
+            }
+            catch( e ) {}
+            dayPeriods[ k ] = dayPeriods[ k ] || ( hr < 12 ? 'AM' : 'PM' );
+        }
+        return dayPeriods[ k ];
+    }
+    // "14:05", "2:05 PM", "09:05:30"...: the main clock.
+    function timeText( hr, min, sec )
+    {
+        var suffix = '';
+        if( set.h12 ) { suffix = ' ' + dayPeriod( hr ); hr = hr % 12 || 12; }
+        return ( set.hourPad === false ? String( hr ) : pad( hr ) ) + ':' + pad( min ) + ( sec == null ? '' : ':' + pad( sec ) ) + suffix;
     }
     function tick()
     {
@@ -1643,27 +1894,42 @@
         clock.hidden = !! set.clockOff;
         var head = [];
         if( set.dow !== 'none' ) head.push( dayName( now, set.dow ) );
-        if( set.date )           head.push( isoDate( now ) );
+        if( set.date )           head.push( dateText( now, set.dateFmt || 'iso' ) );
+        var time = timeText( now.getHours(), now.getMinutes(), set.secs ? now.getSeconds() : null );
         clock.querySelector( 'span:not(.icon)' ).textContent = head.join( ' ' );
         clock.querySelector( 'span:not(.icon)' ).hidden = ! head.length;
-        clock.querySelector( 'b' ).textContent =
-            pad( now.getHours() ) + ':' + pad( now.getMinutes() ) + ( set.secs ? ':' + pad( now.getSeconds() ) : '' );
-        setTip( clock, dayName( now, 'long' ) + ' ' + isoDate( now ) );
+        clock.querySelector( 'b' ).textContent = time;
+        setTip( clock, dayName( now, 'long' ) + ' ' + dateText( now, 'dMMMMy' ) );
         tick2( now );
+        // CLOCK AND DATE's top line: the same text
+        if( clkBack.open )
+        {
+            clkPrev.children[ 0 ].textContent = head.join( ' ' );
+            clkPrev.children[ 1 ].textContent = time;
+        }
         clockTimer = setTimeout( tick, set.secs ? 1000 - now.getMilliseconds() + 20
                                                 : 60000 - now.getSeconds() * 1000 - now.getMilliseconds() + 50 );
     }
 
-    // THE SECOND CLOCK (2026-10-09) - another time zone (set.tz2On + set.tz2,
-    // the "⋮" menu; the zone is kept while off): "<city> <hh:mm>" just before the clock, paler, and "+1" / "-1"
-    // when that place is already on another day. Shows only: no press.
-    var clock2 = document.getElementById( 'clock2' );
+    // OTHER CLOCKS (2026-10-09, up to 5 since 2026-11-23) - other time zones (set.zones, the "⋮"
+    // menu): each "<city> <hh:mm>" just before the clock, paler, and "+1" / "-1" when that place is
+    // already on another day. Always short: CLOCK AND DATE is the main clock's only. Shows only: no press.
+    var clocks2 = document.getElementById( 'clocks2' );
     function zoneCity( z ) { return z.split( '/' ).pop().replace( /_/g, ' ' ); }
     function tick2( now )
     {
-        var z = ! set.clockOff && set.tz2On && set.tz2;
-        clock2.hidden = ! z;
-        if( ! z ) return;
+        var zs = set.clockOff ? [] : set.zones;
+        while( clocks2.children.length > zs.length ) clocks2.lastChild.remove();
+        while( clocks2.children.length < zs.length )
+        {
+            var w = document.createElement( 'span' );
+            w.className = 'widget clock2'; w.innerHTML = '<span></span><b></b><i></i>';
+            clocks2.append( w );
+        }
+        zs.forEach( function ( z, n ) { zoneTick( clocks2.children[ n ], z, now ); } );
+    }
+    function zoneTick( el, z, now )
+    {
         var p = {};
         try
         {
@@ -1671,14 +1937,15 @@
                                                 hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } )
                 .formatToParts( now ).forEach( function ( x ) { p[ x.type ] = x.value; } );
         }
-        catch( e ) { clock2.hidden = true; return; }      // a zone this browser no longer knows
+        catch( e ) { el.hidden = true; return; }      // a zone this browser no longer knows
+        el.hidden = false;
         var there = Date.UTC( +p.year, +p.month - 1, +p.day ),
             here  = Date.UTC( now.getFullYear(), now.getMonth(), now.getDate() ),
             days  = Math.round( ( there - here ) / 86400000 );
-        clock2.querySelector( 'span:not(.icon)' ).textContent = zoneCity( z );
-        clock2.querySelector( 'b' ).textContent = p.hour + ':' + p.minute;
-        clock2.querySelector( 'i' ).textContent = days > 0 ? '+' + days : days < 0 ? String( days ) : '';
-        clock2.title = z + ' - ' + p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
+        el.children[ 0 ].textContent = zoneCity( z );
+        el.children[ 1 ].textContent = p.hour + ':' + p.minute;
+        el.children[ 2 ].textContent = days > 0 ? '+' + days : days < 0 ? String( days ) : '';
+        el.title = z + ' - ' + p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
     }
     tick();
     // the weekday is written in the interface language: once more when that is in

@@ -4,6 +4,21 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
 
 ## Unreleased
 
+- From Nayive (it had them in its own copy; Nayive now links to Ayni instead):
+  - `Ayni.dock(el, { key, edge, onClose })`: a panel moved by its grip that docks on a window edge (the page makes room) or floats; where it sits is kept under `key`.
+  - `AyniVault` + `AyniPasskey` (`ayni-vault.js`, `ayni-passkey.js`): one key for every locked document (a lock password, passkeys, a recovery code); `AyniCrypt` v2 documents (`isV2`, `newDocLock`, `docLockFrom`, `vaultIdOf`); the padlock in `AyniDoc` seals under the vault, and v1 documents move to it on their next save.
+  - `AyniNet` `find()` / `search()`: optional `inDir`, the folder and everything under it (`&in=`).
+  - Scrollbars in Ayni's look (dots grip, an arrow at each end, bevel with "raised controls"), not on touch screens.
+  - A page in a desktop window copies the desktop's `.bevel` / `.flat` look.
+  - Desk page clock: a "Clock and date" dialog (12 / 24 h, seconds, weekday, date formats) and up to 5 other clocks; window bars in their own colour.
+  - Section headings in popups and `.body.controls` dialogs: accent colour and a rule under them.
+  - Help tour finds a menu row by `data-act` too; attachment tiles centre a lone last tile; `sheet-remove` icon; the title-row home link rule no longer nests `:has()` (it dropped the whole rule); splitter grips spaced wider.
+  - Ayni's own texts: `AyniDoc`, `AyniStore` and the desk page no longer borrow an app's keys; theirs are `ayni.doc.*`, `ayni.lock.*`, `ayni.desktop.*` and `ayni.weather.*` (5 languages).
+  - Notifications rise above a bar along the bottom by themselves: mark the bar `data-toasts-above` (it was the app's job to set `--toasts-lift`).
+  - CSS that lived in the app: the window title row in its own colour and the dimmed window behind (`ayni-shell.css`), the read-only badge `.ro-badge`, `.actions-row`, `.props`, `.warn-box`, `.dim-note` (`ayni-dialogs.css`), `.face` (a picture you can change) and a bare svg's size in a `.btn` (`ayni-buttons.css`), `.mi-phone` and the picked group on a phone (`ayni-menus.css`), the image editor bar's group lines (`ayni-image.css`), `.scope-bar` (`ayni-media.css`), native boxes in the accent and no iOS callout on buttons and popups (`ayni-base.css`).
+- `Ayni.holdMs`: the long-tap time (400 ms, Android's own touch-and-hold time), for a hold a page times itself, so every hold takes the same time. The ring's fallback and the guidelines said 500 ms; they say 400 ms now, as the code always did.
+- Second action: a disabled or busy button ignores the hold, the double-click and Shift+Enter (it painted the ring, buzzed and fired `ayni:press`); the buzz waits for the user's first tap, as the long tap's does.
+- Folding section label: a `.section-label` holding a `button` with `aria-controls` gets a chevron after it and folds its rows; `data-key` (or `key`) keeps the choice on this device. `Ayni.foldLabel(label, { part, open, key, onToggle })` returns `{ open, set(on) }`; a user's press fires `ayni:fold` (guidelines 12.4).
 - `AyniBoot.wireRefresh`: the new `watch` option (a file path) re-reads the page as soon as that file changes on the server, with no click. The server answers `GET <api>watch?file=<path>&etag=<tag>` (see `ayni-boot.js`, `watchFile`). Over plain HTTP the page asks every 10 s instead of keeping a request open.
 - `AyniStore`: `store.heldTag(path)`, the version the page's copy came from, so a page does not read its own save again.
 - Forms family, optional (`ayni-forms.css`, `ayni-forms.js`): `Ayni.editList`, the editable list: rows edited in place, Enter for the next one, pasted lines, × with Undo, drag or Ctrl+Shift+arrows, ⋮ on touch (guidelines 20.1). `Ayni.repeat`, the repeated block: one card per repetition, a bin with Undo that brings back the same card, min and max, `ayni:add` and `ayni:remove` the page may refuse (20.2). `Ayni.signature`: drawn with a finger, a pen or the mouse, or typed; a 600 × 200 box with 200 strokes and 3000 points at most, and `set()` holds a value to the same box and limits (20.3).

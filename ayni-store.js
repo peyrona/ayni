@@ -745,8 +745,8 @@
             {
                 if( ! Object.keys( pageOnly ).length ) return true;
                 if( ! window.Ayni || ! Ayni.confirm || ! Ayni.t ) return false;
-                return Ayni.confirm( { title: Ayni.t( "drive.unsavedTitle" ), body: Ayni.t( "ayni.store.pageOnly" ),
-                                           confirm: Ayni.t( "drive.closeWithout" ), danger: true } );
+                return Ayni.confirm( { title: Ayni.t( "ayni.doc.unsavedTitle" ), body: Ayni.t( "ayni.store.pageOnly" ),
+                                           confirm: Ayni.t( "ayni.doc.closeWithout" ), danger: true } );
             };
     }
     catch ( e ) {}

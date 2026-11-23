@@ -28,6 +28,7 @@
   document.addEventListener('ayni:tabclose', (e) => L.push(`close ${e.target.id}:${e.detail.textContent.trim()}`));
   document.addEventListener('ayni:split', (e) => L.push(`split ${e.detail.action}/${e.detail.pane}/${e.detail.message}`));
   document.addEventListener('ayni:more', (e) => L.push(`more ${e.detail.open}`));
+  document.addEventListener('ayni:fold', (e) => L.push(`fold ${e.detail.open}`));
   window.S = [];
   window.sheets = Ayni.tabs('#sheets', { scope: $('#sheetbox'), onSelect: (v) => S.push('pick ' + v), onClose: (v) => S.push('closed ' + v), items: [
     { value: 'a', label: 'Summary', icon: 'file', tip: 'The summary' }, { value: 'b', label: 'Sales' },
@@ -100,6 +101,8 @@
 <div id="mf1-box" hidden>More</div>
 <button type="button" id="mf2" aria-expanded="true" aria-controls="mf2-box"></button>
 <div id="mf2-box">Extras</div>
+<h2 class="section-label" id="fl1" data-key="test-fl1"><button type="button" aria-controls="fl1-box">Upcoming</button></h2>
+<ul id="fl1-box"><li>One</li></ul>
 <div class="choices" id="ch" role="group" aria-label="Show">
   <button class="btn text sm bordered" id="ch1" aria-pressed="true">All</button>
   <button class="btn text sm bordered" id="ch2" aria-pressed="false">Unread</button>

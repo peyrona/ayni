@@ -211,7 +211,7 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 - A device counts as touch when its main pointer is coarse; Ayni marks the page with the class `touch` on `<html>`. An app can switch it by hand (a tablet with a mouse plugged in, a preview), and every touch rule follows. Sizes switch to the touch values above.
 - There are no tooltips on touch. The Help button (?) in the title row explains every button instead (chapter 15).
-- **Long tap** (hold 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area or a tree item it opens that element's pop-up menu; on a list item it starts picking (8.4). While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
+- **Long tap** (hold 400 ms, Android's own touch-and-hold time; iOS waits 500 ms) means "more for this thing": on a button with a dot it runs the second action; on an area or a tree item it opens that element's pop-up menu; on a list item it starts picking (8.4). While holding, a ring paints in around the button (or at the finger) over the hold time. The menu opens when the finger lifts. Moving more than 10 px before the ring is full cancels the long tap (the page scrolls); in a tree that allows moving, moving the finger after the ring is full drags the item instead (16.5).
 - On phones (below 600 px), lists of the list picker open as a sheet at the bottom of the screen, kept above the on-screen keyboard.
 
 ### 2.7 Scrolling
@@ -294,7 +294,7 @@ A button that opens a dialog gets no marker: no triangle and no dot. Its tooltip
 
 A button may have one second action, for example Print (first action) and Print with the last settings (second action).
 
-- **Reached by:** double-click with a mouse, long tap (500 ms) on touch, Shift+Enter on the keyboard.
+- **Reached by:** double-click with a mouse, long tap (400 ms) on touch, Shift+Enter on the keyboard.
 - **Marked by:** a small solid dot in the Accent colour at the lower right of the button, on every device. Nothing else marks it.
 - **Timing:** a single click on a button with a dot waits about 250 ms in case a second click follows. A double-click runs only the second action, never the first. Taps and Enter act at once. Buttons without a dot never wait. (Browsers cannot read the system double-click time, so 250 ms is fixed.)
 - **Hold feedback:** while the finger holds, a ring paints in around the button over the hold time.
@@ -975,6 +975,7 @@ A long form folds its rarely used half behind one line: a small pill with a chev
 
 - **Empty state:** what a list shows with nothing to list: the app's glyph, faint, a bold line saying what is missing, a quieter line saying what to do, and at most one text button.
 - **Section label:** a small uppercase heading over a group of fields or rows. It is the only place for uppercase. It is dimmer than a button, so it never reads as one.
+- **Folding section label:** a section label with a chevron after it folds the rows below it away. The chevron points right when folded and down when open; the label still reads as a label. A page may keep the choice on this device, so a section folded stays folded the next time.
 - **Card row:** a row on its own card, for items that stand alone (an account, a trip). Hover firms up its border; a picked one takes the soft Accent tint (8.9).
 
 ### 12.5 For developers
@@ -983,6 +984,7 @@ A long form folds its rarely used half behind one line: a small pill with a chev
 | --- | --- |
 | Empty state | `.empty-state` with an icon, `p.empty-title` and a `p`; toggle it with `hidden` |
 | Section label | `.section-label` |
+| Folding section label | `.section-label` holding a `button` with `aria-controls` (Ayni adds the chevron); `data-key` on the label keeps the choice in localStorage. `Ayni.foldLabel(label, { part, open, key, onToggle })` returns `{ open, set(on) }`: `part` is what it folds (`aria-controls`, or the next element); a kept choice wins over `open`. A user's press fires `ayni:fold` |
 | Card row | `.card-row` |
 | Tabs in the page | `[role="tablist"]` with `[role="tab"]` and `[role="tabpanel"]`, linked by `aria-controls`; Ayni wires them when the page loads |
 | Tabs from code | `Ayni.tabs(list, { items, value, onSelect, onClose, scope, hash })` returns `{ value, tabs, select(value), set(items, value), add(item, index), close(value), setTabEnabled(value, on, why) }`. An item is `{ value, label, icon, tip, panel, closable, disabled, why }` |

@@ -215,3 +215,23 @@
 .prev-text .hint:empty { display: none; }
 .prev-text progress { width: 100%; }
 .prev-text textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+
+/* ---------- From Nayive's app.css (2026-11-23): Ayni's own rules, moved here ---------- */
+/* The right-hand groups (see HEADER) are Ayni's: the header's actions are an
+   Ayni toolbar (role="toolbar" .tall: one Tab stop, the arrows move) whose
+   .tb-group boxes take no room when nothing in them shows, with a line drawn
+   between two that show (shared/ayni/ayni-menus.css). The image editor's bar
+   (.ie-bar) is not a toolbar yet: it keeps the line here. */
+.ie-bar > .tb-group:not([hidden]):has(> :not([hidden]):not(.fit-out):not(.search-field.fold:not(.is-open))) ~ .tb-group::before
+{
+    content: "";
+    align-self: stretch;
+    width: 1px;
+    margin: 6px 4px;
+    background: var(--line);
+}
+
+@media (pointer: coarse)
+{
+    html .ie-bar > .tb-group::before { margin-inline: 0 !important; }
+}

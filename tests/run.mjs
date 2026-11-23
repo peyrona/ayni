@@ -495,6 +495,23 @@ try {
   check('touch: a finger 3 px outside the drawn circle still hits it (44 px area)', await t.evaluate(`(() => { const b = document.getElementById('plain').getBoundingClientRect(); const e = document.elementFromPoint(b.left - 3, b.top + b.height / 2); return e === document.getElementById('plain'); })()`));
   check('touch: a dialog\'s bottom row is drawn at 44 px', (await t.evaluate(`getComputedStyle(document.querySelector('#foot .btn')).width`)) === '44px');
   check('touch: the second action\'s tooltip says "Hold"', /Hold/.test(await t.evaluate(`document.getElementById('alt').dataset.tip`)));
+  const holdAlt = (disabled) => t.evaluate(`(async () => {
+    const b = document.getElementById('alt'), got = [], on = (e) => got.push(e.detail.second);
+    if (${disabled}) b.setAttribute('aria-disabled', 'true');
+    b.addEventListener('ayni:press', on);
+    b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', button: 0 }));
+    const ring = b.classList.contains('holding');
+    await new Promise((r) => setTimeout(r, Ayni.holdMs + 80));
+    b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }));
+    b.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    b.removeEventListener('ayni:press', on); b.removeAttribute('aria-disabled');
+    return ring + ' ' + got.join(',');
+  })()`);
+  check('Ayni.holdMs is 400 ms, Android\'s touch-and-hold time', (await t.evaluate('Ayni.holdMs')) === 400);
+  const held = await holdAlt(false);
+  check('touch: a hold paints the ring and runs the second action (Shift+Enter too)', held === 'true true,true', held);
+  const heldOff = await holdAlt(true);
+  check('touch: a disabled button ignores the hold and Shift+Enter: no ring, no second action', heldOff === 'false ', heldOff);
   await t.evaluate(`Ayni.setTouchPreview(false), true`);
   check('back to mouse: "Double-click or Shift+Enter"', /Double-click/.test(await t.evaluate(`document.getElementById('alt').dataset.tip`)));
 
@@ -2952,6 +2969,25 @@ try {
     check('…and a line made alone, put beside its part right after', await ev(`(async () => { const b = document.createElement('button'), part = document.createElement('div'), box = document.createElement('div');
       b.type = 'button'; b.setAttribute('aria-controls', 'mf4-box'); part.id = 'mf4-box'; Ayni.moreFields(b); box.append(b, part);
       await Promise.resolve(); return part.hidden && b.getAttribute('aria-expanded') === 'false'; })()`));
+
+    /* ---------- Folding section labels ---------- */
+    check('a folding label written in the page: open, with a chevron after the text', await ev(`fl1.querySelector('button').getAttribute('aria-expanded') === 'true' && !document.getElementById('fl1-box').hidden && fl1.querySelector('button').lastElementChild.classList.contains('fold-chevron') && getComputedStyle(fl1.querySelector('.fold-chevron')).transform !== 'none' && fl1.textContent.trim() === 'Upcoming'`));
+    await log();
+    await click('#fl1 button');
+    check('pressed: its rows fold, it tells and keeps it', await ev(`document.getElementById('fl1-box').hidden && fl1.querySelector('button').getAttribute('aria-expanded') === 'false' && localStorage.getItem('test-fl1') === '0'`) && (await log()) === 'fold false');
+    await click('#fl1 button');
+    check('pressed again: open, kept open', await ev(`!document.getElementById('fl1-box').hidden && localStorage.getItem('test-fl1') === '1'`) && (await log()) === 'fold true');
+    check('from code: the label gets a button, the next element folds, open: false starts it folded', await ev(`(() => { const box = document.createElement('div');
+      box.innerHTML = '<h2 id="fl2">Past</h2><ul><li>Old</li></ul>'; const l = box.querySelector('#fl2'), heard = [];
+      const f = Ayni.foldLabel(l, { open: false, onToggle: (on) => heard.push(on) }); document.body.append(box);
+      const shut = box.querySelector('ul').hidden && l.classList.contains('section-label') && l.firstElementChild.tagName === 'BUTTON';
+      l.querySelector('button').click(); const open = !box.querySelector('ul').hidden && f.open && heard.join() === 'true';
+      f.set(false); const quiet = heard.length === 1 && box.querySelector('ul').hidden; box.remove(); return shut && open && quiet; })()`));
+    check('a kept choice wins over open, and a label made alone folds the rows put after it', await ev(`(async () => { localStorage.setItem('test-fl3', '0');
+      const l = document.createElement('h2'), part = document.createElement('ul'), box = document.createElement('div'); l.textContent = 'Kept';
+      const f = Ayni.foldLabel(l, { key: 'test-fl3', open: true }); box.append(l, part);
+      await Promise.resolve(); localStorage.removeItem('test-fl3'); return part.hidden && !f.open; })()`));
+    await ev(`(localStorage.removeItem('test-fl1'), true)`);
 
     /* ---------- Choice rows, tags ---------- */
     check('a choice row wraps', (await ev(`getComputedStyle(document.getElementById('ch')).flexWrap`)) === 'wrap');

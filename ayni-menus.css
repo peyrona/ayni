@@ -67,7 +67,9 @@ header [role="toolbar"], [role="toolbar"].tall { background: none; border: 0; bo
 .panel.popup.controls:not(:popover-open) { display: none; }
 /* A popup of settings may grow to the height of the screen; it scrolls past that */
 .panel.popup.controls.tall { max-height: calc(100dvh - 16px); overflow: auto; }
-.panel.popup.controls h4 { margin: 0; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); }
+/* Section titles: accent colour + a rule under them, so a section's start stands out (his ask, 2026-11-11). */
+.panel.popup.controls h4, dialog.panel > .body.controls h4 { margin: 4px 0 0; padding-bottom: 4px; border-bottom: 1px solid var(--line); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.panel.popup.controls h4:first-child, dialog.panel > .body.controls h4:first-child { margin-top: 0; }
 /* Tool group: the real tools of a group, in a row under the one button that stands for them */
 .panel.popup.tools { padding: 6px; display: flex; flex-direction: column; gap: 2px; }
 .panel.popup.tools:not(:popover-open) { display: none; }
@@ -96,3 +98,19 @@ html.touch .menu [role^="menuitem"] > kbd { display: none; }
 .tb-actions:not(:has(> button:not([hidden]))) { display: none; }
 .tb-actions > .tb-sep { width: 1px; align-self: stretch; margin: 4px; background: var(--line); flex: 0 0 auto; }
 .tb-tools:not([hidden]) { display: contents; }
+
+/* ---------- From Nayive's app.css (2026-11-23): Ayni's own rules, moved here ---------- */
+/* A row for a button that IS on the bar on a PC and only disappears on a
+   phone (Write's print, page setup, comments...). The menu carries it for
+   the phone and drops it here, so a PC never offers the same thing twice. */
+@media (min-width: 641px)
+{
+    .panel.menu .mi-phone { display: none; }
+}
+
+/* Item lists on a phone: while rows are picked (Ayni.list .has-selection), the picked group takes the view switch's room. */
+@media (max-width: 640px)
+{
+    .topbar:has(.has-selection) > .tb-modes,
+    .header:has(.has-selection) > .tb-modes      { display: none; }
+}

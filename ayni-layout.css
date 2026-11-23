@@ -12,6 +12,14 @@
 .empty-state .btn.text { margin-top: 14px; }
 /* A small heading over a group of fields or rows: the one place for uppercase, one step dimmer than a button */
 .section-label { margin: 4px 2px 8px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
+/* A folding one (12.4): the label is a button that still reads as a label; the chevron after it turns down when open */
+.section-label > button { display: inline-flex; align-items: center; gap: 4px; margin: -4px -6px; padding: 4px 6px; background: none; border: 0;
+  border-radius: var(--radius-s); font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+.section-label > button:hover { color: var(--text-dim); }
+.section-label > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.section-label .fold-chevron { --icon: 14px; transition: transform var(--tr-fast); }
+.section-label > button[aria-expanded="true"] .fold-chevron { transform: rotate(90deg); }
+html.touch .section-label > button { min-height: var(--touch); }
 /* A row on its own card: a file, a trip, an account */
 .card-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--text); background: var(--card2);
   border: 1px solid var(--line); border-radius: var(--radius-m); transition: border-color var(--tr-fast), background-color var(--tr-fast); }
@@ -85,7 +93,7 @@ fieldset.group[aria-invalid="true"] { border-color: var(--danger); }
 .split .pane { overflow: auto; padding: 10px; min-width: 0; font-size: .85rem; }
 .split .pane:first-child { flex: none; width: var(--split, 35%); }
 .split .pane:last-child { flex: 1; }
-.splitter { --grip-gap: 26px; --grip-len: 132px; flex: none; width: 11px; background-color: var(--card-head);
+.splitter { --grip-gap: 30px; --grip-len: 132px; flex: none; width: 11px; background-color: var(--card-head);
   background-image: linear-gradient(to right, rgb(255 255 255 / .16), transparent 40%, rgb(0 0 0 / .07)); border-inline: var(--panel-border); cursor: col-resize; touch-action: none;
   position: relative; display: grid; place-items: center; z-index: 1; }
 .splitter:hover, .splitter:focus-visible, .splitter.dragging { background-color: var(--accent-soft); outline-offset: -2px; }
@@ -97,7 +105,7 @@ fieldset.group[aria-invalid="true"] { border-color: var(--danger); }
   mask: linear-gradient(to right, #000 0 calc(50% - var(--grip-gap)), transparent 0 calc(50% + var(--grip-gap)), #000 0); }
 /* Splitter controls (Frasquito, 2026-10-22): small filled glyphs drawn on the bar, close together (no circle, no background); two small arrows send the bar to either end
    (collapsing that pane) and a small ring in the middle resets both panes. The rest of the bar is dragged. */
-.split-ctl { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; z-index: 2; }
+.split-ctl { display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; z-index: 2; }
 .splitter.rows .split-ctl { flex-direction: row; }
 .split-ctl button { width: 9px; height: 10px; padding: 0; border: 0; background: none; color: var(--text-dim);
   display: grid; place-items: center; cursor: pointer; position: relative; }
@@ -120,6 +128,32 @@ fieldset.group[aria-invalid="true"] { border-color: var(--danger); }
 /* While a bar is dragged nothing gets selected and frames do not swallow the pointer */
 html.ayni-dragging { -webkit-user-select: none; user-select: none; }
 html.ayni-dragging iframe { pointer-events: none; }
+
+/* ---------- Dock panel (Ayni.dock): floats, or sits on a window edge; .app makes room for it ---------- */
+.app { padding: var(--ayni-dock-top, 0px) var(--ayni-dock-right, 0px) var(--ayni-dock-bottom, 0px) var(--ayni-dock-left, 0px); box-sizing: border-box; }
+.dock { position: fixed; z-index: 40; display: flex; flex-direction: column; box-sizing: border-box; background: var(--panel-bg);
+        border: var(--panel-border); box-shadow: var(--elev-card); overflow: hidden; }
+.dock[hidden] { display: none; }
+.dock[data-edge="float"] { width: min(340px, calc(100vw - 16px)); max-height: min(70vh, 560px); border-radius: var(--ctl-radius); }
+.dock[data-edge="left"], .dock[data-edge="right"] { top: 0; bottom: 0; width: min(320px, 85vw); box-shadow: none; }
+.dock[data-edge="left"] { left: 0; border-width: 0 1px 0 0; }
+.dock[data-edge="right"] { right: 0; border-width: 0 0 0 1px; }
+.dock[data-edge="top"], .dock[data-edge="bottom"] { left: 0; right: 0; height: min(300px, 45vh); box-shadow: none; }
+.dock[data-edge="top"] { top: 0; border-width: 0 0 1px 0; }
+.dock[data-edge="bottom"] { bottom: 0; border-width: 1px 0 0 0; }
+.dock.dragging { opacity: .92; }
+.dock-grip { display: flex; align-items: center; gap: 6px; flex: none; padding: 4px 4px 4px 8px; background: var(--panel-head-bg);
+             border-bottom: var(--panel-border); cursor: grab; touch-action: none; }
+.dock.dragging .dock-grip { cursor: grabbing; }
+.dock-grip > .icon:first-child { opacity: .55; }
+.dock-title { flex: 1; min-width: 0; font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-body { flex: 1; min-height: 0; overflow: auto; padding: 10px; }
+.dock-hint { position: fixed; z-index: 39; pointer-events: none; background: color-mix(in oklab, var(--accent) 22%, transparent);
+             border: 2px dashed var(--accent); box-sizing: border-box; }
+.dock-hint[data-edge="left"]   { left: 0; top: 0; bottom: 0; width: min(320px, 85vw); }
+.dock-hint[data-edge="right"]  { right: 0; top: 0; bottom: 0; width: min(320px, 85vw); }
+.dock-hint[data-edge="top"]    { top: 0; left: 0; right: 0; height: min(300px, 45vh); }
+.dock-hint[data-edge="bottom"] { bottom: 0; left: 0; right: 0; height: min(300px, 45vh); }
 
 /* ---------- Touch: tabs are 44 px high; the small close button and the bar keep their look, with larger hit areas ---------- */
 html.touch [role="tab"] { min-height: var(--touch); }

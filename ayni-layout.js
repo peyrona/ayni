@@ -1,13 +1,13 @@
-/* Ayni library 0.4.0, layout family: tabs, the splitter, the status bar and More fields. Plain JavaScript, no build step, evergreen
+/* Ayni library 0.4.0, layout family: tabs, the splitter, the status bar, More fields, folding section labels and the dock panel. Plain JavaScript, no build step, evergreen
    browsers 2024+. Load it after ayni-base.js:
      <script src="ayni-base.js" defer></script>
      <script src="ayni-layout.js" defer></script>
    The look is in ayni-layout.css; the rules are chapters 11.4, 12 and 13 of the guidelines.
    RULE: tabs change the page below them (a filter is a choice row, another look at the same content the view switch).
-   A tab row, a .split or a More fields line written in the page is wired when it loads; Ayni.tabs, Ayni.splitter and
-   Ayni.moreFields wire one from code and return its controller. Setting a value from code fires nothing; a user's pick
+   A tab row, a .split, a More fields line or a folding section label written in the page is wired when it loads;
+   Ayni.tabs, Ayni.splitter, Ayni.moreFields and Ayni.foldLabel wire one from code and return its controller. Setting a value from code fires nothing; a user's pick
    fires ayni:tabselect, a closed tab ayni:tabclose (on the tablist), a user's action on a bar ayni:split (bubbles from
-   the bar) and a press on More fields ayni:more. */
+   the bar), a press on More fields ayni:more and a press on a folding label ayni:fold (on its button, bubbles). */
 (() => {
 'use strict';
 const { $, $$ } = Ayni;
@@ -393,14 +393,131 @@ const moreFields = (el, opts = {}) => {
   return have.api;
 };
 
+/* ---------- Folding section label: a chevron after the label folds the rows below it away (12.4) ---------- */
+const foldOf = new WeakMap();
+
+const initFold = (label, o = {}) => {
+  let btn = $(':scope > button', label);
+  if (!btn) { btn = document.createElement('button'); btn.type = 'button'; btn.append(...label.childNodes); label.append(btn); }
+  if (!$('.fold-chevron', btn)) btn.insertAdjacentHTML('beforeend', Ayni.icon('chev-right', 'fold-chevron'));
+  const part = () => o.part || foldedBy(btn) || label.nextElementSibling;
+  const key = () => o.key ?? label.dataset.key;
+  const set = (on) => { btn.setAttribute('aria-expanded', on); const p = part(); if (p) p.hidden = !on; };
+  const api = { get open() { return btn.getAttribute('aria-expanded') !== 'false'; }, set };
+  btn.addEventListener('click', () => {
+    const on = !api.open; set(on);
+    if (key()) store(key(), on ? '1' : '0');
+    fire(btn, 'ayni:fold', { open: on }); o.onToggle?.(on);
+  });
+  foldOf.set(label, { api, o });
+  /* Kept on this device wins; then the page's open; then what the markup says (open when it says nothing) */
+  const kept = key() ? load(key()) : null;
+  set(kept != null ? kept === '1' : o.open ?? api.open);
+  /* A label made in code, put beside its rows right after: fold them once the code that made it is done */
+  if (!part()) queueMicrotask(() => set(api.open));
+  return api;
+};
+
+const foldLabel = (el, opts = {}) => {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return null;
+  el.classList.add('section-label');
+  const have = foldOf.get(el);
+  if (!have) return initFold(el, opts);
+  Object.assign(have.o, opts); have.api.set(have.api.open);
+  return have.api;
+};
+
+/* ---------- Dock panel: Ayni.dock(el, { key, edge, onClose }) ----------
+   A panel the user moves by its grip (.dock-grip, the top bar): let go near a window edge and it docks there, full
+   height or full width; anywhere else it floats where it was dropped. While it is dragged, the edge it would dock to
+   lights up. A docked panel makes room: :root gets --ayni-dock-left / right / top / bottom (its size, 0px when it
+   is not there), which .app takes as padding. Where it sits is kept under `key` (localStorage). A [data-dock-close]
+   button inside closes it. Returns { open(), close(), toggle(), get isOpen, get edge } - edge null = floating. */
+const SNAP = 40;                                  /* px from a window edge that docks */
+const EDGES = ['left', 'right', 'top', 'bottom'];
+const dock = (el, o = {}) => {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return null;
+  el.classList.add('dock');
+  const grip = $('.dock-grip', el), html = document.documentElement;
+  const st = { edge: o.edge ?? 'right', x: 0, y: 0 };
+  try { const s = JSON.parse(load(o.key) || 'null'); if (s && (s.edge === null || EDGES.includes(s.edge))) Object.assign(st, s); } catch {}
+  if (grip && !grip.dataset.tip) grip.dataset.tip = tx('dock.grip');
+
+  let hint = null;
+  const showHint = (edge) => {
+    if (!edge) { hint?.remove(); hint = null; return; }
+    hint ||= Object.assign(document.createElement('div'), { className: 'dock-hint' });
+    hint.dataset.edge = edge;
+    if (!hint.isConnected) document.body.append(hint);
+  };
+  const edgeAt = (x, y) => x < SNAP ? 'left' : x > innerWidth - SNAP ? 'right' : y < SNAP ? 'top' : y > innerHeight - SNAP ? 'bottom' : null;
+  const room = () => {
+    const r = el.hidden ? null : el.getBoundingClientRect();
+    for (const e of EDGES) html.style.setProperty('--ayni-dock-' + e, r && st.edge === e ? Math.round(e === 'left' || e === 'right' ? r.width : r.height) + 'px' : '0px');
+  };
+  const place = (x, y) => {                       /* a floating panel stays on screen */
+    const w = el.offsetWidth, h = el.offsetHeight;
+    st.x = Math.round(Math.max(0, Math.min(x, innerWidth - w)));
+    st.y = Math.round(Math.max(0, Math.min(y, innerHeight - Math.min(h, 48))));
+    el.style.left = st.x + 'px'; el.style.top = st.y + 'px';
+  };
+  const paint = () => {
+    el.dataset.edge = st.edge || 'float';
+    if (st.edge) { el.style.left = el.style.top = ''; } else place(st.x, st.y);
+    room();
+  };
+  const save = () => store(o.key, o.key ? JSON.stringify(st) : null);
+
+  grip?.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button, input, .picker')) return;
+    e.preventDefault();
+    try { grip.setPointerCapture(e.pointerId); } catch {}
+    const r = el.getBoundingClientRect();
+    let dx = e.clientX - r.left, dy = e.clientY - r.top, moved = false;
+    html.classList.add('ayni-dragging');
+    const move = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 4) return;
+      if (!moved) {
+        moved = true; el.classList.add('dragging');
+        if (st.edge) { st.edge = null; el.dataset.edge = 'float'; room(); dx = Math.min(dx, el.offsetWidth - 24); dy = Math.min(dy, 20); }
+      }
+      place(ev.clientX - dx, ev.clientY - dy);
+      showHint(edgeAt(ev.clientX, ev.clientY));
+    };
+    const end = (ev) => {
+      grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', end); grip.removeEventListener('pointercancel', end);
+      html.classList.remove('ayni-dragging'); el.classList.remove('dragging'); showHint(null);
+      if (!moved) return;
+      st.edge = ev.type === 'pointerup' ? edgeAt(ev.clientX, ev.clientY) : null;
+      paint(); save();
+    };
+    grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
+  });
+  $$('[data-dock-close]', el).forEach((b) => b.addEventListener('click', () => api.close()));
+  addEventListener('resize', () => { if (!el.hidden) paint(); });
+  new ResizeObserver(() => { if (!el.hidden) room(); }).observe(el);
+
+  const api = {
+    get isOpen() { return !el.hidden; },
+    get edge() { return st.edge; },
+    open() { el.hidden = false; paint(); },
+    close() { if (el.hidden) return; el.hidden = true; room(); o.onClose?.(); },
+    toggle() { if (el.hidden) api.open(); else api.close(); }
+  };
+  return api;
+};
+
 /* A class named .split with no bar of its own is not ours */
 const init = (root) => {
   const among = (sel) => [...(root.matches?.(sel) ? [root] : []), ...$$(sel, root)];
   among('[role="tablist"]').forEach((l) => { if (!tabsOf.has(l)) initTabs(l); });
   among('.split:has(> .splitter)').forEach((s) => { if (!barsOf.has($(':scope > .splitter', s))) initSplit(s); });
   among('button.more-toggle[aria-controls]').forEach((b) => { if (!moreOf.has(b)) initMore(b); });
+  among('.section-label:has(> button[aria-controls])').forEach((l) => { if (!foldOf.has(l)) initFold(l); });
 };
 
-Object.assign(Ayni, { status, tabs, splitter, moreFields });
+Object.assign(Ayni, { status, tabs, splitter, moreFields, foldLabel, dock });
 Ayni.core.family({ init });
 })();
