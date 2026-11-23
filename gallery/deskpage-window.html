@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample</title>
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<link rel="stylesheet" href="../ayni-shell.css">
+<style>
+/* Demo page only: the sample app's content */
+.sample { padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 60ch; }
+.sample p { margin: 0; color: var(--text-dim); }
+</style>
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-icons-more.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+</head>
+<body>
+<!-- A sample app for gallery/deskpage.html: its own top row (the app's icon and name) is its window's title row. -->
+<div class="app">
+  <header class="topbar"><span class="app-icon icon" data-icon="edit"></span><h1 id="appName">Notes</h1></header>
+  <main class="sample">
+    <p>A page in a window. Drag its top row to move the window, an edge to resize it; double-click the row to maximise.</p>
+    <input class="input" id="field" aria-label="Some text">
+  </main>
+</div>
+<script>
+( function ()
+{
+    var app = new URLSearchParams( location.search ).get( 'app' ) || 'notes';
+    var NAMES = { notes: 'Notes', sums: 'Sums' };
+    document.getElementById( 'appName' ).textContent = document.title = NAMES[ app ] || app;
+    if( app === 'sums' ) document.querySelector( '.app-icon' ).dataset.icon = 'table';
+} )();
+</script>
+</body>
+</html>

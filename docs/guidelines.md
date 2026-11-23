@@ -1241,7 +1241,7 @@ Desktop mode gives Ayni a desktop like other operating systems: windows on a wor
 
 ### 17.4 Windows that hold whole pages
 
-An app made of separate pages shows each in a frame, one per window. **Ayni's code does not do this**: the window engine of such an app is the app's own, because it has to reach into its own pages and knows what they save. The app takes the taskbar, chips and gadgets from Ayni (17.5) and follows these rules.
+An app made of separate pages shows each in a frame, one per window. `Ayni.deskPage` (optional, `ayni-deskpage.js`) is such a window engine; the app tells it what it alone knows (its apps' names and icons, what a page's address says about its app) through hooks. An app may also keep an engine of its own, take the taskbar, chips and gadgets from Ayni (17.5) and follow these rules.
 
 - **Title row.** The page's own top row is the title row, when it holds the app's icon and name; the window adds one only when the page has none. A press on an empty spot of that row moves the window once it has moved 4 px, so a click on a file name still edits it. A double-click maximises.
 - **Frames take the pointer away.** While a window moves or resizes, frames ignore the pointer. A press or the focus inside a frame selects its window, and closes what is open on the bar.
@@ -1258,6 +1258,8 @@ Three options an app may offer, per device, with any of them left out:
 - **Sticky windows.** A window dropped on an edge of the work area takes that half; a dotted area shows it first. Dragged away, it gets its old size back.
 - **Tile.** One switch for the whole desk: every window not minimised gets a place, none on top of another, none left over. Columns of equal width, and stacks of equal height inside them, the first windows in the bigger places. Windows opened or closed deal the desk out again. Switched off, every window goes back exactly as it was. On touch, a screen held upright tiles by itself.
 - **Scale.** Per window: made smaller than it was at full size, the window shrinks like a picture of itself, instead of rearranging its content. Maximised, it is always at full size.
+
+**What the desk page brings, and what the app brings.** `Ayni.deskPage` puts the whole desk on the page: the work area, the bar (the menu button, the chips, a row for gadgets, More ⋮ and Help ?), the More popup with the window options above (Free / Tile, Sticky windows, Scale on open), the bar's edge and height and Raised controls, and the switcher. A right-click or a long press on an empty spot of the desk opens More; the mouse wheel moves a row of chips. Each choice is kept per device. Only what is how things look and how they are handled is Ayni's. A gadget that runs on a timer of its own, fetches or stores anything, talks to a device or knows what a given app is (a clock, the weather, a countdown, a battery level) is the app's: the app puts it in the desk page's slots, on the bar before More, as a section of More, or as a popup of the bar.
 
 ### 17.5 For developers
 
@@ -1288,6 +1290,15 @@ By default `.desktop` hides below 1024 px and anything marked `.no-desktop` show
 ```
 
 `aria-current="true"` marks the selected chip, `.min` a minimised one. `.chip-ctl` holds any number of `.btn`.
+
+**The desk page (17.4)** loads `ayni-deskpage.css` and `ayni-tiling.js`, then `ayni-deskpage.js` as a plain script (no `defer`), and calls `var D = Ayni.deskPage(hooks)` from a script at the end of `<body>`. With no `#desktop` on the page it puts its own markup there: `.desktop#desktop` with `main.area.desk#desk` (`.desk-empty`, `#snapGhost`), `nav.taskbar#bar` (`#menuBtn`, `.chips#tasks`, `.widgets` holding `#moreBtn` and `#helpBtn`), an empty `#menu` for the app's launcher, the More popup `#moreMenu` (sections `#moreWindows`, `#moreBar`, `#moreOther`; the bevel row `#bevelRow`) and `#switcher`. A page that brings its own `#desktop` keeps it. The slots, at once after the call:
+
+- `D.addWidget(el, { before, after })`: a gadget on the bar, before More unless `before` or `after` (an element or a selector) says where.
+- `D.addMenuSection(el, { before, after })`: rows of More, at its end unless told where (`{ before: '#moreWindows' }` puts a section first).
+- `D.addPopup(el)`: a popup of a gadget; it closes with More when a window takes a press.
+- `D.relayout()`: More follows the bar again after a gadget changed size.
+
+`el` may be an element, a fragment or a `<template>`, whose content goes in. `D.set` is this device's settings object and `D.saveSet()` keeps it; a gadget adds its own keys to it and never renames one. `D.store(key, value)` reads or writes one JSON value in localStorage; `D.KEYS` is the prefix of every key (`AyniNames.deskKey`, `ayni-` by default).
 
 ## 18. The app shell
 
@@ -1520,7 +1531,8 @@ These were considered and turned down; they are listed so they are not proposed 
 | Desktop mode decided by the width alone | Replaced: the default; an app may set its own rule (chapter 17) |
 | A selected chip with only the icon and its buttons | Not taken: it also names what the window shows, except on a side bar (17.3) |
 | Snapping or tiling for every window | Not taken: options for windows that hold whole pages (17.4); plain windows move freely |
-| A window engine for pages inside Ayni | Not taken: it would need a hook for each thing done inside a page; the app keeps its engine and takes the bar from Ayni (17.4) |
+| A window engine for pages inside Ayni | Taken, optional: `Ayni.deskPage`, with hooks for what only the app knows; an app may still keep its own engine and take the bar from Ayni (17.4) |
+| Gadgets of the desk page in Ayni (a clock, the weather, countdowns, the battery) | Not taken: each runs on a timer, fetches or talks to a device; the app puts them in the desk page's slots (17.4) |
 | A year box in the calendar | Not taken: the title steps to months, then years (6.4) |
 | Longer notification time than 6 s | Not taken: 6 s with pause on hover |
 | Knob on the splitter | Replaced by the three glyphs |

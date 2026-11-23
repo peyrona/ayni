@@ -107,6 +107,7 @@ The markup of each control is the one in `gallery/index.html`: copy a specimen f
 | Launcher | `.panel.popup.launcher[popover]` with a `.search-field` and `.apps > button[data-app]` |
 | Clock widget | `.widget.clock` (any app widget is a `.widget`, a button too) |
 | Chip written by the app | `.chip[role=group]` with `button.chip-main` and `.chip-ctl`, for an app with its own windows (guideline 17.5) |
+| Desk page | `var D = Ayni.deskPage(hooks)` (`ayni-deskpage.js`, a plain script at the end of `<body>`): with no `#desktop` it puts the desk, the bar, More (`#moreMenu`: `#moreWindows`, `#moreBar`, `#moreOther`, `#bevelRow`) and the switcher on the page. Slots: `D.addWidget(el, { before, after })`, `D.addMenuSection(el, { before, after })`, `D.addPopup(el)`, `D.relayout()`; `el` may be a `<template>`. This device's settings: `D.set`, `D.saveSet()`, `D.store(key, value)`, `D.KEYS` (guideline 17.5); see `gallery/deskpage.html` |
 
 A few controls need one call because they take options:
 
@@ -221,7 +222,7 @@ The page follows the system setting until the user picks light or dark (`ayni-th
 | `ayni-locker.css`, `ayni-locker.js`, `lockers/` | Optional: the screen locker, `AyniLocker` |
 | `ayni-net.js`, `ayni-store.js`, `ayni-boot.js` | Optional, the data side: `AyniNet`, `AyniStore`, `AyniBoot`. An app's data stays usable offline. See `sample/server.mjs` for what the server must answer; `wireRefresh`'s `watch` also needs `GET <api>watch` (see `ayni-boot.js`) |
 | `ayni-doc.js`, `ayni-doc.css`, `ayni-menutable.js` | Optional: `AyniDoc`, a document with autosave and drafts; `AyniMenus` |
-| `ayni-deskpage.js`, `.css`, `ayni-tiling.js`, `ayni-desk-rule.js` | Optional: `Ayni.deskPage`, a desktop of windows that each hold a page |
+| `ayni-deskpage.js`, `.css`, `ayni-tiling.js`, `ayni-desk-rule.js` | Optional: `Ayni.deskPage`, a desktop of windows that each hold a page: the desk, the bar, More with the window and bar options, the switcher, and slots for the app's gadgets |
 | `ayni-media.js`, `.css`, `ayni-playon.js` | Optional: `Ayni.media`, `AyniPlayOn` |
 | `ayni-photo.js`, `ayni-image-editor.js`, `ayni-image.css` | Optional: `AyniPhoto`, `AyniImageEditor`; the editor needs Fabric, `window.AyniFabricUrl` says where |
 | `ayni-map.js`, `.css` | Optional: `AyniBaseMap`; needs Leaflet |

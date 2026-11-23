@@ -3746,6 +3746,73 @@ try {
     check('the forms family: no errors or warnings', t.logs.length === 0, t.logs.slice());
   }
 
+  section('Desk page (Ayni.deskPage: windows that each hold a page)');
+  {
+    t.logs.length = 0;
+    await t.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
+    await t.open(BASE + '/gallery/deskpage.html');
+    const ev = (e, ms) => t.evaluate(e, ms);
+    const wait = (ms) => ev(`new Promise((r) => setTimeout(r, ${ms}))`);
+    const until = async (e, ms = 6000) => { const end = Date.now() + ms; for (;;) { let v = null; try { v = await ev(e); } catch {} if (v || Date.now() > end) return v; await new Promise((r) => setTimeout(r, 40)); } };
+    const mouse = (type, x, y, button = 'left', buttons = 0) => t.send('Input.dispatchMouseEvent', { type, x, y, button: type === 'mouseMoved' && !buttons ? 'none' : button, buttons, clickCount: 1 });
+    const clickAt = async (x, y, button = 'left') => { await mouse('mouseMoved', x, y); await mouse('mousePressed', x, y, button, button === 'right' ? 2 : 1); await mouse('mouseReleased', x, y, button); await wait(80); };
+    const box = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height }; })()`);
+    const press = async (sel, button) => { const r = await box(sel); await clickAt(r.l + r.w / 2, r.t + r.h / 2, button); };
+    const isOpen = (id) => ev(`document.getElementById('${id}').matches(':popover-open')`);
+    const ready = `AyniDesk.windows().length === 2 && [...document.querySelectorAll('#desk > .win iframe')].every((f) => f.contentDocument && f.contentDocument.readyState === 'complete' && f.closest('.win').classList.contains('chromeless'))`;
+    check('desk page: two sample windows open, each page\'s own top row its title row', await until(ready));
+    check('desk page: it puts its own markup on the page (no #desktop of the page\'s)', await ev(`!!document.querySelector('body > .desktop#desktop[data-mode="app"] > main.area.desk#desk > .desk-empty') && !!document.querySelector('#desktop > nav.taskbar#bar > .chips#tasks') && !!document.querySelector('#bar > .widgets > #moreBtn + #helpBtn') && ['moreWindows', 'moreBar', 'moreOther', 'bevelRow', 'tileSw', 'setBar', 'stickyChk'].every((id) => document.querySelector('#moreMenu #' + id)) && document.getElementById('switcher').hidden && document.getElementById('menu').hidden`));
+    check('desk page: no untranslated keys', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
+    check('desk page: no gadget of an app (clock, weather, countdowns, battery)', await ev(`!document.querySelector('#clock, #wxBtn, #cds, #batt, #calPop, #weatherBarChk') && !document.querySelector('#bar .widgets .widget')`));
+    check('desk page: one chip per window, the last opened in front', await ev(`document.querySelectorAll('#tasks > .chip').length === 2 && document.querySelector('#tasks > .chip:nth-child(2)').getAttribute('aria-current') === 'true'`));
+
+    /* Moving: a press on an empty spot of the front window's own top row, inside its frame, and a drag */
+    const frontTop = await ev(`(() => { const f = document.querySelectorAll('#desk > .win iframe')[1], r = f.getBoundingClientRect(), h = f.contentDocument.querySelector('.topbar').getBoundingClientRect(); return { x: r.left + h.left + h.width - 40, y: r.top + h.top + h.height / 2 }; })()`);
+    const before = await ev(`AyniDesk.windows()[1].box`);
+    await mouse('mouseMoved', frontTop.x, frontTop.y); await mouse('mousePressed', frontTop.x, frontTop.y, 'left', 1);
+    for (let i = 1; i <= 8; i++) await mouse('mouseMoved', frontTop.x - i * 15, frontTop.y + i * 5, 'left', 1);
+    await mouse('mouseReleased', frontTop.x - 120, frontTop.y + 40); await wait(400);
+    const after = await ev(`AyniDesk.windows()[1].box`);
+    check('desk page: a window moves by its own top row', Math.abs(after.l - (before.l - 120)) <= 2 && Math.abs(after.t - (before.t + 40)) <= 2, { before, after });
+    const backL = await ev(`(() => { const r = document.querySelectorAll('#desk > .win')[0].getBoundingClientRect(); return { x: r.right - 20, y: r.top + 150 }; })()`);   // its right strip: the moved front window covers its left
+    await clickAt(backL.x, backL.y);
+    check('desk page: a press in the window behind brings it to the front', await ev(`document.querySelector('#tasks > .chip:nth-child(1)').getAttribute('aria-current') === 'true' && document.querySelectorAll('#desk > .win.focused').length === 1`));
+
+    /* The "⋮" */
+    await press('#moreBtn');
+    check('desk page: the "⋮" opens from its button', await until(`document.getElementById('moreMenu').matches(':popover-open')`));
+    await press('#tileSw label:last-of-type');
+    const tiled = await ev(`AyniDesk.windows().map((w) => w.box)`);
+    check('desk page: Tile puts the windows side by side, the "⋮" stays open', await ev('AyniDesk.isTiled()') && await isOpen('moreMenu') && tiled[0].l + tiled[0].w <= tiled[1].l + 1 && tiled[0].t === tiled[1].t, tiled);
+    await press('#tileSw label:first-of-type');
+    check('desk page: Free puts them back as they were', !(await ev('AyniDesk.isTiled()')) && JSON.stringify(await ev(`AyniDesk.windows()[1].box`)) === JSON.stringify(after), await ev(`AyniDesk.windows()[1].box`));
+    await press('#stickyChk');
+    check('desk page: a switch saves this device\'s choice', await ev(`JSON.parse(localStorage.getItem('ayni-desktop')).sticky === false`) && await isOpen('moreMenu'));
+    await ev(`(Ayni.picker(document.getElementById('setBar')).choose('left'), true)`); await wait(100);
+    check('desk page: the bar on the left edge, the "⋮" follows it', await ev(`document.getElementById('desktop').dataset.edge === 'left' && document.body.classList.contains('bar-left') && JSON.parse(localStorage.getItem('ayni-desktop')).bar === 'left'`) && (await box('#moreMenu')).l >= (await box('#bar')).l + (await box('#bar')).w - 1);
+    await ev(`(Ayni.picker(document.getElementById('setBar')).choose('bottom'), true)`); await wait(100);
+    await ev(`(document.getElementById('moreMenu').hidePopover(), true)`);
+    await clickAt(1250, 100, 'right'); await wait(100);
+    check('desk page: a right-click on an empty spot of the desk opens the "⋮"', await isOpen('moreMenu'));
+    await ev(`(document.getElementById('moreMenu').hidePopover(), true)`);
+
+    /* The slots */
+    check('desk page: addWidget puts a gadget before the "⋮", or after the "?"', await ev(`(() => { const a = document.createElement('button'), b = document.createElement('button'); a.className = b.className = 'widget'; a.id = 'tGadA'; b.id = 'tGadB'; a.textContent = 'A'; b.textContent = 'B';
+      deskD.addWidget(a); deskD.addWidget(b, { after: '#helpBtn' }); const ok = a.nextElementSibling.id === 'moreBtn' && b.previousElementSibling.id === 'helpBtn'; a.remove(); b.remove(); return ok; })()`));
+    check('desk page: addMenuSection takes a template, first or at the end', await ev(`(() => { const tp = document.createElement('template'); tp.innerHTML = '<h4 id="tSecH">T</h4><label class="switch end" id="tSecR"><span>T</span><input role="switch" type="checkbox"></label>';
+      deskD.addMenuSection(tp, { before: '#moreWindows' }); const m = document.getElementById('moreMenu'), first = m.firstElementChild.id === 'tSecH' && m.children[1].id === 'tSecR' && !tp.content.childNodes.length;
+      const e = document.createElement('p'); e.id = 'tSecE'; deskD.addMenuSection(e); const last = m.lastElementChild === e; ['tSecH', 'tSecR', 'tSecE'].forEach((id) => document.getElementById(id).remove()); return first && last; })()`));
+    check('desk page: addPopup moves a popup into the desk, closed with the "⋮"', await ev(`(() => { const p = document.createElement('div'); p.className = 'panel popup controls'; p.setAttribute('popover', ''); p.textContent = 'P'; document.body.append(p);
+      deskD.addPopup(p); p.showPopover(); const was = p.matches(':popover-open'); deskD.closeMore(); const ok = p.parentNode.id === 'desktop' && was && !p.matches(':popover-open'); p.remove(); return ok; })()`));
+    check('desk page: this device\'s settings, for the app\'s gadgets', await ev(`deskD.KEYS === 'ayni-' && deskD.set.bar === 'bottom' && typeof deskD.saveSet === 'function' && (deskD.store('ayni-t-key', { a: 1 }), deskD.store('ayni-t-key').a === 1) && (localStorage.removeItem('ayni-t-key'), true)`));
+
+    /* A reload: the windows come back */
+    await t.open(BASE + '/gallery/deskpage.html');
+    check('desk page: the windows come back after a reload, where they were', await until(ready) && JSON.stringify(await ev(`AyniDesk.windows().find((w) => w.app === 'sums').box`)) === JSON.stringify(after), await ev(`AyniDesk.windows().map((w) => [w.app, w.box])`));
+    check('desk page: no errors or warnings', t.logs.length === 0, t.logs.slice());
+    await ev(`(Object.keys(localStorage).filter((k) => /^ayni-desktop/.test(k)).forEach((k) => localStorage.removeItem(k)), true)`);
+  }
+
   section('Desktop page');
   t.logs.length = 0;
   await t.open(BASE + '/gallery/desktop.html');

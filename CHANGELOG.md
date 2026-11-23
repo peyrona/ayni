@@ -4,6 +4,7 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
 
 ## Unreleased
 
+- Desk page (`Ayni.deskPage`): it puts its own markup on the page (the desk, the bar, More with the window options, the bar's edge and height and Raised controls, the switcher) unless the page brings a `#desktop`; a right-click or a long press on an empty spot of the desk opening More, and the wheel moving the chips, came with it from the app. Slots for the app's gadgets: `addWidget(el, { before, after })`, `addMenuSection(el, { before, after })`, `addPopup(el)`, `relayout()`; this device's settings: `set`, `saveSet()`, `store()`, `KEYS`. A hook left out does nothing. Out of Ayni, to the app: the clock and the other clocks, "Clock and date", the month, the countdowns, the weather and the battery, each with its texts: they run on a timer, fetch or talk to a device (guidelines 17.4). The hooks `loadLocker`, `loadScript`, `openMoreHere` and `weatherEngine` and the returned `battEl`, `clock`, `wxSvg` and `placeMore` are gone (`relayout()` is the last one). Demo: `gallery/deskpage.html`.
 - `Ayni.longTap`: a menu its callback opens no longer closes by itself on a busy device. The held finger's `touchend` is cancelled (no mousedown / click is made from it, which landed after the menu opened and closed it as a press outside), and the one click left is swallowed wherever it lands, also on that menu.
 - From Nayive (it had them in its own copy; Nayive now links to Ayni instead):
   - `Ayni.dock(el, { key, edge, onClose })`: a panel moved by its grip that docks on a window edge (the page makes room) or floats; where it sits is kept under `key`.
@@ -11,10 +12,10 @@ All notable changes to Ayni are listed here. Versions follow [Semantic Versionin
   - `AyniNet` `find()` / `search()`: optional `inDir`, the folder and everything under it (`&in=`).
   - Scrollbars in Ayni's look (dots grip, an arrow at each end, bevel with "raised controls"), not on touch screens.
   - A page in a desktop window copies the desktop's `.bevel` / `.flat` look.
-  - Desk page clock: a "Clock and date" dialog (12 / 24 h, seconds, weekday, date formats) and up to 5 other clocks; window bars in their own colour.
+  - Desk page: window bars in their own colour.
   - Section headings in popups and `.body.controls` dialogs: accent colour and a rule under them.
   - Help tour finds a menu row by `data-act` too; attachment tiles centre a lone last tile; `sheet-remove` icon; the title-row home link rule no longer nests `:has()` (it dropped the whole rule); splitter grips spaced wider.
-  - Ayni's own texts: `AyniDoc`, `AyniStore` and the desk page no longer borrow an app's keys; theirs are `ayni.doc.*`, `ayni.lock.*`, `ayni.desktop.*` and `ayni.weather.*` (5 languages).
+  - Ayni's own texts: `AyniDoc`, `AyniStore` and the desk page no longer borrow an app's keys; theirs are `ayni.doc.*`, `ayni.lock.*` and `ayni.desktop.*` (5 languages).
   - Notifications rise above a bar along the bottom by themselves: mark the bar `data-toasts-above` (it was the app's job to set `--toasts-lift`).
   - CSS that lived in the app: the window title row in its own colour and the dimmed window behind (`ayni-shell.css`), the read-only badge `.ro-badge`, `.actions-row`, `.props`, `.warn-box`, `.dim-note` (`ayni-dialogs.css`), `.face` (a picture you can change) and a bare svg's size in a `.btn` (`ayni-buttons.css`), `.mi-phone` and the picked group on a phone (`ayni-menus.css`), the image editor bar's group lines (`ayni-image.css`), `.scope-bar` (`ayni-media.css`), native boxes in the accent and no iOS callout on buttons and popups (`ayni-base.css`).
 - `Ayni.holdMs`: the long-tap time (400 ms, Android's own touch-and-hold time), for a hold a page times itself, so every hold takes the same time. The ring's fallback and the guidelines said 500 ms; they say 400 ms now, as the code always did.

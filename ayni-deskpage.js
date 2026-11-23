@@ -1,17 +1,81 @@
 /* Ayni library 0.4.0, a desktop of whole pages: windows that hold a page each, in a frame. Moving, sizing, Tile, Scale, sticky halves, a window
-   that remembers its place, the switcher, the on-screen keyboard, the clock, a second clock, countdowns, weather, battery. Plain JavaScript, no
-   build step, evergreen browsers 2024+. Optional: a plain script, without defer, with ayni-deskpage.css, ayni-tiling.js, and the page's own markup
-   (.desktop, #desk, #bar, #tasks, #menu, #menuBtn, #snapGhost, and the rest of the "more" menu ids).
+   that remembers its place, the switcher, the on-screen keyboard, the "⋮" with the window and bar options. Plain JavaScript, no build step,
+   evergreen browsers 2024+. Optional: a plain script, without defer, with ayni-deskpage.css, ayni-tiling.js and ayni-icons-more.js, called from
+   a script at the end of <body>. With no #desktop on the page it puts its own markup there (MARKUP, below).
      var D = Ayni.deskPage( hooks )
-   hooks: appName; APPS { app: { name, svg } }; NARROW, SHORT { app: px }; appsReady, a promise; appOf( url ); openMenu(), closeMenu(), openMoreHere();
-   placeUnread(), pokeUnread(), placeMail(), askMail(), placePlanner() (optional); loadLocker(), loadScript( url ), weatherEngine(). D holds what the page needs back.
+   hooks, each optional: appName; icon, the menu button's picture (a URL); APPS { app: { name, svg } }; NARROW, SHORT { app: px }; appsReady,
+   a promise; appOf( url ), the app a page belongs to; openMenu(), closeMenu(), the app's launcher in #menu; placeUnread(), pokeUnread(),
+   placeMail(), askMail(), placePlanner(), the app's marks on the chips. D holds what the page needs back, the slots for the app's own parts
+   (addWidget( el, where ), addMenuSection( el, where ), addPopup( el ), relayout()) and this device's settings (set, saveSet(), store( key,
+   value ), KEYS). A gadget with a timer, a fetch or a device of its own (a clock, the weather...) is the app's: it goes in the slots.
    A page in a window says what it holds with window.ayniDocPath, and may hold the close with window.ayniBeforeClose. Rules: chapter 17.4. */
 ( function ()
 {
     var NAMES = window.AyniNames || {}, KEYS = NAMES.deskKey || 'ayni-';
 
+    // THE MARKUP (2026-11-23; until then the app's page held it): what deskPage puts on a page with no #desktop
+    // of its own. The ids are the ones the code below finds. {icon}: the menu button's picture (hooks.icon).
+    var MARKUP = [
+        '<div class="desktop" id="desktop" data-edge="bottom" data-mode="app">',
+        // THE DESK - the windows; a right-click or a long press on an empty spot of it (.desk-empty) opens the "⋮".
+        '    <main class="area desk" id="desk"><div class="desk-empty"></div><div class="snap-ghost" id="snapGhost" hidden></div></main>',
+        // THE BAR - the menu button (it opens the app's launcher, #menu), one chip per window, then the gadgets:
+        // the app's (addWidget), the "⋮" and the "?" of the help card (Ayni.help).
+        '    <nav class="taskbar" id="bar" data-i18n-attr="aria-label:ayni.desk.taskbar">',
+        '        <button class="btn" id="menuBtn" data-i18n-attr="data-tip:ayni.desktop.apps" data-tip="Apps">{icon}</button>',
+        '        <div class="chips" id="tasks" role="group" data-i18n-attr="aria-label:ayni.desktop.switchWin"></div>',
+        '        <div class="widgets">',
+        '        <button id="moreBtn" class="btn" type="button" popovertarget="moreMenu" data-i18n-attr="data-tip:ayni.more, aria-label:ayni.more"><span class="icon" data-icon="more"></span></button>',
+        '        <button id="helpBtn" class="btn" data-help-open type="button" data-i18n-attr="data-tip:ayni.help, aria-label:ayni.help"><span class="icon" data-icon="help"></span></button>',
+        '        </div>',
+        '    </nav>',
+        // THE MENU - the app's launcher goes in here; the app opens and closes it (hooks.openMenu, closeMenu).
+        '    <div class="menu" id="menu" hidden></div>',
+        // MORE - the "⋮": Ayni's popup with controls. Every change applies at once and leaves it open. The app's
+        // own sections go before, between or after these three (addMenuSection).
+        '    <div class="panel popup controls tall" id="moreMenu" popover data-i18n-attr="aria-label:ayni.more">',
+        // WINDOWS - how the windows behave on the desk.
+        '        <h4 id="moreWindows" data-i18n="ayni.desktop.windowsLabel"></h4>',
+        // TILE - one switch for the whole desk (see TILE / UNTILE): Free <-> Tile.
+        '        <div class="switch-pair" role="radiogroup" id="tileSw" data-i18n-attr="aria-label:ayni.desktop.tileTip, data-tip:ayni.desktop.tileTip">',
+        '            <label><input type="radio" name="tileSw" id="tileOff" checked><span data-i18n="ayni.desktop.tileFree"></span></label>',
+        '            <span class="track" aria-hidden="true"></span>',
+        '            <label><input type="radio" name="tileSw" id="tileOn"><span data-i18n="ayni.desktop.tileOn"></span></label>',
+        '        </div>',
+        // STICKY WINDOWS - on: a window dropped on an edge of the desk takes that half (see drag).
+        '        <label class="switch end"><span class="icon" data-icon="window-half"></span><span data-i18n="ayni.desktop.sticky"></span><span class="info-tip" role="button" tabindex="0" data-i18n-attr="data-help:ayni.desktop.stickyInfo"></span><input role="switch" type="checkbox" id="stickyChk"></label>',
+        // SCALE ON OPEN - new windows start with Scale on (set.scaleNew; see SCALE).
+        '        <label class="switch end"><span class="icon" data-icon="window-scale"></span><span data-i18n="ayni.desktop.scaleNew"></span><span class="info-tip" role="button" tabindex="0" data-i18n-attr="data-help:ayni.desktop.scaleNewInfo"></span><input role="switch" type="checkbox" id="scaleNewChk"></label>',
+        // THE BAR - its side of the screen and its height (its width when at a side).
+        '        <h4 id="moreBar" data-i18n="ayni.desktop.barLabel"></h4>',
+        '        <div class="set-row"><label for="setBar" data-i18n="ayni.desktop.barPos"></label>',
+        '            <div class="picker" id="setBar"><input type="hidden" value="bottom"><div class="panel popup picker-pop" popover="manual"><ul role="listbox"><li role="option" data-value="top" data-i18n="ayni.desktop.barTop"></li><li role="option" data-value="bottom" data-i18n="ayni.desktop.barBottom"></li><li role="option" data-value="left" data-i18n="ayni.desktop.barLeft"></li><li role="option" data-value="right" data-i18n="ayni.desktop.barRight"></li></ul></div></div></div>',
+        '        <div class="set-row"><label for="setBarH" data-i18n="ayni.desktop.barHeight"></label>',
+        '            <span class="slider-row"><input type="range" id="setBarH" min="36" max="72" step="2"><output id="setBarHOut" for="setBarH"></output></span></div>',
+        // OTHER - what fits no section above: the raised look (and the app's rows, before it).
+        '        <h4 id="moreOther" data-i18n="ayni.desktop.othersLabel"></h4>',
+        // BEVEL - set.bevel (default on): buttons, tabs, switches and splitters look raised, here and in every window.
+        '        <label class="switch end" id="bevelRow"><span data-i18n="ayni.desktop.bevel"></span><span class="info-tip" role="button" tabindex="0" data-i18n-attr="data-help:ayni.desktop.bevelInfo"></span><input role="switch" type="checkbox" id="bevelChk"></label>',
+        '    </div>',
+        // WINDOW SWITCHER - Alt pressed and let go on its own (see SWITCHER).
+        '    <div class="switcher" id="switcher" role="listbox" hidden data-i18n-attr="aria-label:ayni.desktop.switchWin"></div>',
+        '</div>'
+    ].join( '\n' );
+
     Ayni.deskPage = function ( h )
     {
+    // Any hook left out does nothing: a page with no launcher, no unread counts...
+    var noop = function () {};
+    h = Object.assign( { appName: '', APPS: {}, NARROW: {}, SHORT: {}, appsReady: Promise.resolve(), appOf: function () { return ''; },
+                         openMenu: noop, closeMenu: noop, placeUnread: noop, pokeUnread: noop, placeMail: noop, askMail: noop }, h );
+
+    // The page's markup, unless it brings its own (see MARKUP).
+    if( ! document.getElementById( 'desktop' ) )
+    {
+        var pic = h.icon ? '<img src="' + Ayni.esc( h.icon ) + '" alt="">' : Ayni.icon( 'grid' );
+        document.body.insertAdjacentHTML( 'afterbegin', MARKUP.replace( '{icon}', function () { return pic; } ) );
+    }
+
     // A new tooltip. This script runs as the page is read, before Ayni (a
     // deferred script) is in: until then the tooltip is only written down.
     function setTip( el, text )
@@ -44,10 +108,11 @@
 
     //------------------------------------------------------------------------//
     // SETTINGS - this device's desktop (a PC and a tablet can each want their
-    // own), in localStorage "desktop"; set from the "⋮" menu (see MORE).
+    // own), in localStorage "desktop"; set from the "⋮" menu (see MORE). The app's
+    // gadgets keep their choices in the same object (D.set, D.saveSet).
 
     var SET_KEY = KEYS + 'desktop';
-    var set = { bar: 'bottom', barH: 48, dow: 'short', date: false, secs: false, sticky: true };
+    var set = { bar: 'bottom', barH: 48, sticky: true };     // the app's gadgets add their own keys (until 2026-11-23 the clock's were here)
     Object.assign( set, store( SET_KEY ) || {} );
     // Until 2026-09-26 the desktop had its own colour schemes; they now follow the account's.
     // Until 2026-09-28 it had "Start with" and a bar font too (dropped with the settings dialog).
@@ -1147,27 +1212,78 @@
     paintTile();
 
     //------------------------------------------------------------------------//
-    // MORE - the "⋮" after the clock (2026-09-28): Ayni's popup with controls
-    // (opened by its button, or by h.openMoreHere). Holds the Free/Tile switch,
-    // Sticky windows, the clock, the bar, the screen locker and Lock now. Open
-    // popups close on their own with a press elsewhere, Escape, a resize, or when
-    // a frame takes the focus; a press in a frame that does not take it: closeMore.
+    // MORE - the "⋮" after the gadgets (2026-09-28): Ayni's popup with controls
+    // (opened by its button, or by a right-click / long press on the desk, below).
+    // Holds the Free/Tile switch, Sticky windows, Scale on open, the bar and
+    // Raised controls, and the app's own sections (SLOTS). Open popups close on
+    // their own with a press elsewhere, Escape, a resize, or when a frame takes
+    // the focus; a press in a frame that does not take it: closeMore.
 
     var moreBtn = document.getElementById( 'moreBtn' ), moreMenu = document.getElementById( 'moreMenu' );
 
     function placeMore() { if( moreMenu.matches( ':popover-open' ) ) Ayni.place( moreMenu, moreBtn ); }
 
-    // The bar's popups (the "⋮", the weather, the month), closed from code.
+    // The bar's popups (the "⋮" and the gadgets' own, added with addPopup), closed from code.
+    var popups = [ moreMenu ];
     function closeMore()
     {
-        [ moreMenu, wxPop, calPop ].forEach( function ( p ) { if( p.matches( ':popover-open' ) ) p.hidePopover(); } );
+        popups.forEach( function ( p ) { if( p.matches( ':popover-open' ) ) p.hidePopover(); } );
     }
 
-    document.getElementById( 'lockNowBtn' ).addEventListener( 'click', function ()
+    // A press on the desk or the bar closes an open menu. A right-click on an empty
+    // spot of the desk (not the bar) opens the "⋮" menu, where the desktop's
+    // settings are - unless that very press was the one closing the launcher's menu.
+    var menuWasOpen = false;
+    [ desk, bar ].forEach( function ( el )
     {
-        closeMore();
-        if( window.AyniLocker ) AyniLocker.lock();
+        el.addEventListener( 'pointerdown', function ( e )
+        {
+            if( e.target.closest( '#menuBtn' ) ) return;
+            menuWasOpen = ! menu.hidden;
+            h.closeMenu();
+        } );
     } );
+    function openMoreHere()
+    {
+        if( ! menuWasOpen && ! moreMenu.matches( ':popover-open' ) ) Ayni.showPopup( moreMenu, moreBtn );
+    }
+    desk.addEventListener( 'contextmenu', function ( e )
+    {
+        if( ! e.target.closest( '.desk-empty' ) ) return;
+        e.preventDefault();
+        openMoreHere();
+    } );
+    // A finger's right-click: a long press on an empty spot of the desk. And the
+    // wheel moves a row of chips along the bar (a column scrolls by itself).
+    document.addEventListener( 'DOMContentLoaded', function () { if( window.Ayni ) Ayni.ready.then( function ()
+    {
+        Ayni.longTap( desk, '.desk-empty', openMoreHere );
+    } ); } );
+    tasks.addEventListener( 'wheel', function ( e )
+    {
+        if( set.bar === 'left' || set.bar === 'right' || tasks.scrollWidth <= tasks.clientWidth || ! e.deltaY ) return;
+        e.preventDefault();
+        tasks.scrollLeft += e.deltaY;
+    }, { passive: false } );
+
+    // SLOTS (2026-11-23) - where the app puts its own parts: gadgets on the bar, sections
+    // of the "⋮", popups of the bar. `el`: an element, a fragment, or a <template> (its
+    // content goes in); `where.before` / `where.after`: an element or a selector.
+    var widgets = bar.querySelector( '.widgets' );
+    function put( box, el, where, ref )
+    {
+        where = where || {};
+        var at = function ( x ) { return typeof x === 'string' ? box.querySelector( x ) : x; };
+        if( where.after ) ref = at( where.after ).nextSibling;
+        else if( where.before ) ref = at( where.before );
+        box.insertBefore( el.tagName === 'TEMPLATE' ? el.content : el, ref || null );
+    }
+    // A gadget on the bar: before the "⋮" unless told where.
+    function addWidget( el, where ) { put( widgets, el, where, moreBtn ); }
+    // Rows of the "⋮": at its end unless told where ({ before: '#moreWindows' } is first).
+    function addMenuSection( el, where ) { put( moreMenu, el, where, null ); }
+    // A gadget's popup: in the desktop, and closed with the "⋮" (closeMore).
+    function addPopup( el ) { desktop.appendChild( el ); if( popups.indexOf( el ) < 0 ) popups.push( el ); }
 
     // STICKY WINDOWS - this device's choice (set.sticky); see drag.
     var stickyChk = document.getElementById( 'stickyChk' );
@@ -1217,466 +1333,27 @@
     }
     if( finePtr.addEventListener ) finePtr.addEventListener( 'change', onFineChange );
 
-    // THE CLOCK AND THE BAR - every change applies at once; the menu (and the
-    // CLOCK AND DATE dialog) stays open, the menu follows the bar when it moves or
-    // changes size. The clock's rows live in that dialog (below).
-    var F = {
-        dow:  document.getElementById( 'setDow' ), date: document.getElementById( 'setDateFmt' ),
-        secs: document.getElementById( 'setSecs' ), pad: document.getElementById( 'setPad' ),
-        h12:  document.getElementById( 'clk12' ), h24: document.getElementById( 'clk24' ),
-        bar:  document.getElementById( 'setBar' ), barH: document.getElementById( 'setBarH' )
-    };
+    // THE BAR - every change applies at once; the menu stays open and follows
+    // the bar when it moves or changes size.
+    var F = { bar: document.getElementById( 'setBar' ), barH: document.getElementById( 'setBarH' ) };
     var barHOut = document.getElementById( 'setBarHOut' );
-    F.secs.checked = !! set.secs; F.pad.checked = set.hourPad !== false;
-    F.h12.checked = !! set.h12; F.h24.checked = ! set.h12;
     F.barH.value = set.barH; barHOut.textContent = set.barH + ' px';
-    // The weekday, the date and the bar's side are Ayni list pickers: set once Ayni has started
+    // The bar's side is an Ayni list picker: set once Ayni has started
     document.addEventListener( 'DOMContentLoaded', function () { if( window.Ayni ) Ayni.ready.then( function ()
     {
-        Ayni.picker( F.dow ).set( set.dow ); Ayni.picker( F.bar ).set( set.bar );
-        loadDateFmts(); loadZones(); h.loadLocker();
+        Ayni.picker( F.bar ).set( set.bar );
     } ); } );
     Object.keys( F ).forEach( function ( k )
     {
-        F[ k ].addEventListener( k === 'barH' ? 'input' : k === 'dow' || k === 'bar' || k === 'date' ? 'ayni:change' : 'change', function ()
+        F[ k ].addEventListener( k === 'barH' ? 'input' : 'ayni:change', function ()
         {
-            var df = Ayni.picker( F.date ).value || 'none';
-            set.dow = Ayni.picker( F.dow ).value; set.secs = F.secs.checked;
-            set.date = df !== 'none'; if( set.date ) set.dateFmt = df;      // the format is kept while the date is off
-            set.hourPad = F.pad.checked; set.h12 = F.h12.checked;
             set.bar = Ayni.picker( F.bar ).value; set.barH = +F.barH.value;
             barHOut.textContent = set.barH + ' px';
             saveSet();
             applyLayout();
-            tick();
             placeMore();
         } );
     } );
-
-    // OTHER CLOCKS' rows (2026-11-23): one per zone of set.zones (ZONES_MAX at most, the bar's order), each
-    // an Ayni filtered list of the time zones and a bin; "+" adds one (UTC) and opens its list at once, to
-    // type the city. Made again at each menu open (ui.js is deferred) and after an add or a remove.
-    var ZONES_MAX = 5;
-    if( ! Array.isArray( set.zones ) ) set.zones = [];
-    set.zones = set.zones.filter( function ( z ) { return typeof z === 'string' && z; } ).slice( 0, ZONES_MAX );
-    delete set.tz2; delete set.tz2On;      // the one second clock until 2026-11-23: not carried over (his call)
-    var zoneRows = document.getElementById( 'zoneRows' ), zoneAdd = document.getElementById( 'zoneAdd' ), zoneOpts = null;
-    function zoneItem( z ) { return { value: z, text: z.replace( /_/g, ' ' ) }; }
-    function zoneOptions()
-    {
-        if( ! zoneOpts )
-        {
-            var zones = Ayni.dates.zones().slice();
-            if( zones.indexOf( 'UTC' ) < 0 ) zones.unshift( 'UTC' );
-            zoneOpts = zones.map( zoneItem );
-        }
-        // a saved zone the browser's list lacks still shows
-        var extra = set.zones.filter( function ( z ) { return ! zoneOpts.some( function ( o ) { return o.value === z; } ); } );
-        return extra.filter( function ( z, i ) { return extra.indexOf( z ) === i; } ).map( zoneItem ).concat( zoneOpts );
-    }
-    function loadZones()
-    {
-        zoneAdd.disabled = set.zones.length >= ZONES_MAX;
-        if( ! window.Ayni || ! Ayni.picker ) return;      // called again once Ayni has started
-        zoneRows.textContent = '';
-        var opts = zoneOptions();
-        return set.zones.map( function ( z, i )
-        {
-            var row = document.createElement( 'div' ), el = document.createElement( 'div' ), del = document.createElement( 'button' );
-            row.className = 'set-row';
-            el.className = 'picker'; el.dataset.picker = 'filter'; el.setAttribute( 'aria-label', t( 'ayni.desktop.clock2Zone' ) );
-            del.type = 'button'; del.className = 'btn'; del.innerHTML = Ayni.icon( 'trash' );
-            del.dataset.tip = t( 'ayni.desktop.clockDel' ); del.setAttribute( 'aria-label', del.dataset.tip );
-            row.append( el, del );
-            zoneRows.append( row );
-            var pk = Ayni.picker( el );
-            pk.options = opts; pk.set( z );
-            el.addEventListener( 'ayni:change', function () { set.zones[ i ] = pk.value || 'UTC'; saveSet(); tick(); } );
-            del.addEventListener( 'click', function ()
-            {
-                set.zones.splice( i, 1 );
-                saveSet(); loadZones(); tick(); placeMore();
-                zoneAdd.focus();
-            } );
-            return pk;
-        } );
-    }
-    zoneAdd.addEventListener( 'click', function ()
-    {
-        if( set.zones.length >= ZONES_MAX ) return;
-        set.zones.push( 'UTC' );
-        saveSet();
-        var pks = loadZones() || [];
-        tick(); placeMore();
-        var pk = pks[ pks.length - 1 ];
-        if( pk ) { pk.field.focus(); if( pk.field.select ) pk.field.select(); pk.open(); }
-    } );
-    // SHOW THE CLOCK - off (set.clockOff) hides all the clocks, disables the cog before it (CLOCK AND DATE)
-    // and greys the other clocks' rows.
-    var clockChk = document.getElementById( 'setClock' ), clockSetBtn = document.getElementById( 'clockSetBtn' ),
-        clock2Rows = document.getElementById( 'clock2Rows' );
-    function clockShown() { clockChk.checked = ! set.clockOff; clockSetBtn.disabled = !! set.clockOff; clock2Rows.inert = !! set.clockOff; }
-    clockShown();
-    clockChk.addEventListener( 'change', function () { set.clockOff = ! clockChk.checked; clockShown(); saveSet(); tick(); placeMore(); } );
-    loadZones();
-    moreBtn.addEventListener( 'click', loadZones );
-
-    // CLOCK AND DATE (2026-11-23) - the cog in the menu's clock row: a close-only
-    // dialog with the clock as the bar shows it on top (drawn by tick), then the
-    // time (24 h / 12 h, two-digit hour, seconds) and the date (weekday, format)
-    // of the main clock; the second clock stays in the menu, always short. The cog is a button inside the row's <label>: a press on
-    // it never flips the switch (a label leaves its buttons alone).
-    var clkBack = document.getElementById( 'clkBackdrop' ), clkPrev = document.getElementById( 'clkPreview' );
-    clockSetBtn.addEventListener( 'click', function ()
-    {
-        closeMore();
-        loadDateFmts();
-        clkBack.showModal();
-        tick();
-    } );
-    clkBack.addEventListener( 'close', function () { moreBtn.focus(); } );      // its cog went with the menu
-    // THE DATE's list: "Don't show", then today in each format, grouped by what comes first (so
-    // 05/06 and 06/05 never look alike); the month's name in the interface language.
-    function loadDateFmts()
-    {
-        if( ! window.Ayni || ! Ayni.picker ) return;      // called again once Ayni has started
-        var now = new Date(), items = [ { value: 'none', text: t( 'ayni.desktop.weekdayNone' ) } ];
-        DATE_GROUPS.forEach( function ( g )
-        {
-            items.push( { heading: t( g[ 0 ] ) } );
-            g[ 1 ].forEach( function ( f ) { items.push( { value: f, text: dateText( now, f ) } ); } );
-        } );
-        var pk = Ayni.picker( F.date );
-        pk.options = items;
-        pk.set( set.date ? set.dateFmt || 'iso' : 'none' );
-    }
-
-    //------------------------------------------------------------------------//
-    // WEATHER - this device's choice (set.weatherBar, the "⋮" menu): the sky
-    // now as an icon on the bar, again every 30 min; a press opens today's
-    // forecast beside it, fetched then (never on its own). The place, the units
-    // and who gives it are ONE per user (data/weather.json, set below in this
-    // menu, read by both lockers too); the engine is Bellas artes': shared/lockers/culture.js, loaded only when
-    // this is on. Its cache too ("nv-culture:"): the locker reuses our call.
-
-    var wxBtn = document.getElementById( 'wxBtn' ), wxPop = document.getElementById( 'wxPop' ),
-        wxChk = document.getElementById( 'weatherBarChk' );
-    var wxTimer = 0, wxGen = 0, wxPopGen = 0, wxCached = null;
-    var WX_EVERY = 30 * 60000;
-
-    // One icon per sky of the engine's skyOf (clear, partly cloudy, cloudy, fog,
-    // drizzle, rain, snow, showers, storm), [ day, night ] where they differ.
-    // Class "s" paints amber (sun, bolt), "sd" fills the sun's disc, "r" blue (rain, snow).
-    var WX_CLOUD = '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>';
-    // A sun behind the cloud `d`: its rays, and its disc (filled, like the clear
-    // sky's) cut away by the cloud with a small gap - a mask, "#M" made unique per
-    // icon in wxSvg; then the cloud itself.
-    function wxPeek( d )
-    {
-        return '<path class="s" d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41"/>' +
-               '<mask id="M"><rect width="24" height="24" fill="#fff" stroke="none"/>' +
-               '<path d="' + d + '" fill="#000" stroke="#000" stroke-width="5"/></mask>' +
-               '<circle class="s sd" cx="12" cy="12" r="4" mask="url(#M)"/><path d="' + d + '"/>';
-    }
-    var WX_ICONS =
-    [
-        [ '<g class="s"><circle class="sd" cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></g>',
-          '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>' ],
-        [ wxPeek( 'M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z' ),
-          '<path d="M13 16a3 3 0 1 1 0 6H7a5 5 0 1 1 4.9-6Z"/><path d="M10.1 9A6 6 0 0 1 16 4a4 4 0 0 0 6 6 6 6 0 0 1-3 5.197"/>' ],
-        [ '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>' ],
-        [ WX_CLOUD + '<path d="M16 17H7M17 21H9"/>' ],
-        [ WX_CLOUD + '<path class="r" d="M8 19v1M8 14v1M16 19v1M16 14v1M12 21v1M12 16v1"/>' ],
-        [ WX_CLOUD + '<path class="r" d="M16 14v6M8 14v6M12 16v6"/>' ],
-        [ WX_CLOUD + '<path class="r" d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/>' ],
-        [ wxPeek( 'M3 20a5 5 0 1 1 8.9-4H13a3 3 0 0 1 2 5.24' ) + '<path class="r" d="M11 20v2M7 19v2"/>',
-          WX_CLOUD + '<path class="r" d="M16 14v6M8 14v6M12 16v6"/>' ],
-        [ '<path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path class="s" d="m13 12-3 5h4l-3 5"/>' ]
-    ];
-    var wxMask = 0;
-    function wxSvg( k, day )
-    {
-        var i = WX_ICONS[ k ] || WX_ICONS[ 2 ], id = 'wxm' + ( ++wxMask );
-        return '<svg class="wx-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-               ( day || i.length < 2 ? i[ 0 ] : i[ 1 ] ).replace( 'id="M"', 'id="' + id + '"' ).replace( 'url(#M)', 'url(#' + id + ')' ) + '</svg>';
-    }
-
-    // Day or night at place-local time `iso` ("YYYY-MM-DDTHH:MM"): Open-Meteo says
-    // so for now (is_day); else that day's sunrise and sunset; day when unknown.
-    function wxDay( w, iso, isDay )
-    {
-        if( isDay != null ) return !! isDay;
-        var i = w.daily.time.indexOf( iso.slice( 0, 10 ) ), up = w.daily.sunrise[ i ], down = w.daily.sunset[ i ];
-        return i < 0 || ! up || ! down || ( iso >= up && iso < down );
-    }
-
-    function wxEngine()
-    {
-        return h.weatherEngine();
-    }
-
-    // The weather settings (data/weather.json), the place, the weather. `fresh`: a new call (the
-    // 30-min turn, a press); else the cache while under 30 min old (a reload).
-    // The place keeps its own long cache (no new name lookup each time).
-    function wxGet( fresh )
-    {
-        return wxEngine().then( function ( S )
-        {
-            var E = S.engine;
-            wxCached = wxCached || E.store( 'nv-culture:' );
-            var get = fresh ? function ( k, ttl, fn ) { return wxCached( k, 0, fn ); } : wxCached;
-            return S.weatherRead().then( function ( cfg )
-            {
-                return E.placeOf( cfg, wxCached ).then( function ( p )
-                {
-                    return E.weatherAt( get, p, cfg.units, cfg.weather ).then( function ( w ) { return { S: S, cfg: cfg, p: p, w: w }; } );
-                } );
-            } );
-        } );
-    }
-
-    function wxT( S )                         // the engine's words, in the interface language
-    {
-        var l = window.Ayni ? String( Ayni.i18n.lang() ).slice( 0, 2 ) : '';
-        return S.engine.T[ l ] || S.engine.T.en;
-    }
-
-    function wxPaint( d )                     // the bar's icon: the sky now
-    {
-        var E = d.S.engine, c = d.w.current;
-        wxBtn.innerHTML = wxSvg( E.skyOf( c.weather_code ), wxDay( d.w, c.time, c.is_day ) );
-        setTip( wxBtn, t( 'ayni.desktop.weather' ) + ': ' + E.deg( c.temperature_2m ) + ', ' + wxT( d.S ).sky[ E.skyOf( c.weather_code ) ] );
-    }
-
-    function wxTick( fresh )
-    {
-        clearTimeout( wxTimer );
-        wxTimer = setTimeout( function () { wxTick( true ); }, WX_EVERY );
-        var g = ++wxGen;
-        wxGet( fresh ).then( function ( d ) { if( g === wxGen ) wxPaint( d ); }, function () {} );
-    }
-
-    function wxEl( tag, cls, text, parent )
-    {
-        var e = document.createElement( tag );
-        if( cls ) e.className = cls;
-        if( text != null ) e.textContent = text;
-        if( parent ) parent.appendChild( e );
-        return e;
-    }
-
-    // The popup: the place first, a sliding bar until the forecast comes, then
-    // the next 5 times 3 hours apart from the coming hour: "hh:mm", the sky, the temperature.
-    function wxOpen()
-    {
-        var g = ++wxPopGen;
-        wxPop.innerHTML = '';
-        var head = wxEl( 'div', 'wx-head', t( 'ayni.desktop.weather' ), wxPop );
-        var busy = wxEl( 'span', 'wx-busy', null, wxPop );
-        busy.setAttribute( 'role', 'progressbar' );
-        wxEl( 'span', null, null, busy );
-        Ayni.place( wxPop, wxBtn );
-        wxGet( true ).then( function ( d )
-        {
-            if( set.weatherBar ) wxPaint( d );
-            if( g !== wxPopGen ) return;
-            var E = d.S.engine, T = wxT( d.S ), w = d.w, hr = w.hourly, now = w.current.time;
-            head.textContent = ( d.p.name ? T.weather.replace( '{c}', d.p.name ) : T.here ) + ' · ' + d.S.WEATHER[ d.cfg.weather ].name;
-            var cols = wxEl( 'div', 'wx-cols' ), i = 0;
-            while( i < hr.time.length && hr.time[ i ] <= now ) i++;
-            for( ; i < hr.time.length && cols.childNodes.length < 5; i += 3 )
-            {
-                var k = E.skyOf( hr.weather_code[ i ] ), col = wxEl( 'div', 'wx-col', null, cols );
-                col.title = T.sky[ k ];
-                wxEl( 'span', '', hr.time[ i ].slice( 11, 16 ), col );
-                col.insertAdjacentHTML( 'beforeend', wxSvg( k, wxDay( w, hr.time[ i ] ) ) );
-                wxEl( 'b', '', E.deg( hr.temperature_2m[ i ] ), col );
-            }
-            if( ! cols.childNodes.length ) throw new Error( 'no hours' );
-            wxPop.replaceChild( cols, busy );
-            Ayni.place( wxPop, wxBtn );
-        } ).catch( function ()
-        {
-            if( g !== wxPopGen || ! busy.parentNode ) return;
-            wxPop.replaceChild( wxEl( 'div', 'wx-fail', t( 'ayni.loadFailed' ) ), busy );
-            Ayni.place( wxPop, wxBtn );
-        } );
-    }
-
-    function wxApply()
-    {
-        wxChk.checked = !! set.weatherBar;
-        wxBtn.hidden = ! set.weatherBar;
-        if( set.weatherBar )
-        {
-            if( ! wxBtn.firstChild ) wxBtn.innerHTML = wxSvg( 2, true );     // a cloud until the first answer
-            wxTick( false );
-            return;
-        }
-        clearTimeout( wxTimer );
-        wxGen++; wxPopGen++;
-        if( wxPop.matches( ':popover-open' ) ) wxPop.hidePopover();
-    }
-    wxChk.addEventListener( 'change', function () { set.weatherBar = wxChk.checked; saveSet(); wxApply(); placeMore(); } );
-    wxApply();
-
-    wxPop.addEventListener( 'toggle', function ( e ) { if( e.newState === 'open' ) wxOpen(); else wxPopGen++; } );
-
-    // WEATHER SETTINGS in the "⋮" menu (2026-11-11): where, who gives it,
-    // units - ONE per user (data/weather.json via the engine's weatherUpdate),
-    // for the bar and both lockers. Read again at each menu open; each change
-    // saved at once, version-checked. A read that failed shows nothing to
-    // change (a stand-in saved would replace the real settings, F6).
-    var wxsPlace = document.getElementById( 'wxPlace' ), wxsBy = document.getElementById( 'wxBy' ),
-        wxsUnits = document.getElementById( 'wxUnits' ),
-        wxsCity = document.getElementById( 'wxCity' ), wxsMsg = document.getElementById( 'wxMsg' ),
-        wxsS = null, wxsCfg = null, wxsGen = 0, wxsOff = true;
-    function wxsSay( text ) { wxsMsg.hidden = ! text; wxsMsg.textContent = text || ''; }
-    function wxsLock( off )
-    {
-        [ wxsPlace, wxsBy, wxsUnits ].forEach( function ( x ) { Ayni.picker( x ).disabled = off; } );
-        wxsOff = off;
-        wxsCityOn();
-    }
-    // The city field is always shown; usable only while "A city" is picked.
-    function wxsCityOn()
-    {
-        var off = wxsOff || ! wxsCfg || wxsCfg.place !== 'city';
-        wxsCity.disabled = off;
-        document.getElementById( 'wxFind' ).ariaDisabled = off ? 'true' : null;
-    }
-    function wxsDraw()
-    {
-        var c = wxsCfg, W = wxsS.WEATHER;
-        var pp = Ayni.picker( wxsPlace );
-        pp.options = [ { value: 'geo', text: t( 'ayni.weather.placeGeo' ) }, { value: 'city', text: t( 'ayni.weather.placeCity' ) } ];
-        pp.set( c.place );
-        var pb = Ayni.picker( wxsBy );
-        pb.options = Object.keys( W ).map( function ( k ) { return { value: k, text: W[ k ].name }; } );
-        pb.set( c.weather );
-        var pu = Ayni.picker( wxsUnits );
-        pu.options = [ { value: 'c', text: t( 'ayni.weather.metric' ) }, { value: 'f', text: t( 'ayni.weather.imperial' ) } ];   // 'c'/'f' kept: the saved value
-        pu.set( c.units );
-        wxsCityOn();
-        if( document.activeElement !== wxsCity ) wxsCity.value = c.city ? c.city.name : '';
-        placeMore();
-    }
-    function wxsFill()
-    {
-        var g = ++wxsGen;
-        wxEngine().then( function ( S ) { return S.weatherReadStrict().then( function ( c ) { return { S: S, c: c }; } ); } ).then( function ( d )
-        {
-            if( g !== wxsGen ) return;
-            wxsS = d.S; wxsCfg = d.c;
-            wxsLock( false );
-            wxsDraw();
-        }, function () { if( g === wxsGen ) { wxsCfg = null; wxsLock( true ); wxsSay( t( 'ayni.weather.readFail' ) ); } } );
-    }
-    // One change: laid over the settings as they are on the server now.
-    function wxsSave( patch )
-    {
-        if( ! wxsS || ! wxsCfg ) return;
-        Object.keys( patch ).forEach( function ( k ) { wxsCfg[ k ] = patch[ k ]; } );
-        wxsDraw();
-        wxsS.weatherUpdate( function ( now )
-        {
-            var out = JSON.parse( JSON.stringify( now ) );
-            Object.keys( patch ).forEach( function ( k ) { out[ k ] = patch[ k ]; } );
-            return out;
-        } ).then( function ( out )
-        {
-            wxsCfg = out;
-            if( set.weatherBar ) wxTick( true );
-        }, function ( e ) { Ayni.toast( e && e.read ? 'err' : 'warn', t( e && e.read ? 'ayni.weather.notSaved' : 'ayni.weather.saveFail' ) ); } );
-    }
-    // "Where this computer is" asks the browser now, while someone is at the keyboard.
-    function wxsAskHere()
-    {
-        if( ! navigator.geolocation ) { wxsSay( t( 'ayni.weather.geoDenied' ) ); return; }
-        wxsSay( '…' );
-        navigator.geolocation.getCurrentPosition( function ( g )
-        {
-            wxsSay( '✓' );
-            if( window.NayiveUI && NayiveUI.townName )
-                NayiveUI.townName( Math.round( g.coords.latitude * 100 ) / 100, Math.round( g.coords.longitude * 100 ) / 100 )
-                    .then( function ( n ) { if( n ) wxsSay( '✓ ' + n ); }, function () {} );
-        }, function () { wxsSay( t( 'ayni.weather.geoDenied' ) ); }, { timeout: 20000, maximumAge: 30 * 6e4 } );
-    }
-    function wxsFind()
-    {
-        var name = wxsCity.value.trim();
-        if( ! name || ! wxsCfg || wxsCity.disabled ) return;
-        wxsSay( '…' );
-        var lang = window.Ayni ? String( Ayni.i18n.lang() ).slice( 0, 2 ) : 'en';
-        fetch( 'https://geocoding-api.open-meteo.com/v1/search?count=10&language=' + encodeURIComponent( lang ) + '&name=' + encodeURIComponent( name ) )
-            .then( function ( r ) { return r.json(); } )
-            .then( function ( d )
-            {
-                // The biggest of the namesakes ("Lisboa": Lisbon, not a village in Mozambique).
-                var r = ( d.results || [] ).reduce( function ( a, b ) { return ! a || ( b.population || 0 ) > ( a.population || 0 ) ? b : a; }, null );
-                if( ! r ) { wxsSay( t( 'ayni.weather.cityNone' ) ); return; }
-                wxsCity.value = r.name;
-                wxsSay( '✓ ' + [ r.name, r.admin1, r.country ].filter( Boolean ).join( ', ' ) );
-                wxsSave( { place: 'city', city: { name: r.name, lat: Math.round( r.latitude * 100 ) / 100, lon: Math.round( r.longitude * 100 ) / 100, tz: r.timezone } } );
-            }, function () { wxsSay( t( 'ayni.weather.cityNone' ) ); } );
-    }
-    wxsPlace.addEventListener( 'ayni:change', function ( e )
-    {
-        var v = e.detail.value;
-        if( ! wxsCfg ) return;
-        wxsSay( '' );
-        if( v === 'geo' ) { wxsSave( { place: 'geo' } ); wxsAskHere(); return; }
-        if( wxsCfg && wxsCfg.city ) wxsSave( { place: 'city' } );
-        else { wxsCfg.place = 'city'; wxsDraw(); wxsCity.focus(); }      // saved once a city is found
-    } );
-    wxsBy.addEventListener( 'ayni:change', function ( e ) { wxsSave( { weather: e.detail.value } ); } );
-    wxsUnits.addEventListener( 'ayni:change', function ( e ) { wxsSave( { units: e.detail.value } ); } );
-    document.getElementById( 'wxFind' ).addEventListener( 'click', wxsFind );
-    wxsCity.addEventListener( 'keydown', function ( e ) { if( e.key === 'Enter' ) { e.preventDefault(); wxsFind(); } } );
-    moreBtn.addEventListener( 'click', function () { wxsSay( '' ); wxsFill(); } );
-
-    //------------------------------------------------------------------------//
-    // BATTERY - this device's choice (set.battBar, the first row of the "⋮"
-    // menu): the level on the bar, an icon and "80%". Only where the browser
-    // tells it (navigator.getBattery: Chrome, Edge; not Firefox or Safari) and
-    // there is a battery; else the switch is greyed and the bar shows nothing.
-    // A PC without one reports "charging, full, no time left" - and so does a
-    // full laptop on its charger: greyed too, until it is unplugged. The
-    // low-battery dialog is shared/ui.js's (every page, this switch or not).
-
-    var battEl = document.getElementById( 'batt' ), battChk = document.getElementById( 'battBarChk' ),
-        battRow = document.getElementById( 'battRow' ), batt = null;
-
-    function battNone( b )
-    {
-        return ! b || ( b.charging && b.level >= 1 && b.chargingTime === 0 && b.dischargingTime === Infinity );
-    }
-
-    function battApply()
-    {
-        var none = battNone( batt );
-        battChk.checked  = !! set.battBar;
-        battChk.disabled = none;
-        battRow.toggleAttribute( 'disabled', none );
-        battEl.hidden = none || ! set.battBar;
-        if( battEl.hidden ) return;
-        var n = Math.round( batt.level * 100 );
-        battEl.classList.toggle( 'low', ! batt.charging && batt.level <= 0.15 );
-        battEl.classList.toggle( 'chg', batt.charging );
-        battEl.querySelector( '.batt-fill' ).setAttribute( 'width', Math.max( 1, 14 * batt.level ).toFixed( 1 ) );
-        battEl.querySelector( 'b' ).textContent = n + '%';
-        battEl.title = t( 'ayni.desktop.battery' ) + ': ' + n + '%' + ( batt.charging ? ' · ' + t( 'ayni.desktop.battCharging' ) : '' );
-        battEl.setAttribute( 'aria-label', battEl.title );
-    }
-    battChk.addEventListener( 'change', function () { set.battBar = battChk.checked; saveSet(); battApply(); placeMore(); } );
-    battApply();
-    if( window.Ayni ) Ayni.i18n.ready.then( battApply );     // the tooltip's words
-    if( navigator.getBattery ) navigator.getBattery().then( function ( b )
-    {
-        batt = b;
-        [ 'chargingchange', 'levelchange', 'chargingtimechange', 'dischargingtimechange' ].forEach( function ( ev ) { b.addEventListener( ev, battApply ); } );
-        battApply();
-    }, function () {} );
 
     // A window by its place on the bar (0, 1...), its app's folder ("drive"), or itself.
     function winOf( which )
@@ -1821,405 +1498,6 @@
     hookAlt( window );
 
     //------------------------------------------------------------------------//
-    // THE CLOCK - "<weekday> <date> <time>", as CLOCK AND DATE says: the weekday
-    // short or long, the date in one of DATE_GROUPS' formats (yyyy-mm-dd until
-    // 2026-11-23, still the first), the time 24 h or 12 h, with or without the
-    // hour's leading zero and the seconds; names in the interface language. A
-    // press on the time opens the countdown (below), on the weekday / date the
-    // month (THE MONTH).
-
-    var clock = document.getElementById( 'clock' ), clockTimer = 0;
-    var pad = Ayni.dates.pad, isoDate = Ayni.dates.iso;
-    // The date formats, by what comes first: [ heading, [ format... ] ].
-    var DATE_GROUPS = [
-        [ 'ayni.desktop.dateYearFirst',  [ 'iso', 'ymd/' ] ],
-        [ 'ayni.desktop.dateDayFirst',   [ 'dmy/', 'dmy.', 'dmy-', 'dmyy/', 'dm/' ] ],
-        [ 'ayni.desktop.dateMonthFirst', [ 'mdy/', 'mdyy/', 'md/' ] ],
-        [ 'ayni.desktop.dateNamed',      [ 'dMMMy', 'dMMMMy', 'dMMM', 'dMMMM' ] ]
-    ];
-    var NAMED = { dMMMy:  { day: 'numeric', month: 'short', year: 'numeric' }, dMMMMy: { day: 'numeric', month: 'long', year: 'numeric' },
-                  dMMM:   { day: 'numeric', month: 'short' },                  dMMMM:  { day: 'numeric', month: 'long' } };
-    function uiLang() { return window.Ayni && Ayni.i18n.lang ? Ayni.i18n.lang() : undefined; }
-    function dayName( d, style )
-    {
-        var iso = d.getDay() || 7;
-        return window.Ayni ? Ayni.i18n.weekday( iso, style ) : d.toLocaleDateString( undefined, { weekday: style } );
-    }
-    function dateText( d, f )
-    {
-        if( NAMED[ f ] ) { try { return d.toLocaleDateString( uiLang(), NAMED[ f ] ); } catch( e ) { f = 'iso'; } }
-        var y = String( d.getFullYear() ), m = pad( d.getMonth() + 1 ), dd = pad( d.getDate() ), sep = f.slice( -1 );
-        switch( f )
-        {
-            case 'ymd/':  return y + sep + m + sep + dd;
-            case 'dmy/': case 'dmy.': case 'dmy-': return dd + sep + m + sep + y;
-            case 'dmyy/': return dd + sep + m + sep + y.slice( -2 );
-            case 'dm/':   return dd + sep + m;
-            case 'mdy/':  return m + sep + dd + sep + y;
-            case 'mdyy/': return m + sep + dd + sep + y.slice( -2 );
-            case 'md/':   return m + sep + dd;
-            default:      return isoDate( d );
-        }
-    }
-    // "AM" / "PM" in the interface language ("a. m." in Spanish), for 12 h.
-    var dayPeriods = {};
-    function dayPeriod( hr )
-    {
-        var k = ( uiLang() || '' ) + ( hr < 12 ? 'a' : 'p' );
-        if( ! dayPeriods[ k ] )
-        {
-            try
-            {
-                var part = new Intl.DateTimeFormat( uiLang(), { hour: 'numeric', hour12: true, timeZone: 'UTC' } )
-                    .formatToParts( new Date( Date.UTC( 2024, 0, 1, hr < 12 ? 9 : 21 ) ) )
-                    .filter( function ( x ) { return x.type === 'dayPeriod'; } )[ 0 ];
-                dayPeriods[ k ] = part ? part.value : '';
-            }
-            catch( e ) {}
-            dayPeriods[ k ] = dayPeriods[ k ] || ( hr < 12 ? 'AM' : 'PM' );
-        }
-        return dayPeriods[ k ];
-    }
-    // "14:05", "2:05 PM", "09:05:30"...: the main clock.
-    function timeText( hr, min, sec )
-    {
-        var suffix = '';
-        if( set.h12 ) { suffix = ' ' + dayPeriod( hr ); hr = hr % 12 || 12; }
-        return ( set.hourPad === false ? String( hr ) : pad( hr ) ) + ':' + pad( min ) + ( sec == null ? '' : ':' + pad( sec ) ) + suffix;
-    }
-    function tick()
-    {
-        clearTimeout( clockTimer );
-        var now = new Date();
-        clock.hidden = !! set.clockOff;
-        var head = [];
-        if( set.dow !== 'none' ) head.push( dayName( now, set.dow ) );
-        if( set.date )           head.push( dateText( now, set.dateFmt || 'iso' ) );
-        var time = timeText( now.getHours(), now.getMinutes(), set.secs ? now.getSeconds() : null );
-        clock.querySelector( 'span:not(.icon)' ).textContent = head.join( ' ' );
-        clock.querySelector( 'span:not(.icon)' ).hidden = ! head.length;
-        clock.querySelector( 'b' ).textContent = time;
-        setTip( clock, dayName( now, 'long' ) + ' ' + dateText( now, 'dMMMMy' ) );
-        tick2( now );
-        // CLOCK AND DATE's top line: the same text
-        if( clkBack.open )
-        {
-            clkPrev.children[ 0 ].textContent = head.join( ' ' );
-            clkPrev.children[ 1 ].textContent = time;
-        }
-        clockTimer = setTimeout( tick, set.secs ? 1000 - now.getMilliseconds() + 20
-                                                : 60000 - now.getSeconds() * 1000 - now.getMilliseconds() + 50 );
-    }
-
-    // OTHER CLOCKS (2026-10-09, up to 5 since 2026-11-23) - other time zones (set.zones, the "⋮"
-    // menu): each "<city> <hh:mm>" just before the clock, paler, and "+1" / "-1" when that place is
-    // already on another day. Always short: CLOCK AND DATE is the main clock's only. Shows only: no press.
-    var clocks2 = document.getElementById( 'clocks2' );
-    function zoneCity( z ) { return z.split( '/' ).pop().replace( /_/g, ' ' ); }
-    function tick2( now )
-    {
-        var zs = set.clockOff ? [] : set.zones;
-        while( clocks2.children.length > zs.length ) clocks2.lastChild.remove();
-        while( clocks2.children.length < zs.length )
-        {
-            var w = document.createElement( 'span' );
-            w.className = 'widget clock2'; w.innerHTML = '<span></span><b></b><i></i>';
-            clocks2.append( w );
-        }
-        zs.forEach( function ( z, n ) { zoneTick( clocks2.children[ n ], z, now ); } );
-    }
-    function zoneTick( el, z, now )
-    {
-        var p = {};
-        try
-        {
-            new Intl.DateTimeFormat( 'en-GB', { timeZone: z, year: 'numeric', month: '2-digit', day: '2-digit',
-                                                hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } )
-                .formatToParts( now ).forEach( function ( x ) { p[ x.type ] = x.value; } );
-        }
-        catch( e ) { el.hidden = true; return; }      // a zone this browser no longer knows
-        el.hidden = false;
-        var there = Date.UTC( +p.year, +p.month - 1, +p.day ),
-            here  = Date.UTC( now.getFullYear(), now.getMonth(), now.getDate() ),
-            days  = Math.round( ( there - here ) / 86400000 );
-        el.children[ 0 ].textContent = zoneCity( z );
-        el.children[ 1 ].textContent = p.hour + ':' + p.minute;
-        el.children[ 2 ].textContent = days > 0 ? '+' + days : days < 0 ? String( days ) : '';
-        el.title = z + ' - ' + p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute;
-    }
-    tick();
-    // the weekday is written in the interface language: once more when that is in
-    if( window.Ayni ) Ayni.i18n.ready.then( tick );
-
-    //------------------------------------------------------------------------//
-    // THE MONTH (2026-10-08) - a press on the clock's weekday / date (only when
-    // shown) opens a month's calendar beside the bar, like many Linux desktops:
-    // Ayni's calendar, view only: a day has no press. It always opens on today's
-    // month, and each row starts with its ISO week number.
-
-    var calPop = document.getElementById( 'calPop' ), calView = null, calWasOpen = false;
-
-    function calOpen()
-    {
-        h.closeMenu();
-        calView = calView || Ayni.calendar( document.getElementById( 'calView' ) );
-        calView.set( new Date() );
-        Ayni.showPopup( calPop, clock );
-    }
-    // A press on the clock closes an open popup before its click comes: noted first,
-    // so a second press on the date closes the month, and does not open it again.
-    clock.addEventListener( 'pointerdown', function () { calWasOpen = calPop.matches( ':popover-open' ); }, true );
-
-    //------------------------------------------------------------------------//
-    // THE COUNTDOWNS - as many as wanted at once, on this device (localStorage),
-    // so they go on after a reload. Each: running = `end` (a wall-clock time,
-    // never a counter a sleeping tab would slow down); paused = `left` (ms still
-    // to go); `len` its length in seconds. `last` is the length last started, to
-    // offer it again for a new one. Each has its own chip on the bar, just before
-    // the clock (oldest first) - the time left (not the text) and small Pause /
-    // Play and Stop buttons. The clock adds a new one; a chip changes its own.
-    // Time's up (`done`): beeps again and again until a press on a chip, a
-    // system notice when the desktop is not on screen, and NO dialog - the chip
-    // stays on the bar with the text (or 0:00 when there is none) and a small x
-    // at its end that takes it away.
-
-    var CD_KEY = KEYS + 'countdowns', CD_OLD = KEYS + 'countdown';   // until 2026-10-12: one countdown
-    var cds = cdLoad();
-    var cdBox = document.getElementById( 'cds' ), cdTpl = document.getElementById( 'cdTpl' ), cdBack = document.getElementById( 'cdBackdrop' );
-    var cdH = document.getElementById( 'cdH' ), cdM = document.getElementById( 'cdM' ), cdS = document.getElementById( 'cdS' );
-    var cdText = document.getElementById( 'cdText' ), cdPlay = document.getElementById( 'cdPlay' );
-    var cdTitle = document.getElementById( 'cdTitle' ), cdNote = document.getElementById( 'cdNote' );
-    var cdTimer = 0, audio = null, ringTimer = 0, cdEdit = 0;      // cdEdit: the id the dialog changes (0 = a new one)
-
-    function cdLoad()
-    {
-        var v = store( CD_KEY );
-        if( ! v )                                           // the old single one, if any
-        {
-            var o = store( CD_OLD ) || {};
-            v = { list: ( o.end || o.left || o.done ) ? [ { id: 1, end: o.end || 0, left: o.left || 0, done: !! o.done, text: o.text || '', len: o.last || 300 } ] : [],
-                  last: o.last };
-        }
-        return { list: Array.isArray( v.list ) ? v.list : [], last: v.last > 0 ? v.last : 300 };
-    }
-    function cdSave() { store( CD_KEY, cds ); try { localStorage.removeItem( CD_OLD ); } catch( e ) {} }
-    function cdById( id ) { return cds.list.filter( function ( c ) { return c.id === id; } )[ 0 ]; }
-    function cdMs( c )    { return c.end ? Math.max( 0, c.end - Date.now() ) : c.left; }
-    function cdFmt( ms )
-    {
-        var s = Math.ceil( ms / 1000 ), h = Math.floor( s / 3600 ), m = Math.floor( s / 60 ) % 60;
-        s %= 60;
-        return ( h ? h + ':' + pad( m ) : m ) + ':' + pad( s );
-    }
-
-    // One chip per countdown, in the list's order; chips of ones gone go too.
-    function cdPaint()
-    {
-        if( ! cds.list.some( function ( c ) { return c.done; } ) ) stopRing();   // all started again, stopped or taken away (also in another tab)
-        var keep = {};
-        cds.list.forEach( function ( c )
-        {
-            keep[ c.id ] = true;
-            var el = cdBox.querySelector( '[data-id="' + c.id + '"]' );
-            if( ! el ) { el = cdTpl.content.firstElementChild.cloneNode( true ); el.setAttribute( 'data-id', c.id ); }
-            cdBox.appendChild( el );                        // (re)placed in order
-            cdPaintChip( el, c );
-        } );
-        Array.prototype.slice.call( cdBox.children ).forEach( function ( el ) { if( ! keep[ el.getAttribute( 'data-id' ) ] ) el.remove(); } );
-    }
-
-    function cdPaintChip( el, c )
-    {
-        var on = !! ( c.end || c.left ), done = ! on && !! c.done;
-        var pp = el.querySelector( '.cd-pp' ), stop = el.querySelector( '.cd-stop' ), x = el.querySelector( '.cd-x' );
-        el.classList.toggle( 'paused', on && ! c.end );
-        el.classList.toggle( 'done', done );
-        el.querySelector( 'b' ).textContent = on ? cdFmt( cdMs( c ) ) : done && ! c.text ? cdFmt( 0 ) : '';
-        el.querySelector( '.cd-text' ).textContent = done ? c.text : '';   // the text only once time is up
-        setTip( el.querySelector( '.cd-main' ), done ? t( 'ayni.desktop.cdDone' ) : t( 'ayni.desktop.countdown' ) + ( c.text ? ' - ' + c.text : '' ) );
-        pp.hidden = stop.hidden = ! on;
-        x.hidden = ! done;
-        var icon = c.end ? 'pause' : 'play';
-        if( pp.getAttribute( 'data-icon' ) !== icon )
-        {
-            pp.innerHTML = Ayni.icon( icon );
-            pp.setAttribute( 'data-icon', icon );
-        }
-        if( ! stop.firstChild ) stop.innerHTML = Ayni.icon( 'stop' );
-        tip( pp, c.end ? 'ayni.desktop.cdPause' : 'ayni.desktop.cdContinue' );
-        tip( stop, 'ayni.desktop.cdStop' );
-        tip( x, 'ayni.close' );
-    }
-
-    function tip( el, key ) { setTip( el, t( key ) ); el.setAttribute( 'aria-label', el.dataset.tip ); }
-
-    // Ends the ones whose time is up, repaints, and comes back at the next
-    // second change of the soonest running one.
-    function cdTick()
-    {
-        clearTimeout( cdTimer );
-        var now = Date.now(), ended = cds.list.filter( function ( c ) { return c.end && c.end <= now; } );
-        if( ended.length ) cdDone( ended );
-        cdPaint();
-        var next = 0;
-        cds.list.forEach( function ( c )
-        {
-            if( ! c.end ) return;
-            var ms = ( c.end - now ) % 1000 + 20;
-            if( ! next || ms < next ) next = ms;
-        } );
-        if( next ) cdTimer = setTimeout( cdTick, next );
-    }
-
-    // The AudioContext is made on a press (Start), or a browser keeps it silent.
-    function wakeAudio()
-    {
-        var AC = window.AudioContext || window.webkitAudioContext;
-        try { if( ! audio && AC ) audio = new AC(); if( audio && audio.state !== 'running' ) audio.resume(); } catch( e ) {}
-    }
-    // Only a context a press already woke: one made now (no press) would hold
-    // the beeps and play them at the next Start.
-    function beep()
-    {
-        if( ! audio || audio.state !== 'running' ) return;
-        try
-        {
-            for( var i = 0; i < 6; i++ )           // 3 pairs of short beeps
-            {
-                var at = audio.currentTime + 0.05 + Math.floor( i / 2 ) * 0.8 + ( i % 2 ) * 0.22;
-                var o = audio.createOscillator(), g = audio.createGain();
-                o.frequency.value = 880;
-                g.gain.setValueAtTime( 0.0001, at );
-                g.gain.exponentialRampToValueAtTime( 0.25, at + 0.01 );
-                g.gain.exponentialRampToValueAtTime( 0.0001, at + 0.16 );
-                o.connect( g ); g.connect( audio.destination );
-                o.start( at ); o.stop( at + 0.18 );
-            }
-        } catch( e ) {}
-    }
-
-    // Time's up rings until the user stops it (his call, 2026-10-11): the 3
-    // pairs again every 2.5 s, until a press on the chip.
-    function ring()     { stopRing(); beep(); ringTimer = setInterval( beep, 2500 ); }
-    function stopRing() { clearInterval( ringTimer ); ringTimer = 0; }
-
-    function cdDone( ended )
-    {
-        ended.forEach( function ( c )
-        {
-            c.end = c.left = 0;
-            c.done = true;
-            try
-            {
-                if( document.hidden && window.Notification && Notification.permission === 'granted' )
-                    new Notification( t( 'ayni.desktop.cdDone' ), { body: c.text, icon: '../icons/icon-192.png' } );
-            } catch( e ) {}
-        } );
-        cdSave();
-        ring();
-    }
-
-    // `by`: what was pressed (the clock or a chip); the dialog sits beside it,
-    // on the desk side of the bar, as the month does. `c`: the countdown to
-    // change (its chip), or none for a new one (the clock).
-    var cdBy = clock;
-    function cdOpen( by, c )
-    {
-        h.closeMenu();
-        cdEdit = c ? c.id : 0;
-        var s = c && c.len > 0 ? c.len : cds.last;
-        cdH.value = Math.floor( s / 3600 ); cdM.value = Math.floor( s / 60 ) % 60; cdS.value = s % 60;
-        cdText.value = c ? c.text : '';
-        cdTitle.textContent = t( c ? 'ayni.desktop.cdChange' : 'ayni.desktop.cdNew' );
-        cdNote.hidden = !! c;
-        cdBack.showModal();
-        cdBy = by || clock;
-        Ayni.place( cdBack, cdBy );
-    }
-    window.addEventListener( 'resize', function ()
-    {
-        if( cdBack.open ) Ayni.place( cdBack, cdBy.isConnected ? cdBy : clock );
-    } );
-
-    function num( el, max ) { var n = Math.floor( +el.value ); return n > 0 ? Math.min( n, max ) : 0; }
-
-    // Play: restarts the one being changed (if still there), else adds a new one.
-    function cdStart()
-    {
-        var secs = num( cdH, 99 ) * 3600 + num( cdM, 59 ) * 60 + num( cdS, 59 );
-        if( ! secs ) { cdH.focus(); return; }
-        wakeAudio();
-        var c = cdEdit && cdById( cdEdit );
-        if( ! c )
-        {
-            c = { id: cds.list.reduce( function ( n, x ) { return Math.max( n, x.id ); }, 0 ) + 1 };
-            cds.list.push( c );
-        }
-        Object.assign( c, { end: Date.now() + secs * 1000, left: 0, done: false, text: cdText.value.trim(), len: secs } );
-        cds.last = secs;
-        cdSave();
-        cdBack.close();
-        cdTick();
-    }
-
-    // The clock: its weekday / date opens the month (a second press closes it), the rest a new countdown.
-    clock.addEventListener( 'click', function ( e )
-    {
-        var head = clock.querySelector( 'span:not(.icon)' );
-        if( ! head.hidden && head.contains( e.target ) ) { if( ! calWasOpen ) calOpen(); return; }
-        cdOpen( clock );
-    } );
-    cdPlay.addEventListener( 'click', cdStart );
-    [ cdH, cdM, cdS, cdText ].forEach( function ( el )
-    {
-        el.addEventListener( 'keydown', function ( e ) { if( e.key === 'Enter' ) { e.preventDefault(); cdStart(); } } );
-    } );
-    // A chip: Pause / Play, Stop (at once, no "are you sure") and, time's up,
-    // the x that takes it away; anywhere else opens the dialog to change it.
-    cdBox.addEventListener( 'click', function ( e )
-    {
-        var chip = e.target.closest( '.cd-chip' ), c = chip && cdById( +chip.getAttribute( 'data-id' ) );
-        if( ! c ) return;
-        var b = e.target.closest( '[data-cd]' ), what = b && b.getAttribute( 'data-cd' );
-        stopRing();                                         // any press on a chip silences it
-        if( ! what ) { cdOpen( chip, c ); return; }
-        if( what === 'pp' )
-        {
-            if( c.end ) { c.left = Math.max( 1000, c.end - Date.now() ); c.end = 0; }
-            else        { wakeAudio(); c.end = Date.now() + c.left; c.left = 0; }
-        }
-        else                                                // stop / x
-        {
-            var at = cds.list.indexOf( c ), was = Object.assign( {}, c );
-            cds.list.splice( at, 1 );
-            // Undo: back in its place with the same end moment (never one gone by
-            // meanwhile), the same time left when paused, or its time's-up chip.
-            Ayni.toast( 'ok', t( what === 'stop' ? 'ayni.desktop.cdStopped' : 'ayni.toast.removed' ), { undo: function ()
-            {
-                if( cdById( was.id ) || ( was.end && was.end <= Date.now() ) ) return;
-                if( was.end ) wakeAudio();
-                cds.list.splice( Math.min( at, cds.list.length ), 0, was );
-                cdSave();
-                cdTick();
-            } } );
-        }
-        cdSave();
-        cdTick();
-    } );
-    // Another tab of the desktop started / paused / stopped one: follow.
-    window.addEventListener( 'storage', function ( e )
-    {
-        if( e.key !== CD_KEY ) return;
-        cds = cdLoad();
-        cdTick();
-    } );
-    // First look once shared/ui.js (deferred) is in: a countdown that ended while
-    // the desktop was closed still says so, on its chip.
-    if( document.readyState === 'loading' ) document.addEventListener( 'DOMContentLoaded', cdTick );
-    else cdTick();
-    if( window.Ayni ) Ayni.i18n.ready.then( cdPaint );
-
-    //------------------------------------------------------------------------//
     // KEYBOARD (2026-10-01) - while the on-screen keyboard is up, the window in
     // front gets shorter, down to the keyboard's top edge, so the field typed
     // into stays in sight; when it goes, the window gets its size back. Seen
@@ -2313,6 +1591,9 @@
     // narrow = null: looked at afresh, so a desk tiled upright and reloaded wide goes back to Free
     h.appsReady.then( function () { restoreWins(); narrow = null; upright(); } );
 
-        return { showDesk: showDesk, ICON_SCALE: ICON_SCALE, ICON_TILE: ICON_TILE, ICON_WIN: ICON_WIN, ROOT: ROOT, bar: bar, battEl: battEl, clock: clock, closeMore: closeMore, desk: desk, desktop: desktop, focus: focus, ghost: ghost, hookAlt: hookAlt, menu: menu, menuBtn: menuBtn, moreBtn: moreBtn, moreMenu: moreMenu, narrow: narrow, openApp: openApp, placeMore: placeMore, set: set, setTip: setTip, t: t, tasks: tasks, tile: tile, wins: wins, wxSvg: wxSvg };
+        return { showDesk: showDesk, ICON_SCALE: ICON_SCALE, ICON_TILE: ICON_TILE, ICON_WIN: ICON_WIN, ROOT: ROOT, bar: bar, closeMore: closeMore, desk: desk, desktop: desktop, focus: focus, ghost: ghost, hookAlt: hookAlt, menu: menu, menuBtn: menuBtn, moreBtn: moreBtn, moreMenu: moreMenu, narrow: narrow, openApp: openApp, set: set, setTip: setTip, t: t, tasks: tasks, tile: tile, wins: wins,
+                 // the slots and this device's settings, for the app's own parts
+                 addWidget: addWidget, addMenuSection: addMenuSection, addPopup: addPopup, relayout: placeMore,
+                 saveSet: saveSet, store: store, KEYS: KEYS };
     };
 } )();
