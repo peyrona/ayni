@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayni Locked documents</title>
+<script src="../ayni-i18n.js"></script>
+<script src="../ayni-util.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ayni-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}</script>
+<link rel="stylesheet" href="../ayni-base.css">
+<link rel="stylesheet" href="../ayni-buttons.css">
+<link rel="stylesheet" href="../ayni-toasts.css">
+<link rel="stylesheet" href="../ayni-dialogs.css">
+<link rel="stylesheet" href="../ayni-fields.css">
+<style>
+/* Demo page only */
+.demo { max-width: 64ch; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 14px; }
+.demo h1 { font-size: 18px; margin: 0; } .demo p { margin: 0; color: var(--text-dim); } .demo a { color: var(--accent); }
+.demo .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo pre { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--card2);
+            font: 12px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 4em; }
+</style>
+<script>
+/* Demo page only: the server is this page's memory (data/vault.json and data/vault.prev.json), so nothing leaves it;
+   a reload starts again. A real app's AyniNet talks to its server (guidelines 18.11). */
+window.SRV = {};
+window.AyniNet = {
+    readJson:  async function ( p ) { return p in SRV ? JSON.parse( SRV[ p ] ) : null; },
+    writeJson: async function ( p, o ) { SRV[ p ] = JSON.stringify( o ); return {}; },
+    updateJson: async function ( p, fn )
+    {
+        var cur = p in SRV ? JSON.parse( SRV[ p ] ) : null;
+        var out = fn( cur );
+        if( out === false ) return cur;
+        if( out === undefined || out === null ) throw new TypeError( "nothing to write" );
+        SRV[ p ] = JSON.stringify( out );
+        return out;
+    }
+};
+</script>
+<script src="../ayni-icons.js" defer></script>
+<script src="../ayni-base.js" defer></script>
+<script src="../ayni-icons-more.js" defer></script>
+<script src="../ayni-buttons.js" defer></script>
+<script src="../ayni-toasts.js" defer></script>
+<script src="../ayni-dialogs.js" defer></script>
+<script src="../ayni-fields.js" defer></script>
+<script src="../ayni-crypt.js" defer></script>
+<script src="../ayni-passkey.js" defer></script>
+<script src="../ayni-vault.js" defer></script>
+</head>
+<body>
+<!-- Locked documents (guidelines 18.12): one key for every locked document, opened with a lock password, a passkey
+     or the recovery code. The buttons are this page's; the dialogs are Ayni's. -->
+<main class="demo">
+  <h1>Locked documents</h1>
+  <p>Lock a short text, then unlock it again. The first lock sets the key up: a lock password, the recovery code, and a passkey if this browser has one. "Lock now" makes this tab forget the key.</p>
+  <div class="field"><label for="vd-text">Text</label><input id="vd-text" class="input" value="The combination is 4-8-15-16."></div>
+  <div class="row">
+    <button class="btn text bordered" type="button" id="vd-lock"><span class="icon" data-icon="lock"></span><span>Lock</span></button>
+    <button class="btn text bordered" type="button" id="vd-open"><span class="icon" data-icon="key"></span><span>Unlock</span></button>
+    <button class="btn text bordered" type="button" id="vd-forget"><span class="icon" data-icon="lock"></span><span>Lock now</span></button>
+    <button class="btn text bordered" type="button" id="vd-manage"><span class="icon" data-icon="settings"></span><span>Locked documents…</span></button>
+  </div>
+  <pre id="vd-out" role="status"></pre>
+  <p><a href="index.html">Back to the gallery</a></p>
+</main>
+<script>
+document.addEventListener( 'DOMContentLoaded', function () { Ayni.ready.then( function ()
+{
+    var out = document.getElementById( 'vd-out' ), sealed = null;
+    function say( text ) { out.textContent = text; }
+    function failed( e ) { say( 'Not done: ' + ( e && ( e.code || e.message ) || e ) ); }
+    document.getElementById( 'vd-lock' ).addEventListener( 'click', function ()
+    {
+        AyniVault.ensure( { name: 'note.txt' } ).then( function ( v )
+        {
+            if( ! v ) return say( 'Cancelled.' );
+            return AyniCrypt.newDocLock( v ).then( function ( lock ) { return AyniCrypt.seal( lock, document.getElementById( 'vd-text' ).value ); } )
+                .then( function ( body ) { sealed = body; say( 'Locked. What a server keeps:\n' + body.slice( 0, 120 ) + '…' ); } );
+        } ).catch( failed );
+    } );
+    document.getElementById( 'vd-open' ).addEventListener( 'click', function ()
+    {
+        if( ! sealed ) return say( 'Lock something first.' );
+        AyniVault.unlock( { name: 'note.txt' } ).then( function ( v )
+        {
+            if( ! v ) return say( 'Cancelled.' );
+            return AyniCrypt.docLockFrom( v, sealed ).then( function ( lock ) { return AyniCrypt.unseal( lock, sealed ); } )
+                .then( function ( text ) { say( 'Unlocked: ' + text ); } );
+        } ).catch( failed );
+    } );
+    document.getElementById( 'vd-forget' ).addEventListener( 'click', function () { AyniVault.forget(); say( 'This tab forgot the key.' ); } );
+    document.getElementById( 'vd-manage' ).addEventListener( 'click', function ()
+    {
+        AyniVault.exists().then( function ( has ) { if( has ) AyniVault.manage(); else say( 'Lock something first: that sets the key up.' ); } );
+    } );
+} ); } );
+</script>
+</body>
+</html>

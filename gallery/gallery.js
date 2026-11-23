@@ -424,6 +424,10 @@ $('#sb-busy').onclick = () => { status('Saving ana-morales.json…'); setTimeout
 /* ---------- Layout ---------- */
 document.addEventListener('ayni:split', (e) => status(e.detail.message));
 
+/* Dock panel: the button opens and closes it; where it sits is kept */
+const dockPanel = Ayni.dock('#demo-dock', { key: 'ayni-gallery-dock', onClose: () => $('#dock-btn').setAttribute('aria-expanded', 'false') });
+$('#dock-btn').addEventListener('click', () => { dockPanel.toggle(); $('#dock-btn').setAttribute('aria-expanded', String(dockPanel.isOpen)); });
+
 /* ---------- Icons ---------- */
 /* The icons the controls use, with where each one appears */
 const iconUse = {

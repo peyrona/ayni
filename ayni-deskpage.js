@@ -1,3 +1,4 @@
+// DATA: a window is asked before it closes (close, shut) and a file never gets two editors (sameDoc, sameImage). Change those with care, and run your data tests.
 /* Ayni library 0.4.0, a desktop of whole pages: windows that hold a page each, in a frame. Moving, sizing, Tile, Scale, sticky halves, a window
    that remembers its place, the switcher, the on-screen keyboard, the "⋮" with the window and bar options. Plain JavaScript, no build step,
    evergreen browsers 2024+. Optional: a plain script, without defer, with ayni-deskpage.css, ayni-tiling.js and ayni-icons-more.js, called from

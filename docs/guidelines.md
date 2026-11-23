@@ -218,6 +218,8 @@ A disabled group box fades everything inside it at once. A read-only field never
 
 Every container (Panel bodies, dialogs, menus, popups, lists, tables, panes) can scroll vertically and horizontally, and shows a scrollbar only when its content does not fit. Menus and popups are never larger than the screen: they scroll instead.
 
+**The scrollbar's look.** With a mouse, Ayni draws its own: 14 px across, a soft track, a rounded thumb in a light Accent with a short strip of fine dots in its middle (the splitter's grip), and an arrow at each end. With Raised controls on (`html.bevel`) the thumb and the arrows look raised, as every other control; off, they are flat. The thumb takes more Accent under the pointer and while dragged. On touch (`html.touch`) the system's own thin bars stay, which fade away. A box that sets its own `scrollbar-width` or `scrollbar-color` keeps it. Firefox paints only the two colours. The sizes and colours are `--sb-size`, `--sb-track`, `--sb-thumb` and `--sb-edge` (`ayni-base.css`).
+
 ### 2.8 Language
 
 Every text Ayni shows (tooltips, "Loading…", the calendar's month names, the guided tour) comes in the page's language. Ayni ships English, Spanish, Portuguese, French and German.
@@ -995,7 +997,7 @@ A long form folds its rarely used half behind one line: a small pill with a chev
 | Group box | `fieldset.group` with a `legend` |
 | More fields | `button.more-toggle` with `aria-expanded` and `aria-controls` (Ayni writes its parts); `Ayni.moreFields(button, { more, less, onToggle })` returns `{ open, set(on) }`; a user's press fires `ayni:more` |
 
-## 13. Splitter
+## 13. Splitter and dock panel
 
 A splitter is a bar between two panes, side by side or top and bottom, that the user drags to resize them; three small glyphs in its middle collapse either pane or reset both.
 
@@ -1029,6 +1031,26 @@ A splitter is a bar between two panes, side by side or top and bottom, that the 
 | Without glyphs | `glyphs: false` |
 | After a user action | `onChange(size, collapsed)`, and `ayni:split` on the bar with `{ action, pane, message }` |
 | The controller | `{ size, collapsed, collapse(pane), restore(), reset(), reload() }`; `reload()` reads the saved size again (the device turned and `key` changed) |
+
+### 13.2 Dock panel
+
+A dock panel is a side panel the user places: a dictionary beside a text, a list of results beside a map. It is a Panel with a bar on top that holds its name and its close button.
+
+- **Moving:** the bar moves the panel. A press becomes a move once the pointer has gone 4 px, so a click on the bar's buttons stays a click.
+- **Docking:** let go within 40 px of a window edge, the panel docks on that edge: full height on the left or the right (320 px wide, at most 85% of the screen), full width at the top or the bottom (300 px tall, at most 45%). While it is dragged, the edge it would dock to lights up.
+- **Floating:** let go anywhere else, it floats where it was dropped (340 px wide, at most 70% of the screen tall), always kept on the screen. Dragged off an edge, a docked panel floats again.
+- **Room:** a docked panel never covers the page: the page gets narrower or shorter by the panel's size. A floating one lies over the page.
+- **Remembered:** where it sits, docked or floating, is kept on this device.
+- **Closing:** the bar's × closes it; the page gets its room back.
+
+### 13.3 For developers (dock panel)
+
+| Need | Markup or call |
+| --- | --- |
+| The panel | `.dock` (hidden at first) with `.dock-grip` (an icon, `.dock-title`, the panel's buttons, `[data-dock-close]`) and `.dock-body` |
+| Wiring it | `Ayni.dock(el, { key, edge, onClose })`: `key` keeps where it sits (localStorage); `edge` the first place, `'right'` by default (`null` = floating); `onClose` after its × |
+| The controller | `{ open(), close(), toggle(), isOpen, edge }`; `edge` is `null` while it floats |
+| Making room | `:root` gets `--ayni-dock-left`, `-right`, `-top` and `-bottom` (the panel's size, `0px` where it is not); `.app` takes them as padding, any other layout may too |
 
 ## 14. Labels and info label
 
@@ -1298,7 +1320,7 @@ By default `.desktop` hides below 1024 px and anything marked `.no-desktop` show
 - `D.addPopup(el)`: a popup of a gadget; it closes with More when a window takes a press.
 - `D.relayout()`: More follows the bar again after a gadget changed size.
 
-`el` may be an element, a fragment or a `<template>`, whose content goes in. `D.set` is this device's settings object and `D.saveSet()` keeps it; a gadget adds its own keys to it and never renames one. `D.store(key, value)` reads or writes one JSON value in localStorage; `D.KEYS` is the prefix of every key (`AyniNames.deskKey`, `ayni-` by default).
+`el` may be an element, a fragment or a `<template>`, whose content goes in. The app's logo may sit engraved in the middle of the desk: the app gives `.desk::before` and `.desk::after` `content: ""` and a `mask` with its picture. `D.set` is this device's settings object and `D.saveSet()` keeps it; a gadget adds its own keys to it and never renames one. `D.store(key, value)` reads or writes one JSON value in localStorage; `D.KEYS` is the prefix of every key (`AyniNames.deskKey`, `ayni-` by default).
 
 ## 18. The app shell
 
@@ -1384,6 +1406,23 @@ No library: the page writes a plain, light sheet and the browser's print dialog 
 `ayni-net.js`, `ayni-store.js` and `ayni-boot.js` keep an app's data safe when the network is not. A save goes to the screen and the device first, and to the server when it can: a page closed, a train tunnel or a lost session never loses it. Two devices that change the same file are told apart by its version, and nothing is written over a change the page has not seen. `AyniDoc` adds a document on top: autosave, a draft on the device for one with no name yet, one window per document.
 
 `window.AyniNames` (keys, cookies, the API's address, its headers, the upload event's name - `upload`, "ayni:upload" by default) is read when the files load. `sample/server.mjs` shows what the server must answer.
+
+### 18.12 Locked documents
+
+A document may be locked: only someone who can unlock it can read it, the server never can. One key opens every locked document of the account (`ayni-vault.js`).
+
+- **Setting it up:** the first lock asks for a lock password, twice. It is never the sign-in password, which the server sees at every sign-in. A password under 10 characters is refused: this one opens everything. Then a recovery code is shown, once, to keep in a safe place. Then a passkey is offered; Later is fine.
+- **Unlocking:** one dialog names the document asking. It takes the lock password, a passkey (fingerprint, face or device PIN, no typing), or, after "Forgot the password?", the recovery code. The code may be typed loosely: small letters, spaces instead of dashes, an O for a zero. After the code a new lock password is asked. A wrong password or code says so, and the dialog stays.
+- **Where the key lives:** in this tab only, while it is open. Another tab or window unlocks for itself, and is never handed the key. Lock now and the screen locker make every tab forget it.
+- **Offline:** a locked document opens with no connection; setting up a new key needs one.
+- **Never lost:** every change to the key's record first keeps the version before it, and is written over the version just read. A record that cannot be read is never written over: setting up refuses, and says so.
+- **Managing:** the "Locked documents" dialog (the app's account settings) changes the lock password, lists, adds and removes passkeys, and makes a new recovery code. Each asks to unlock first.
+
+| Need | Call |
+| --- | --- |
+| The key | `AyniVault.exists()`, `current()` (`{ id, key }` or `null`), `unlock({ name })` (`null` when cancelled; throws `code: 'noVault'` with none), `ensure(o)` (sets one up first), `forget()`, `manage()`, `config({ path, appName })` (`data/vault.json` by default). Load it deferred, after `ayni-net.js`, `ayni-crypt.js`, `ayni-passkey.js` and `ayni-dialogs.js` |
+| A document's lock | `AyniCrypt.newDocLock(vault)`, `docLockFrom(vault, body)`, `seal(lock, data)`, `unseal(lock, body)`, `isV2(body)`, `looksLocked(body)`, `vaultIdOf(body)` |
+| Passkeys | `AyniPasskey.supported()`, `prfMaybe()`, `create(o)`, `get(o)`, `error(e)`, `listDialog(o)`: the browser's side only; the caller brings the challenge and the key list |
 
 ## 19. To be defined
 

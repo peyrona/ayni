@@ -35,8 +35,10 @@ html, body { height: 100%; overflow: hidden; }
     --win-scale:   #1873CC;     /* DodgerBlue, one step darker for a light bar */
 }
 
-/* THE DESK - where the windows live. The the app logo sits engraved in
-   its centre, the same groove + lit edge as behind the launcher tiles. */
+/* THE DESK - where the windows live. The app's logo may sit engraved in
+   its centre, the same groove + lit edge as behind the launcher tiles: the
+   app gives .desk::before and .desk::after its picture (a mask) and
+   content: ""; with none the desk is plain. */
 .desk
 {
     isolation: isolate;          /* window z-indexes stay under the dialogs */
@@ -52,11 +54,9 @@ html, body { height: 100%; overflow: hidden; }
 .desk::before,
 .desk::after
 {
-    content: ""; position: absolute; left: 50%; top: 50%;
+    position: absolute; left: 50%; top: 50%;
     width: min(38vw, 38vh); aspect-ratio: 1; translate: -50% -50%;
     pointer-events: none;
-    -webkit-mask: url(../../icons/logo-lines.svg) center / contain no-repeat;
-            mask: url(../../icons/logo-lines.svg) center / contain no-repeat;
 }
 .desk::before { background: var(--engrave-lit); transform: translateY(1px); }
 .desk::after  { background: var(--engrave-groove); }
@@ -169,14 +169,12 @@ body.touch .grip.sw { left: calc(-12 * var(--win-px));  bottom: calc(-12 * var(-
 /* THE BAR - Ayni's taskbar (shared/ayni/ayni-desktop.css): on the desk's colours; its place
    and size come from the settings (the "⋮" menu; data-edge, --bar-h). */
 #bar          { background: var(--desk-bar); border-color: var(--desk-edge); color: var(--text); font-family: var(--font-sans); }
-#bar button   { font-family: inherit; position: relative; }   /* position: holds the Chat and eMail dots */
-/* Unread Chat (red), eMail (blue) and Planner's day (green), see CHAT and EMAIL below. On the
-   menu button: a plain dot, Chat top-right, eMail top-left. On the app's
-   own chip: a disc with the count on the app icon, so it never takes
-   room from the name or covers the close (x). */
+#bar button   { font-family: inherit; position: relative; }   /* position: holds a mark (.icon-badge) */
+/* A mark of the app's (Ayni's .icon-badge: unread messages, a day's events) on the
+   menu button or a chip. On the menu button: a plain dot, top-right. On a
+   chip, with its count: a disc on the app icon, so it never takes room
+   from the name or covers the close (x). */
 #bar .icon-badge           { top: 3px; right: 3px; width: 8px; height: 8px; box-shadow: 0 0 0 1.5px var(--bg); }
-#bar .icon-badge.mail-dot  { right: auto; left: 3px; background: var(--busy); }
-#bar .icon-badge.plan-dot  { background: var(--ok); }   /* Planner: today's events, only ever on its own chip */
 #bar .icon-badge.has-count
 {
     top: 0; right: 0; left: auto;
@@ -187,7 +185,7 @@ body.touch .grip.sw { left: calc(-12 * var(--win-px));  bottom: calc(-12 * var(-
 #bar .chip-main > .icon-badge.has-count { top: 1px; right: auto; left: 3px; }   /* over the app icon */
 #bar .icon-badge[hidden]   { display: none; }   /* .has-count's flex would beat app.css's */
 
-/* The menu button carries the the app logo, sized to the bar. */
+/* The menu button carries the app's picture (hooks.icon), sized to the bar. */
 #menuBtn       { width: calc(var(--bar-h) - 8px); height: calc(var(--bar-h) - 8px); }
 #menuBtn img   { width: calc(var(--bar-h) * 0.58); height: calc(var(--bar-h) * 0.58); display: block; }
 /* Desktop-only state: while the menu is open its button keeps the hover wash. */

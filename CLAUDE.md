@@ -17,7 +17,8 @@ Ayni is the UI library; apps use it, they never fork it. Nayive
 ## Data code
 
 Files that start with a `// DATA:` line (ayni-net.js, ayni-store.js,
-ayni-doc.js, ayni-vault.js, formats/ical.js) decide what reaches the disk. A
+ayni-doc.js, ayni-vault.js, formats/ical.js; ayni-deskpage.js, which asks a
+window before it closes) decide what reaches the disk. A
 change there is a data change: keep it minimal, and the app's data-safety
 tests must be run afterwards (in Nayive the user runs them himself - never run
 them for him).

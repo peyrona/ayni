@@ -3004,6 +3004,48 @@ try {
     check('touch: a choice button has a 44 px hit area', (await ev(`(() => { const r = ch2.getBoundingClientRect(), s = getComputedStyle(ch2, '::before'); return r.height + 2 * Math.max(0, -parseFloat(s.top)); })()`)) >= 44);
     await ev(`(Ayni.setTouchPreview(false), true)`);
 
+    /* ---------- Dock panel (Ayni.dock) ---------- */
+    await ev(`(document.body.insertAdjacentHTML('beforeend', '<section class="dock" id="dk" hidden><div class="dock-grip"><span class="dock-title">Panel</span><button type="button" class="btn" data-dock-close aria-label="Close">x</button></div><div class="dock-body">Body</div></section>'),
+      localStorage.removeItem('test-dock'), window.DK = Ayni.dock('#dk', { key: 'test-dock', onClose: () => L.push('dock closed') }), true)`);
+    const room = () => ev(`['left', 'right', 'top', 'bottom'].map((e) => getComputedStyle(document.documentElement).getPropertyValue('--ayni-dock-' + e).trim() || '0px').join()`);
+    check('dock: closed until opened, no room taken', await ev(`!DK.isOpen && dk.hidden`) && (await room()) === '0px,0px,0px,0px', await room());
+    await ev(`(DK.open(), true)`); await wait(60);
+    const dw = await ev(`Math.round(dk.getBoundingClientRect().width)`);
+    check('dock: it opens on the right edge, full height, and the page makes room for it', await ev(`DK.edge === 'right' && dk.dataset.edge === 'right' && Math.round(dk.getBoundingClientRect().height) === document.documentElement.clientHeight`) && (await room()) === `0px,${dw}px,0px,0px`, [await ev('DK.edge'), await room()]);
+    check('dock: its bar says how to move it', (await tip('#dk .dock-grip')) === await ev(`Ayni.t('ayni.dock.grip')`));
+    {
+      const [gx, gy] = await mid('#dk .dock-title');
+      await mouse('mouseMoved', gx, gy); await mouse('mousePressed', gx, gy);
+      for (let i = 1; i <= 6; i++) await mouse('mouseMoved', gx - i * 80, gy + i * 30);
+      await mouse('mouseReleased', gx - 480, gy + 180); await wait(60);
+    }
+    check('dock: let go in the middle, it floats there and gives the room back', await ev(`DK.edge === null && dk.dataset.edge === 'float'`) && (await room()) === '0px,0px,0px,0px', [await ev('DK.edge'), await room()]);
+    check('dock: where it floats is kept on this device', await ev(`(() => { const s = JSON.parse(localStorage.getItem('test-dock')); return s.edge === null && s.x === Math.round(dk.getBoundingClientRect().left) && s.y === Math.round(dk.getBoundingClientRect().top); })()`), await ev(`localStorage.getItem('test-dock')`));
+    {
+      const [hx, hy] = await mid('#dk .dock-title');
+      await mouse('mouseMoved', hx, hy); await mouse('mousePressed', hx, hy);
+      for (let i = 1; i <= 6; i++) await mouse('mouseMoved', hx - (hx - 10) * i / 6, hy);
+      check('dock: dragged to the left edge, that edge lights up first', await ev(`document.querySelector('.dock-hint')?.dataset.edge === 'left'`));
+      await mouse('mouseReleased', 10, hy); await wait(60);
+    }
+    const dl = await ev(`Math.round(dk.getBoundingClientRect().width)`);
+    check('dock: let go there, it docks on the left, full height, and the page makes room', await ev(`DK.edge === 'left' && Math.round(dk.getBoundingClientRect().left) === 0 && Math.round(dk.getBoundingClientRect().height) === document.documentElement.clientHeight && !document.querySelector('.dock-hint')`) && (await room()) === `${dl}px,0px,0px,0px`, [await ev('DK.edge'), await room()]);
+    await click('#dk .dock-title');
+    check('dock: a press on its bar with no move changes nothing', await ev(`DK.edge === 'left' && DK.isOpen`));
+    check('dock: a new panel with the same key comes back where it was', await ev(`(() => { const e = document.createElement('section'); e.hidden = true; e.innerHTML = '<div class="dock-grip"></div>'; document.body.append(e); const ok = Ayni.dock(e, { key: 'test-dock' }).edge === 'left'; e.remove(); return ok; })()`));
+    await click('#dk [data-dock-close]');
+    check('dock: its × closes it, gives the room back and tells the page', await ev(`!DK.isOpen && dk.hidden`) && (await room()) === '0px,0px,0px,0px' && (await log()).includes('dock closed'), await room());
+    await ev(`(dk.remove(), localStorage.removeItem('test-dock'), true)`);
+
+    /* ---------- Scrollbars (ayni-base.css) ---------- */
+    await ev(`(document.body.insertAdjacentHTML('beforeend', '<div id="sb1" style="width:120px; height:80px; overflow:scroll"><div style="width:400px; height:400px"></div></div><div id="sb2" style="width:120px; height:80px; overflow:scroll; scrollbar-width:none"><div style="width:400px; height:400px"></div></div>'), true)`);
+    const bar = (id) => ev(`(() => { const e = document.getElementById('${id}'); return [e.offsetWidth - e.clientWidth, e.offsetHeight - e.clientHeight]; })()`);
+    check('scrollbars: Ayni\'s, 14 px across, both ways, with a mouse', JSON.stringify(await bar('sb1')) === '[14,14]', await bar('sb1'));
+    check('scrollbars: a box that sets its own scrollbar-width keeps it', JSON.stringify(await bar('sb2')) === '[0,0]', await bar('sb2'));
+    await ev(`(Ayni.setTouchPreview(true), true)`); await wait(60);
+    check('scrollbars: on touch, the system\'s own', JSON.stringify(await bar('sb1')) !== '[14,14]', await bar('sb1'));
+    await ev(`(Ayni.setTouchPreview(false), sb1.remove(), sb2.remove(), true)`);
+
     /* ---------- Languages ---------- */
     check('no untranslated keys in the layout family', (await ev(RAW_KEYS)).length === 0, await ev(RAW_KEYS));
     await ev(`(document.body.insertAdjacentHTML('beforeend', '<div class="empty-state" id="es"><span class="icon" data-icon="file"></span><p class="empty-title">None</p><p>Press +</p><button type="button" class="btn text" id="es-add"><span class="icon" data-icon="plus"></span><span>New</span></button></div><p class="section-label" id="sl">Group</p><div class="card-row" id="cr">Row</div>'), Ayni.init(document.body), true)`); await wait(40);
@@ -3744,6 +3786,287 @@ try {
     check('a narrow column: the box keeps 3 to 1 and never sticks out of a group box', await ev(`(() => { const w = document.createElement('div'), f = document.createElement('fieldset'), d = document.createElement('div'); w.style.width = '200px'; f.className = 'group'; f.innerHTML = '<legend>X</legend>'; f.append(d); w.append(f); document.body.prepend(w);
       try { Ayni.signature(d, {}); const p = d.querySelector('.sign-pad').getBoundingClientRect(); return f.getBoundingClientRect().width <= 200 && Math.abs(p.width / p.height - 3) < 0.05; } finally { w.remove(); } })()`));
     check('the forms family: no errors or warnings', t.logs.length === 0, t.logs.slice());
+  }
+
+  section('Vault (AyniVault, AyniPasskey, AyniCrypt v2: one key for every locked document)');
+  {
+    /* The same checks as Nayive's tools/vault-test/run.mjs, on tests/vault-only.html. At localhost: passkeys refuse an IP address as the site */
+    const url = BASE.replace('127.0.0.1', 'localhost') + '/tests/vault-only.html';
+    const vok = (name, cond, extra) => check('vault: ' + name, cond, extra);
+    const sub = (s) => console.log('  · ' + s.toLowerCase());
+    const Ayni_t = (k) => k;   /* the note is translated in the page; any non-error note counts */
+    const up = async (tt) => { for (let i = 0; i < 200; i++) { let ready = false; try { ready = await tt.evaluate('!!(window.AyniVault && window.AyniCrypt && window.Ayni && Ayni.dialog)'); } catch {} if (ready) break; await new Promise((r) => setTimeout(r, 50)); } await tt.evaluate('Ayni.i18n.ready'); };
+    const vt = await tab(); let vt2 = null;
+    try {
+      await vt.open(url); await up(vt);
+      sub( "THE v2 FORMAT (ayni-crypt.js)" );
+
+      const c = await vt.evaluate( `( async function () {
+          async function mk() {
+              var raw = crypto.getRandomValues( new Uint8Array( 32 ) );
+              return { id: crypto.getRandomValues( new Uint8Array( 16 ) ),
+                       key: await crypto.subtle.importKey( "raw", raw, { name: "AES-GCM", length: 256 }, false, [ "encrypt", "decrypt" ] ) };
+          }
+          async function fails( f ) { try { await f(); return null; } catch ( e ) { return e.code || "error"; } }
+          var A = await mk(), B = await mk();
+          var lock = await AyniCrypt.newDocLock( A );
+          var txt  = await AyniCrypt.seal( lock, "hola, mundo\\n" );
+          var bin  = await AyniCrypt.seal( lock, new Uint8Array( [ 1, 2, 3, 250 ] ) );
+          var back = await AyniCrypt.unseal( lock, txt );
+          var backB = Array.from( await AyniCrypt.unseal( lock, bin ) );
+
+          var again = await AyniCrypt.docLockFrom( A, txt );
+          var txt2  = await AyniCrypt.seal( again, "otra vez" );
+          var sameHead = txt.slice( 0, 16 ) === txt2.slice( 0, 16 );
+          var raw1 = atob( txt.slice( 16 ) ), raw2 = atob( txt2.slice( 16 ) );
+
+          var other = await AyniCrypt.newDocLock( A );
+          var byOther = await AyniCrypt.unseal( other, txt );
+
+          var badBin = bin.slice(); badBin[ 50 ] ^= 1;        // in the wrapped file key
+          var badIv  = bin.slice(); badIv[ 95 ] ^= 1;         // in this save's IV
+          var badCt  = bin.slice(); badCt[ bin.length - 1 ] ^= 1;
+
+          var v1 = await AyniCrypt.newLock( "una-clave-larga" );
+          var s1 = await AyniCrypt.seal( v1, "viejo" );
+
+          return {
+              txtHead: txt.slice( 0, 16 ), binHead: new TextDecoder().decode( bin.slice( 0, 16 ) ),
+              looks: AyniCrypt.looksLocked( txt ) && AyniCrypt.looksLocked( bin ), v2: AyniCrypt.isV2( txt ) && AyniCrypt.isV2( bin ),
+              v1isV2: AyniCrypt.isV2( s1 ), v1looks: AyniCrypt.looksLocked( s1 ),
+              back: back, backB: backB,
+              sameKeyHead: raw1.slice( 0, 92 ) === raw2.slice( 0, 92 ), diffIv: raw1.slice( 92, 104 ) !== raw2.slice( 92, 104 ), sameHead: sameHead,
+              byOther: byOther,
+              otherVault: await fails( function () { return AyniCrypt.docLockFrom( B, txt ); } ),
+              bWrong: await fails( function () { return AyniCrypt.unseal( { v: 2, vault: B, keyHead: new Uint8Array( 92 ) }, txt ); } ),
+              tamperWrap: await fails( function () { return AyniCrypt.docLockFrom( A, badBin ); } ),
+              tamperIv: await fails( function () { return AyniCrypt.unseal( lock, badIv ); } ),
+              tamperCt: await fails( function () { return AyniCrypt.unseal( lock, badCt ); } ),
+              v1back: await AyniCrypt.unseal( v1, s1 ),
+              moved: await ( async function () { var m = await AyniCrypt.newDocLock( A ); m.v1 = v1; return AyniCrypt.unseal( m, s1 ); } )(),
+              v1byV2: await fails( function () { return AyniCrypt.unseal( lock, s1 ); } ),
+              v2byV1: await fails( function () { return AyniCrypt.unseal( v1, txt ); } ),
+              idOf: AyniPasskey.b64u( AyniCrypt.vaultIdOf( bin ) ) === AyniPasskey.b64u( A.id ), idOfV1: AyniCrypt.vaultIdOf( s1 ),
+              size: bin.length
+          };
+      } )()` );
+      vok( "text form is AYNI-LOCKED-B62 (an app names its own: Nayive's is NAYIVE-LOCK-B62)", c.txtHead === "AYNI-LOCKED-B62\n", c.txtHead );
+      vok( "bytes form is AYNI-LOCKED-BI2", c.binHead === "AYNI-LOCKED-BI2\n", c.binHead );
+      vok( "looksLocked + isV2 know it", c.looks && c.v2 );
+      vok( "a v1 file is locked, not v2", c.v1looks && ! c.v1isV2 );
+      vok( "text round trip", c.back === "hola, mundo\n", c.back );
+      vok( "bytes round trip", JSON.stringify( c.backB ) === "[1,2,3,250]", c.backB );
+      vok( "104-byte header + 4 + 16 tag", c.size === 104 + 4 + 16, c.size );
+      vok( "reopened: the same file key, a new IV", c.sameKeyHead && c.diffIv );
+      vok( "another lock of the same vault opens it", c.byOther === "hola, mundo\n" );
+      vok( "another vault: says otherVault", c.otherVault === "otherVault", c.otherVault );
+      vok( "another vault's lock cannot open it", c.bWrong !== null );
+      vok( "a changed wrapped key fails", c.tamperWrap === "error", c.tamperWrap );
+      vok( "a changed IV fails", c.tamperIv === "error", c.tamperIv );
+      vok( "a changed body fails", c.tamperCt === "error", c.tamperCt );
+      vok( "v1 still opens with its password", c.v1back === "viejo" );
+      vok( "a moved document's lock still opens its old v1 copies", c.moved === "viejo", c.moved );
+      vok( "a v2 lock never opens a v1 file", c.v1byV2 !== null );
+      vok( "a v1 lock never opens a v2 file", c.v2byV1 !== null );
+      vok( "vaultIdOf", c.idOf && c.idOfV1 === null );
+
+      //------------------------------------------------------------------------//
+      sub( "SET UP (ayni-vault.js)" );
+
+      vok( "no vault yet", await vt.evaluate( "AyniVault.exists().then( function ( x ) { return x === false; } )" ) );
+      vok( "unlock with none says noVault", await vt.evaluate( "AyniVault.unlock().then( function () { return 'no'; }, function ( e ) { return e.code; } )" ) === "noVault" );
+
+      await vt.evaluate( "window.SETUP = AyniVault.ensure(), true" );
+      vok( "a short password is refused", await vt.evaluate( `( async function () {
+          await typeNew( "short-1" );
+          var e = await wait( function () { var x = document.querySelector( "dialog[open] .form-error" ); return x && ! x.hidden && x; } );
+          return !! e && !! document.getElementById( "ayni-ask-pw" );
+      } )()` ) );
+      vok( "the lock password is asked twice", await vt.evaluate( "typeNew( 'lock-password-1' )" ) );
+      const code = await vt.evaluate( "codeShown()" );
+      vok( "the recovery code is shown once", /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){5}$/.test( code || "" ), code );
+      // The passkey offer (no authenticator yet): Later.
+      vok( "the passkey offer, Later", await vt.evaluate( "answer( false )" ) );
+      const made = await vt.evaluate( `SETUP.then( function ( v ) {
+          var r = JSON.parse( SRV[ "data/vault.json" ] );
+          return { got: !! v && !! v.key, same: !! v && AyniPasskey.b64u( v.id ) === r.id, cur: AyniVault.current() === v,
+                   rec: Object.keys( r ).sort(), pk: r.pk.length, iters: r.pw.iters, plain: SRV[ "data/vault.json" ].indexOf( "lock-password-1" ) };
+      } )` );
+      vok( "ensure() resolves the vault", made.got && made.cur, made );
+      vok( "data/vault.json has id, pw, rec, pk", JSON.stringify( made.rec ) === JSON.stringify( [ "created", "id", "pk", "pw", "rec", "v" ] ), made.rec );
+      vok( "the record's id is the vault's", made.same );
+      vok( "600 000 rounds", made.iters === 600000, made.iters );
+      vok( "no password in the record", made.plain === -1 );
+
+      //------------------------------------------------------------------------//
+      sub( "UNLOCK" );
+
+      await vt.evaluate( `( async function () {
+          window.SEALED = await AyniCrypt.seal( await AyniCrypt.newDocLock( AyniVault.current() ), "secreto" );
+          AyniVault.forget();
+      } )()` );
+      vok( "forget(): nothing in this tab", await vt.evaluate( "AyniVault.current() === null" ) );
+
+      await vt.evaluate( "window.U = AyniVault.unlock( { name: 'carta.txt' } ), true" );
+      vok( "the dialog names the document", ( await vt.evaluate( "wait( function () { var l = document.getElementById( 'ayniVaultLead' ); return l && l.textContent; } )" ) || "" ).indexOf( "carta.txt" ) !== -1 );
+      await vt.evaluate( "unlockWith( 'pw', 'wrong-password' )" );
+      vok( "a wrong password says so, and stays", !! await vt.evaluate( "wait( vaultErr )" ) );
+      await vt.evaluate( "unlockWith( 'pw', 'lock-password-1' )" );
+      vok( "the right password opens the vault", await vt.evaluate( `U.then( async function ( v ) {
+          var l = await AyniCrypt.docLockFrom( v, SEALED ); return await AyniCrypt.unseal( l, SEALED ) === "secreto";
+      } )` ) );
+
+      await vt.evaluate( "AyniVault.forget(); window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'cancel' )" );
+      vok( "cancel = null", await vt.evaluate( "U.then( function ( v ) { return v === null; } )" ) );
+
+      //------------------------------------------------------------------------//
+      sub( "FORGOT THE PASSWORD: THE RECOVERY CODE" );
+
+      await vt.evaluate( "window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'code', 'XXXX-XXXX-XXXX-XXXX-XXXX-XXXX' )" );
+      vok( "a wrong code says so", !! await vt.evaluate( "wait( vaultErr )" ) );
+      // typed loosely: small letters, spaces, an O for a zero
+      const loose = code.toLowerCase().replace( /-/g, " " ).replace( /0/g, "o" );
+      await vt.evaluate( `unlockWith( 'code', ${JSON.stringify( loose )} )` );
+      vok( "the code, typed loosely, opens it and asks a new password", await vt.evaluate( "typeNew( 'new-lock-password-2' )" ) );
+      vok( "...the vault is open", await vt.evaluate( `U.then( async function ( v ) {
+          var l = await AyniCrypt.docLockFrom( v, SEALED ); return await AyniCrypt.unseal( l, SEALED ) === "secreto";
+      } )` ) );
+      vok( "the version before is kept in data/vault.prev.json", await vt.evaluate( `"data/vault.prev.json" in SRV && JSON.parse( SRV[ "data/vault.prev.json" ] ).pw.wrapped !== JSON.parse( SRV[ "data/vault.json" ] ).pw.wrapped` ) );
+      vok( "the vault's id did not change", await vt.evaluate( `JSON.parse( SRV[ "data/vault.prev.json" ] ).id === JSON.parse( SRV[ "data/vault.json" ] ).id` ) );
+
+      await vt.evaluate( "AyniVault.forget(); window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'pw', 'lock-password-1' )" );
+      vok( "the old password no longer opens it", !! await vt.evaluate( "wait( vaultErr )" ) );
+      await vt.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      vok( "the new one does", await vt.evaluate( "U.then( function ( v ) { return !! v; } )" ) );
+
+      //------------------------------------------------------------------------//
+      sub( "A PASSKEY (virtual authenticator, PRF)" );
+
+      await vt.send( "WebAuthn.enable", { enableUI: false } );
+      const auth = await vt.send( "WebAuthn.addVirtualAuthenticator", { options: {
+          protocol: "ctap2", ctap2Version: "ctap2_1", transport: "internal",
+          hasResidentKey: true, hasUserVerification: true, isUserVerified: true,
+          hasPrf: true, automaticPresenceSimulation: true } } );
+      vok( "virtual authenticator with PRF", !! ( auth.result && auth.result.authenticatorId ), auth.error );
+
+      await vt.evaluate( "AyniVault.manage(), true" );
+      await vt.evaluate( "wait( function () { return document.getElementById( 'ayniVaultPkBtn' ); } ).then( function ( b ) { b.click(); } )" );
+      await vt.evaluate( "wait( function () { return document.getElementById( 'ayniPkAdd' ); } ).then( function ( b ) { document.getElementById( 'ayniPkNew' ).value = 'Test phone'; b.click(); } )" );
+      await vt.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      const note = await vt.evaluate( "wait( function () { var n = document.getElementById( 'ayniPkNote' ); var e = document.getElementById( 'ayniPkErr' ); return ( n && ! n.hidden && n.textContent ) || ( e && ! e.hidden && 'ERR ' + e.textContent ); }, 15000 )" );
+      vok( "a passkey is added", note === Ayni_t( "ayni.pk.added" ) || ( note && note.indexOf( "ERR" ) !== 0 ), note );
+      const rec = JSON.parse( await vt.evaluate( "SRV[ 'data/vault.json' ]" ) );
+      vok( "the record lists it, with its PRF salt", rec.pk.length === 1 && rec.pk[ 0 ].name === "Test phone" && !! rec.pk[ 0 ].salt && !! rec.pk[ 0 ].wrapped, rec.pk );
+      await vt.evaluate( "document.querySelectorAll( 'dialog[open]' ).forEach( function ( d ) { d.close(); } ), true" );
+
+      await vt.evaluate( "AyniVault.forget(); window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'pk' )" );
+      vok( "the passkey opens the vault (no password typed)", await vt.evaluate( `U.then( async function ( v ) {
+          if( ! v ) return false;
+          var l = await AyniCrypt.docLockFrom( v, SEALED ); return await AyniCrypt.unseal( l, SEALED ) === "secreto";
+      } )`, 20000 ), await vt.evaluate( "vaultErr()" ) );
+
+      //------------------------------------------------------------------------//
+      sub( "OTHER TABS: THE KEY IS NEVER HANDED OVER; LOCK NOW REACHES THEM" );
+
+      vt2 = await tab(); await vt2.open( url ); await up( vt2 );
+      await vt2.evaluate( `window.SRV = ${JSON.stringify( { "data/vault.json": JSON.stringify( rec ) } )}; true` );
+      await vt2.evaluate( "window.U = AyniVault.unlock(), true" );
+      vok( "a second tab asks for itself", !! await vt2.evaluate( "wait( function () { return document.getElementById( 'ayniVaultLead' ); } )" ) );
+      await vt2.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      vok( "...and opens the document", await vt2.evaluate( `U.then( async function ( v ) {
+          var body = ${JSON.stringify( await vt.evaluate( "SEALED" ) )};
+          var l = await AyniCrypt.docLockFrom( v, body ); return await AyniCrypt.unseal( l, body ) === "secreto";
+      } )` ) );
+      vok( "a page asking on the channel gets nothing", await vt2.evaluate( `new Promise( function ( resolve ) {
+          var ch = new BroadcastChannel( "ayni-vault" ), got = false;
+          ch.onmessage = function ( e ) { if( e.data && e.data.key ) got = true; };
+          ch.postMessage( { ask: AyniPasskey.b64u( AyniVault.current().id ) } );
+          setTimeout( function () { ch.close(); resolve( ! got ); }, 600 );
+      } )` ) );
+      await vt2.evaluate( "AyniVault.forget(), true" );
+      await new Promise( r => setTimeout( r, 300 ) );
+      vok( "Lock now in one tab locks the other", await vt.evaluate( "AyniVault.current() === null" ) );
+
+      //------------------------------------------------------------------------//
+      sub( "REMOVE THE PASSKEY" );
+
+      await vt.evaluate( "window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      await vt.evaluate( "U" );
+      await vt.evaluate( "AyniVault.manage(), true" );
+      await vt.evaluate( "wait( function () { return document.getElementById( 'ayniVaultPkBtn' ); } ).then( function ( b ) { b.click(); } )" );
+      await vt.evaluate( "wait( function () { return document.querySelector( '[data-del]' ); } ).then( function ( b ) { b.click(); } )" );
+      await vt.evaluate( "wait( function () { var n = document.getElementById( 'ayniPkNote' ); return n && ! n.hidden; } )" );
+      vok( "the record no longer has it", JSON.parse( await vt.evaluate( "SRV[ 'data/vault.json' ]" ) ).pk.length === 0 );
+
+      //------------------------------------------------------------------------//
+      sub( "OFFLINE: THIS BROWSER'S COPY OF THE RECORD" );
+
+      await vt.evaluate( `AyniVault.forget(); window.REAL_READ = AyniNet.readJson;
+          AyniNet.readJson = function () { return Promise.reject( new TypeError( "Failed to fetch" ) ); };
+          window.U = AyniVault.unlock(), true` );
+      vok( "with no connection it still asks", !! await vt.evaluate( "wait( function () { return document.getElementById( 'ayniVaultLead' ); } )" ) );
+      await vt.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      vok( "...and opens", await vt.evaluate( "U.then( function ( v ) { return !! v; } )" ) );
+      vok( "set-up refuses offline (never makes a second vault)", await vt.evaluate( `( async function () {
+          AyniVault.forget(); localStorage.clear();
+          try { await AyniVault.ensure(); return false; } catch ( e ) { return true; }
+      } )()` ) );
+      await vt.evaluate( "AyniNet.readJson = REAL_READ, true" );
+
+      //------------------------------------------------------------------------//
+      sub( "THE SCREEN LOCKER: OWN PAGE, AND THE DESKTOP AROUND A WINDOW" );
+
+      await vt.evaluate( "window.U = AyniVault.unlock(), true" );
+      await vt.evaluate( "unlockWith( 'pw', 'new-lock-password-2' )" );
+      await vt.evaluate( "U" );
+      vok( "the locker forgets the key", await vt.evaluate( `( async function () {
+          document.documentElement.classList.add( "ayni-locked" );
+          await new Promise( function ( r ) { setTimeout( r, 50 ); } );
+          document.documentElement.classList.remove( "ayni-locked" );
+          return AyniVault.current() === null;
+      } )()` ) );
+      vok( "a window inside the desktop forgets it too", await vt.evaluate( `( async function () {
+          var f = document.createElement( "iframe" ); f.src = location.href; document.body.appendChild( f );
+          var w = await wait( function () { var x = f.contentWindow; return x && x.AyniVault && x.Ayni && x.Ayni.dialog && x.unlockWith && x; }, 10000 );
+          await w.Ayni.i18n.ready;
+          w.SRV = SRV;
+          var u = w.AyniVault.unlock();
+          await w.unlockWith( "pw", "new-lock-password-2" );
+          var v = await u;
+          if( ! v ) return "not unlocked";
+          document.documentElement.classList.add( "ayni-locked" );
+          await new Promise( function ( r ) { setTimeout( r, 50 ); } );
+          document.documentElement.classList.remove( "ayni-locked" );
+          var gone = w.AyniVault.current() === null;
+          f.remove();
+          return gone;
+      } )()`, 30000 ) === true );
+
+      //------------------------------------------------------------------------//
+      sub( "A DAMAGED data/vault.json IS NEVER WRITTEN OVER" );
+
+      const hurt = await vt.evaluate( `( async function () {
+          AyniVault.forget(); localStorage.clear();
+          SRV[ "data/vault.json" ] = '{"v":1,"oops":true}';
+          var a = await AyniVault.ensure().then( function () { return "made"; }, function ( e ) { return e.code; } );
+          var b = await AyniVault.unlock().then( function () { return "opened"; }, function ( e ) { return e.code; } );
+          return { a: a, b: b, still: SRV[ "data/vault.json" ] };
+      } )()` );
+      vok( "set-up refuses, says damaged", hurt.a === "damaged", hurt );
+      vok( "unlock says damaged", hurt.b === "damaged", hurt );
+      vok( "the file is untouched", hurt.still === '{"v":1,"oops":true}', hurt.still );
+
+      const errs = vt.logs.filter( l => /^(exception|error):/.test( l ) );
+      vok( "no page errors", errs.length === 0, errs );
+    } finally { await vt.close(); if (vt2) await vt2.close(); }
+    t.logs.length = 0;
+    await t.open(BASE + '/gallery/vault.html');
+    check('vault: the gallery\'s page loads with no errors or warnings, no raw keys', t.logs.length === 0 && (await t.evaluate(RAW_KEYS)).length === 0, [t.logs.slice(), await t.evaluate(RAW_KEYS)]);
   }
 
   section('Desk page (Ayni.deskPage: windows that each hold a page)');

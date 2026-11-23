@@ -103,6 +103,9 @@
       <div class="spec"><h3>States</h3>
         <p class="rule">Every control shares one look per state. In a dialog the default button can be disabled until the input is valid: it stays filled but faded, can still be focused, and its tooltip says why.</p>
         <div class="row"><button class="btn primary" aria-disabled="true" aria-label="Save" data-tip="Save: type a name first"><span class="icon" data-icon="save"></span></button><button class="btn" aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button></div></div>
+      <div class="spec"><h3>Locked documents</h3>
+        <p class="rule">One key opens every locked document: a lock password, a passkey or the recovery code. Set up at the first lock; kept in this tab only; Lock now forgets it.</p>
+        <p class="rule"><a href="vault.html">Open the locked documents page</a></p></div>
     </div>
     <p class="out" id="dlg-out" role="status" style="margin-top:12px"></p>
   </div>
@@ -636,6 +639,9 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
       <div class="spec"><h3>Desktop mode</h3>
         <p class="rule">The taskbar, glued to the screen edge the user picks, with the applications launcher, one chip per window and the widgets; and windows, whose minimise, maximise and close buttons live in their taskbar chip. It fills the whole screen, so it has its own page.</p>
         <p class="rule"><a href="desktop.html">Open the desktop page</a></p></div>
+      <div class="spec"><h3>Desk page</h3>
+        <p class="rule">Windows that each hold a whole page (<code>Ayni.deskPage</code>): it puts the desk, the taskbar, More with the window options and the switcher on the page. A gadget with a timer or a fetch of its own (a clock, the weather) is the app's, put in its slots.</p>
+        <p class="rule"><a href="deskpage.html">Open the desk page</a></p></div>
       <div class="spec"><h3>Tabs</h3>
         <p class="rule">Split one Panel into pages. Tabs are drawn like folder tabs, and the selected one joins its page. When there are more tabs than fit, the row scrolls sideways, and the selected tab always scrolls into view. Left and Right switch pages, and Ctrl+Page Down or Ctrl+Page Up switch from anywhere inside the Panel. A tab can have one icon at its left. A closable tab has a small round close button at its right; Delete (or a middle click) also closes it. Here General and Security cannot be closed.</p>
         <div class="subtabs">
@@ -704,6 +710,9 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
         <p class="rule">A chevron after the label folds the rows below it; the page may keep the choice on this device.</p>
         <p class="section-label"><button type="button" aria-controls="fl-rows">Past</button></p>
         <div id="fl-rows"><div class="card-row"><span class="icon" data-icon="calendar"></span><span>Summer camp 2026</span></div></div></div>
+      <div class="spec"><h3>Dock panel</h3>
+        <p class="rule">A panel moved by its top bar: let go near a window edge and it docks there, full height or full width, and the page makes room for it; anywhere else it floats where it was dropped. Where it sits is kept on this device.</p>
+        <div class="row"><button class="btn text sm bordered" id="dock-btn" aria-controls="demo-dock">Open the dock panel</button></div></div>
       <div class="spec"><h3>Tags</h3>
         <p class="rule">A small read-only word on an item. A tag that can be pressed is a text button.</p>
         <div class="row"><span class="tag">Drama</span><span class="tag">1994</span><span class="tag">Today</span></div></div>
@@ -1005,5 +1014,11 @@ Morning is 9:00 to 13:00, afternoon is 16:00 to 20:00. Routes: https://example.o
     <footer><div class="extra"><button class="btn" type="button" id="find-all" aria-label="Clear the list" data-tip="Clear the list"><span class="icon" data-icon="trash"></span></button></div><button class="btn" value="close" formnovalidate data-close aria-label="Close" data-tip="Close (Esc)"><span class="icon" data-icon="close"></span></button><button class="btn primary" type="button" id="find-next" aria-label="Search" data-tip="Search (Enter)"><span class="icon" data-icon="search"></span></button></footer>
   </form>
 </dialog>
+<!-- The dock panel (Ayni.dock): opened from the Layout tab -->
+<section class="dock" id="demo-dock" hidden role="dialog" aria-labelledby="demo-dock-t">
+  <div class="dock-grip"><span class="icon" data-icon="grip" style="--icon:16px"></span><span class="dock-title" id="demo-dock-t">Dictionary</span>
+    <button class="btn sm" type="button" data-dock-close aria-label="Close" data-tip="Close"><span class="icon" data-icon="close"></span></button></div>
+  <div class="dock-body"><p class="static"><b>alcázar</b> · noun · a Spanish fortress or palace.</p><p class="static">Drag the bar above to an edge of the window.</p></div>
+</section>
 </body>
 </html>
