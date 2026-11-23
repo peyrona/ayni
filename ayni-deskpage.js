@@ -5,7 +5,8 @@
    a script at the end of <body>. With no #desktop on the page it puts its own markup there (MARKUP, below).
      var D = Ayni.deskPage( hooks )
    hooks, each optional: appName; icon, the menu button's picture (a URL); APPS { app: { name, svg } }; NARROW, SHORT { app: px }; appsReady,
-   a promise; appOf( url ), the app a page belongs to; openMenu(), closeMenu(), the app's launcher in #menu; placeUnread(), pokeUnread(),
+   a promise; appOf( url ), the app a page belongs to; openMenu(), closeMenu(), the app's launcher in #menu; simpleUrl, the app's simple
+   view (where a screen that no longer wants the desktop goes; none = it stays); placeUnread(), pokeUnread(),
    placeMail(), askMail(), placePlanner(), the app's marks on the chips. D holds what the page needs back, the slots for the app's own parts
    (addWidget( el, where ), addMenuSection( el, where ), addPopup( el ), relayout()) and this device's settings (set, saveSet(), store( key,
    value ), KEYS). A gadget with a timer, a fetch or a device of its own (a clock, the weather...) is the app's: it goes in the slots.
@@ -1306,12 +1307,13 @@
 
     // OPEN THE DESKTOP - this device's choice (set.mode): auto (a big screen
     // with a mouse or touchpad), always (a big screen, mouse or not), never
-    // (the simple view). Set ONLY in My account (../index.html, #deskModeSel;
-    // one action, one knob), which also opens in a window here: we follow its
-    // change. The launcher reads it before it sends a big screen here; both
-    // pages ask the same rule (ayniWantDesk, shared/desk-rule.js). A choice
-    // that no longer wants the desktop leaves for the simple view at once.
-    function toSimple() { location.replace( '../index.html' ); }
+    // (the simple view). Set by the app, in one place only (one action, one
+    // knob), which may open in a window here: we follow its change. The app's
+    // launcher reads it before it sends a big screen here; both pages ask the
+    // same rule (ayniWantDesk, ayni-desk-rule.js). A choice that no longer
+    // wants the desktop leaves for the simple view (hooks.simpleUrl) at once;
+    // an app with no simple view gives none, and stays.
+    function toSimple() { if( h.simpleUrl ) location.replace( h.simpleUrl ); }
     if( set.mode !== 'always' && set.mode !== 'never' ) set.mode = 'auto';
     window.addEventListener( 'storage', function ( e )
     {
@@ -1329,7 +1331,7 @@
     var finePtr = window.matchMedia( '(any-pointer: fine)' );
     function onFineChange()
     {
-        if( finePtr.matches || set.mode !== 'auto' ) return;
+        if( finePtr.matches || set.mode !== 'auto' || ! h.simpleUrl ) return;
         Ayni.toast( 'info', t( 'ayni.desktop.toSimpleAsk' ), { action: { label: t( 'ayni.desktop.toSimpleGo' ), icon: 'apps', run: toSimple } } );
     }
     if( finePtr.addEventListener ) finePtr.addEventListener( 'change', onFineChange );

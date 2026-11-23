@@ -3790,7 +3790,7 @@ try {
 
   section('Vault (AyniVault, AyniPasskey, AyniCrypt v2: one key for every locked document)');
   {
-    /* The same checks as Nayive's tools/vault-test/run.mjs, on tests/vault-only.html. At localhost: passkeys refuse an IP address as the site */
+    /* The checks Nayive ran (its tools/vault-test, until 2026-11-23), on tests/vault-only.html; Nayive's tools/vault-test/app.mjs reads its helpers from there. At localhost: passkeys refuse an IP address as the site */
     const url = BASE.replace('127.0.0.1', 'localhost') + '/tests/vault-only.html';
     const vok = (name, cond, extra) => check('vault: ' + name, cond, extra);
     const sub = (s) => console.log('  · ' + s.toLowerCase());
